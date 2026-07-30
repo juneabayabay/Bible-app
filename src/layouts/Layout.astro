@@ -1,12 +1,15 @@
 ---
 import "../styles/global.css";
 import ThemeToggle from "../components/ThemeToggle.astro";
+import VersionPicker from "../components/VersionPicker.astro";
+import { DEFAULT_VERSION, type VersionId } from "../lib/versions";
 
 interface Props {
   title?: string;
+  version?: VersionId;
 }
 
-const { title = "Bible" } = Astro.props;
+const { title = "Bible", version = DEFAULT_VERSION } = Astro.props;
 ---
 
 <!doctype html>
@@ -33,10 +36,10 @@ const { title = "Bible" } = Astro.props;
   <body class="min-h-screen antialiased transition-colors duration-200">
     <header class="sticky top-0 z-40 border-b border-[var(--color-line)] bg-[var(--color-surface-elevated)]/95 backdrop-blur-sm">
       <div class="mx-auto flex max-w-3xl flex-col gap-3 px-4 py-3 sm:gap-4 sm:py-4">
-        <div class="flex items-center justify-between gap-3">
+        <div class="flex items-center justify-between gap-2 sm:gap-3">
           <nav class="flex min-w-0 items-center gap-3 sm:gap-4" aria-label="Main">
             <a
-              href="/"
+              href={`/${version}/`}
               class="truncate text-base font-semibold tracking-tight text-[var(--color-ink)] transition hover:opacity-70 sm:text-lg"
             >
               Bible
@@ -48,7 +51,10 @@ const { title = "Bible" } = Astro.props;
               Saved
             </a>
           </nav>
-          <ThemeToggle />
+          <div class="flex shrink-0 items-center gap-2">
+            <VersionPicker version={version} />
+            <ThemeToggle />
+          </div>
         </div>
 
         <div class="w-full min-w-0">

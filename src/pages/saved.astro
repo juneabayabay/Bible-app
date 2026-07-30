@@ -1,14 +1,15 @@
 ---
 import Layout from "../layouts/Layout.astro";
 import SearchBar from "../components/SearchBar.astro";
+import { DEFAULT_VERSION } from "../lib/versions";
 ---
 
-<Layout title="Saved">
-  <SearchBar slot="header" />
+<Layout title="Saved" version={DEFAULT_VERSION}>
+  <SearchBar slot="header" version={DEFAULT_VERSION} />
 
   <h1 class="text-2xl font-semibold tracking-tight sm:text-3xl">Saved</h1>
   <p class="mt-2 text-sm text-[var(--color-ink-muted)] sm:text-base">
-    Highlights and notes stored in this browser.
+    Highlights and notes stored in this browser (all versions).
   </p>
 
   <div class="mt-8" x-data="savedList" x-cloak>

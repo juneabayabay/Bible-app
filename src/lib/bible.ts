@@ -1,4 +1,6 @@
-import raw from "../data/bible-raw.json";
+import webRaw from "../data/web.json";
+import tlRaw from "../data/tl-adb1905.json";
+import { DEFAULT_VERSION, type VersionId, isVersionId } from "./versions";
 
 export type Verse = { number: number; text: string };
 export type Chapter = { number: number; verses: Verse[] };
@@ -39,17 +41,25 @@ function normalize(data: RawVerse[]): Book[] {
   return books;
 }
 
-const books = normalize(raw as RawVerse[]);
+const byVersion: Record<VersionId, Book[]> = {
+  web: normalize(webRaw as RawVerse[]),
+  tl: normalize(tlRaw as RawVerse[]),
+};
 
-export function getBooks() {
-  return books;
+export function resolveVersionId(value: string | undefined): VersionId {
+  if (value && isVersionId(value)) return value;
+  return DEFAULT_VERSION;
 }
 
-export function getBook(slug: string) {
-  return books.find((b) => b.slug === slug);
+export function getBooks(version: VersionId = DEFAULT_VERSION) {
+  return byVersion[version];
 }
 
-export function getChapter(slug: string, chapter: number) {
-  const book = getBook(slug);
+export function getBook(version: VersionId, slug: string) {
+  return byVersion[version].find((b) => b.slug === slug);
+}
+
+export function getChapter(version: VersionId, slug: string, chapter: number) {
+  const book = getBook(version, slug);
   return book?.chapters.find((c) => c.number === chapter);
 }

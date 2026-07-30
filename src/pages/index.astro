@@ -1,30 +1,26 @@
 ---
-import Layout from "../layouts/Layout.astro";
-import SearchBar from "../components/SearchBar.astro";
-import { getBooks } from "../lib/bible";
-
-const books = getBooks();
+import { DEFAULT_VERSION } from "../lib/versions";
 ---
 
-<Layout title="Bible App">
-  <SearchBar slot="header" />
-
-  <h1 class="text-2xl font-semibold tracking-tight sm:text-3xl">Bible</h1>
-  <p class="mt-2 text-sm text-[var(--color-ink-muted)] sm:text-base">
-    Read the World English Bible (public domain).
-  </p>
-
-  <h2 class="mt-8 text-lg font-medium sm:text-xl">Books</h2>
-  <ul class="mt-4 columns-2 gap-x-6 sm:columns-3 sm:gap-x-8">
-    {books.map((book) => (
-      <li class="mb-1.5 break-inside-avoid">
-        <a
-          class="inline-block py-0.5 text-sm text-[var(--color-ink)] underline-offset-2 transition hover:underline sm:text-base"
-          href={`/book/${book.slug}`}
-        >
-          {book.name}
-        </a>
-      </li>
-    ))}
-  </ul>
-</Layout>
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Bible</title>
+    <script is:inline define:vars={{ DEFAULT_VERSION }}>
+      (() => {
+        let version = DEFAULT_VERSION;
+        try {
+          const saved = localStorage.getItem("bible-version");
+          if (saved === "web" || saved === "tl") version = saved;
+        } catch {
+          /* ignore */
+        }
+        window.location.replace("/" + version + "/");
+      })();
+    </script>
+    <meta http-equiv="refresh" content={`0;url=/${DEFAULT_VERSION}/`} />
+  </head>
+  <body></body>
+</html>

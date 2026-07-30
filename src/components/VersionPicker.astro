@@ -1,0 +1,29 @@
+---
+import { VERSION_IDS, VERSIONS, type VersionId } from "../lib/versions";
+
+interface Props {
+  version: VersionId;
+}
+
+const { version } = Astro.props;
+const options = VERSION_IDS.map((id) => VERSIONS[id]);
+---
+
+<div
+  class="shrink-0"
+  x-data={`versionPicker('${version}')`}
+>
+  <label class="sr-only" for="bible-version">Bible version</label>
+  <select
+    id="bible-version"
+    class="max-w-[10.5rem] rounded-md border border-[var(--color-line)] bg-[var(--color-surface-elevated)] px-2 py-2 text-xs text-[var(--color-ink)] outline-none ring-[var(--color-accent)] focus:ring-2 sm:max-w-none sm:px-3 sm:text-sm"
+    x-model="current"
+    @change="switchTo(current)"
+  >
+    {options.map((opt) => (
+      <option value={opt.id} selected={opt.id === version}>
+        {opt.label}
+      </option>
+    ))}
+  </select>
+</div>

@@ -7,8 +7,38 @@ export type Annotation = {
 
 export type AnnotationMap = Record<string, Annotation>;
 
-export function verseKey(slug: string, chapter: number, verse: number) {
-  return `${slug}-${chapter}-${verse}`;
+export function verseKey(
+  version: string,
+  slug: string,
+  chapter: number,
+  verse: number,
+) {
+  return `${version}:${slug}-${chapter}-${verse}`;
+}
+
+export function parseVerseKey(key: string) {
+  const withVersion = key.match(/^([a-z0-9]+):(.+)-(\d+)-(\d+)$/i);
+  if (withVersion) {
+    return {
+      version: withVersion[1],
+      slug: withVersion[2],
+      chapter: Number(withVersion[3]),
+      verse: Number(withVersion[4]),
+    };
+  }
+
+  // Legacy keys (before multi-version) → treat as WEB
+  const legacy = key.match(/^(.+)-(\d+)-(\d+)$/);
+  if (legacy) {
+    return {
+      version: "web",
+      slug: legacy[1],
+      chapter: Number(legacy[2]),
+      verse: Number(legacy[3]),
+    };
+  }
+
+  return null;
 }
 
 export function loadAnnotations(): AnnotationMap {

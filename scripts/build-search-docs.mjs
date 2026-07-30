@@ -3,25 +3,34 @@ import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 
 const root = join(dirname(fileURLToPath(import.meta.url)), "..");
-const raw = JSON.parse(readFileSync(join(root, "src/data/bible-raw.json"), "utf8"));
+
+const versions = [
+  { id: "web", file: "src/data/web.json" },
+  { id: "tl", file: "src/data/tl-adb1905.json" },
+];
 
 function toSlug(name) {
   return name.toLowerCase().replace(/\s+/g, "-");
 }
 
-const docs = raw.map((row) => {
-  const slug = toSlug(row.book);
-  return {
-    id: `${slug}-${row.chapter}-${row.verse}`,
-    book: row.book,
-    slug,
-    chapter: row.chapter,
-    verse: row.verse,
-    text: row.text,
-  };
-});
-
-const outDir = join(root, "public");
+const outDir = join(root, "public", "search");
 mkdirSync(outDir, { recursive: true });
-writeFileSync(join(outDir, "search-docs.json"), JSON.stringify(docs));
-console.log(`Wrote ${docs.length} search docs to public/search-docs.json`);
+
+for (const version of versions) {
+  const raw = JSON.parse(readFileSync(join(root, version.file), "utf8"));
+  const docs = raw.map((row) => {
+    const slug = toSlug(row.book);
+    return {
+      id: `${slug}-${row.chapter}-${row.verse}`,
+      book: row.book,
+      slug,
+      chapter: row.chapter,
+      verse: row.verse,
+      text: row.text,
+      version: version.id,
+    };
+  });
+
+  writeFileSync(join(outDir, `${version.id}.json`), JSON.stringify(docs));
+  console.log(`Wrote ${docs.length} search docs to public/search/${version.id}.json`);
+}

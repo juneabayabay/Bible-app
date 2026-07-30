@@ -1,0 +1,51 @@
+---
+import Layout from "../../../layouts/Layout.astro";
+import SearchBar from "../../../components/SearchBar.astro";
+import { getBooks, resolveVersionId } from "../../../lib/bible";
+import { VERSION_IDS, type VersionId } from "../../../lib/versions";
+import type { Book } from "../../../lib/bible";
+
+export function getStaticPaths() {
+  return VERSION_IDS.flatMap((version) =>
+    getBooks(version).map((book) => ({
+      params: { version, book: book.slug },
+      props: { book, version },
+    })),
+  );
+}
+
+const { book, version: versionProp } = Astro.props as {
+  book: Book;
+  version: VersionId;
+};
+const version = resolveVersionId(versionProp);
+---
+
+<Layout title={book.name} version={version}>
+  <SearchBar slot="header" version={version} />
+
+  <p class="mb-4 text-sm">
+    <a
+      class="text-[var(--color-ink-muted)] transition hover:text-[var(--color-ink)] hover:underline"
+      href={`/${version}/`}
+    >
+      ← All books
+    </a>
+  </p>
+
+  <h1 class="text-2xl font-semibold tracking-tight sm:text-3xl">{book.name}</h1>
+
+  <h2 class="mt-8 text-lg font-medium sm:text-xl">Chapters</h2>
+  <ul class="mt-4 grid grid-cols-5 gap-2 sm:grid-cols-8 md:grid-cols-10">
+    {book.chapters.map((chapter) => (
+      <li>
+        <a
+          class="inline-flex h-10 w-full items-center justify-center rounded-md border border-[var(--color-line)] bg-[var(--color-surface-elevated)] text-sm text-[var(--color-ink)] transition hover:border-[var(--color-accent)] hover:bg-[var(--color-line)] active:scale-[0.98] sm:h-9"
+          href={`/${version}/chapter/${book.slug}/${chapter.number}`}
+        >
+          {chapter.number}
+        </a>
+      </li>
+    ))}
+  </ul>
+</Layout>

@@ -1,0 +1,39 @@
+---
+import Layout from "../../layouts/Layout.astro";
+import SearchBar from "../../components/SearchBar.astro";
+import { getBooks, resolveVersionId } from "../../lib/bible";
+import { VERSION_IDS, getVersion } from "../../lib/versions";
+
+export function getStaticPaths() {
+  return VERSION_IDS.map((version) => ({
+    params: { version },
+  }));
+}
+
+const version = resolveVersionId(Astro.params.version);
+const meta = getVersion(version);
+const books = getBooks(version);
+---
+
+<Layout title={`Bible · ${meta.shortLabel}`} version={version}>
+  <SearchBar slot="header" version={version} />
+
+  <h1 class="text-2xl font-semibold tracking-tight sm:text-3xl">Bible</h1>
+  <p class="mt-2 text-sm text-[var(--color-ink-muted)] sm:text-base">
+    {meta.description}
+  </p>
+
+  <h2 class="mt-8 text-lg font-medium sm:text-xl">Books</h2>
+  <ul class="mt-4 columns-2 gap-x-6 sm:columns-3 sm:gap-x-8">
+    {books.map((book) => (
+      <li class="mb-1.5 break-inside-avoid">
+        <a
+          class="inline-block py-0.5 text-sm text-[var(--color-ink)] underline-offset-2 transition hover:underline sm:text-base"
+          href={`/${version}/book/${book.slug}`}
+        >
+          {book.name}
+        </a>
+      </li>
+    ))}
+  </ul>
+</Layout>

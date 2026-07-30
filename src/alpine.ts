@@ -3,11 +3,13 @@ import lunr from "lunr";
 import {
   getAnnotation,
   loadAnnotations,
+  parseVerseKey,
   saveAnnotations,
   upsertAnnotation,
   verseKey,
   type AnnotationMap,
 } from "./lib/annotations";
+import { DEFAULT_VERSION, VERSIONS, type VersionId } from "./lib/versions";
 
 type SearchDoc = {
   id: string;
@@ -16,25 +18,21 @@ type SearchDoc = {
   chapter: number;
   verse: number;
   text: string;
+  version?: string;
 };
 
-function parseVerseKey(key: string) {
-  const match = key.match(/^(.*)-(\d+)-(\d+)$/);
-  if (!match) return null;
-  return {
-    slug: match[1],
-    chapter: Number(match[2]),
-    verse: Number(match[3]),
-  };
-}
-
 const THEME_KEY = "bible-theme";
+const VERSION_KEY = "bible-version";
 
 function resolveDark(): boolean {
   const saved = localStorage.getItem(THEME_KEY);
   if (saved === "dark") return true;
   if (saved === "light") return false;
   return window.matchMedia("(prefers-color-scheme: dark)").matches;
+}
+
+function versionLabel(id: string) {
+  return VERSIONS[id as VersionId]?.shortLabel ?? id.toUpperCase();
 }
 
 export default (Alpine: Alpine) => {
@@ -58,7 +56,6 @@ export default (Alpine: Alpine) => {
     },
   });
 
-  // Keep store in sync if another tab changes preference
   window.addEventListener("storage", (e) => {
     if (e.key !== THEME_KEY) return;
     const dark = resolveDark();
@@ -66,46 +63,74 @@ export default (Alpine: Alpine) => {
     (Alpine.store("theme") as { dark: boolean }).dark = dark;
   });
 
-  Alpine.data("chapterReader", (bookSlug: string, chapter: number) => ({
-    bookSlug,
-    chapter,
-    annotations: {} as AnnotationMap,
-    openNote: null as number | null,
+  Alpine.data("versionPicker", (initial: string) => ({
+    current: initial,
 
-    init() {
-      this.annotations = loadAnnotations();
-    },
+    switchTo(next: string) {
+      localStorage.setItem(VERSION_KEY, next);
+      const path = window.location.pathname.replace(/\/+$/, "") || "/";
+      const parts = path.split("/").filter(Boolean);
 
-    key(verse: number) {
-      return verseKey(this.bookSlug, this.chapter, verse);
-    },
+      if (parts.length === 0) {
+        window.location.href = `/${next}/`;
+        return;
+      }
 
-    isHighlighted(verse: number) {
-      return getAnnotation(this.annotations, this.key(verse)).highlighted;
-    },
+      // /web/... or /tl/...
+      if (parts[0] === "web" || parts[0] === "tl") {
+        parts[0] = next;
+        window.location.href = "/" + parts.join("/");
+        return;
+      }
 
-    noteText(verse: number) {
-      return getAnnotation(this.annotations, this.key(verse)).note;
-    },
-
-    toggleHighlight(verse: number) {
-      this.annotations = upsertAnnotation(this.annotations, this.key(verse), {
-        highlighted: !this.isHighlighted(verse),
-      });
-      saveAnnotations(this.annotations);
-    },
-
-    setNote(verse: number, note: string) {
-      this.annotations = upsertAnnotation(this.annotations, this.key(verse), {
-        note,
-      });
-      saveAnnotations(this.annotations);
-    },
-
-    toggleNote(verse: number) {
-      this.openNote = this.openNote === verse ? null : verse;
+      window.location.href = `/${next}/`;
     },
   }));
+
+  Alpine.data(
+    "chapterReader",
+    (version: string, bookSlug: string, chapter: number) => ({
+      version,
+      bookSlug,
+      chapter,
+      annotations: {} as AnnotationMap,
+      openNote: null as number | null,
+
+      init() {
+        this.annotations = loadAnnotations();
+      },
+
+      key(verse: number) {
+        return verseKey(this.version, this.bookSlug, this.chapter, verse);
+      },
+
+      isHighlighted(verse: number) {
+        return getAnnotation(this.annotations, this.key(verse)).highlighted;
+      },
+
+      noteText(verse: number) {
+        return getAnnotation(this.annotations, this.key(verse)).note;
+      },
+
+      toggleHighlight(verse: number) {
+        this.annotations = upsertAnnotation(this.annotations, this.key(verse), {
+          highlighted: !this.isHighlighted(verse),
+        });
+        saveAnnotations(this.annotations);
+      },
+
+      setNote(verse: number, note: string) {
+        this.annotations = upsertAnnotation(this.annotations, this.key(verse), {
+          note,
+        });
+        saveAnnotations(this.annotations);
+      },
+
+      toggleNote(verse: number) {
+        this.openNote = this.openNote === verse ? null : verse;
+      },
+    }),
+  );
 
   Alpine.data("savedList", () => ({
     items: [] as Array<{
@@ -126,11 +151,12 @@ export default (Alpine: Alpine) => {
         .map(([key, value]) => {
           const parsed = parseVerseKey(key);
           if (!parsed) return null;
-          const label = `${parsed.slug.replace(/-/g, " ")} ${parsed.chapter}:${parsed.verse}`;
+          const bookLabel = parsed.slug.replace(/-/g, " ");
+          const label = `${versionLabel(parsed.version)} · ${bookLabel} ${parsed.chapter}:${parsed.verse}`;
           return {
             key,
             label,
-            url: `/chapter/${parsed.slug}/${parsed.chapter}`,
+            url: `/${parsed.version}/chapter/${parsed.slug}/${parsed.chapter}`,
             highlighted: value.highlighted,
             note: value.note,
           };
@@ -147,7 +173,8 @@ export default (Alpine: Alpine) => {
     },
   }));
 
-  Alpine.data("bibleSearch", () => ({
+  Alpine.data("bibleSearch", (version: string = DEFAULT_VERSION) => ({
+    version,
     q: "",
     results: [] as Array<{
       id: string;
@@ -164,7 +191,7 @@ export default (Alpine: Alpine) => {
     async init() {
       this.loading = true;
       try {
-        const res = await fetch("/search-docs.json");
+        const res = await fetch(`/search/${this.version}.json`);
         if (!res.ok) throw new Error("Could not load search data");
         const docs = (await res.json()) as SearchDoc[];
         this.docsById = Object.fromEntries(docs.map((d) => [d.id, d]));
@@ -199,7 +226,7 @@ export default (Alpine: Alpine) => {
             id: doc.id,
             label: `${doc.book} ${doc.chapter}:${doc.verse}`,
             snippet: doc.text.slice(0, 120) + (doc.text.length > 120 ? "…" : ""),
-            url: `/chapter/${doc.slug}/${doc.chapter}`,
+            url: `/${this.version}/chapter/${doc.slug}/${doc.chapter}`,
           };
         });
       } catch {

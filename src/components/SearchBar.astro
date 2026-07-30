@@ -1,9 +1,16 @@
 ---
+import { type VersionId } from "../lib/versions";
+
+interface Props {
+  version: VersionId;
+}
+
+const { version } = Astro.props;
 ---
 
 <div
   class="relative w-full"
-  x-data="bibleSearch"
+  x-data={`bibleSearch('${version}')`}
   x-cloak
 >
   <label class="sr-only" for="bible-search">Search verses</label>
