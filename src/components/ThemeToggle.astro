@@ -3,7 +3,7 @@
 
 <button
   type="button"
-  class="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-[var(--color-line)] bg-[var(--color-surface-elevated)] text-[var(--color-ink)] transition hover:bg-[var(--color-line)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-primary)]"
+  class="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-[var(--color-line)] bg-[var(--color-surface-elevated)] text-[var(--color-ink)] transition hover:bg-[var(--color-line)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-primary)]"
   x-data
   @click="$store.theme.toggle()"
   :aria-label="$store.theme.dark ? 'Switch to light mode' : 'Switch to dark mode'"
@@ -11,7 +11,7 @@
 >
   <!-- Sun (shown in dark mode) -->
   <svg
-    class="h-5 w-5"
+    class="h-4 w-4"
     viewBox="0 0 24 24"
     fill="none"
     stroke="currentColor"
@@ -25,7 +25,7 @@
   </svg>
   <!-- Moon (shown in light mode) -->
   <svg
-    class="h-5 w-5"
+    class="h-4 w-4"
     viewBox="0 0 24 24"
     fill="none"
     stroke="currentColor"

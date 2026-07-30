@@ -9,34 +9,47 @@ const { version } = Astro.props;
 ---
 
 <div
-  class="relative w-full"
+  class="relative w-full max-w-xl"
   x-data={`bibleSearch('${version}')`}
 >
   <label class="sr-only" for="bible-search">Search verses</label>
-  <input
-    id="bible-search"
-    type="search"
-    placeholder="Search Scripture or John 3:16…"
-    autocomplete="off"
-    enterkeyhint="search"
-    class="w-full rounded-2xl border border-[var(--color-line)] bg-[var(--color-surface)] px-4 py-2.5 text-base text-[var(--color-ink)] outline-none ring-[var(--color-primary)] placeholder:text-[var(--color-ink-subtle)] focus:ring-2 sm:py-2.5 sm:text-sm"
-    x-model="q"
-    @focus="onFocus"
-    @input.debounce.300ms="search"
-  />
+  <div class="relative">
+    <svg
+      class="pointer-events-none absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 text-[var(--color-ink-subtle)]"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      stroke-width="2"
+      aria-hidden="true"
+    >
+      <circle cx="11" cy="11" r="7"></circle>
+      <path d="M20 20l-3-3"></path>
+    </svg>
+    <input
+      id="bible-search"
+      type="search"
+      placeholder="Search or John 3:16"
+      autocomplete="off"
+      enterkeyhint="search"
+      class="w-full rounded-xl border border-[var(--color-line)] bg-[var(--color-surface)] py-2 pr-3 pl-9 text-sm text-[var(--color-ink)] outline-none ring-[var(--color-primary)] placeholder:text-[var(--color-ink-subtle)] focus:ring-2"
+      x-model="q"
+      @focus="onFocus"
+      @input.debounce.300ms="search"
+    />
+  </div>
 
   <p class="mt-1 text-xs text-[var(--color-ink-subtle)]" x-show="loading">Loading search…</p>
   <p class="mt-1 text-xs text-red-600 dark:text-red-400" x-show="error" x-text="error"></p>
 
   <ul
-    class="absolute z-50 mt-2 max-h-[min(20rem,50vh)] w-full overflow-auto rounded-2xl border border-[var(--color-line)] bg-[var(--color-surface-elevated)] shadow-lg"
+    class="absolute z-50 mt-1.5 max-h-[min(20rem,50vh)] w-full overflow-auto rounded-xl border border-[var(--color-line)] bg-[var(--color-surface-elevated)] shadow-lg"
     x-show="results.length > 0"
     @click.outside="results = []"
   >
     <template x-for="result in results" :key="result.id">
       <li class="border-b border-[var(--color-line)] last:border-0">
         <a
-          class="block px-3 py-3 transition hover:bg-[var(--color-line)] sm:py-2"
+          class="block px-3 py-2.5 transition hover:bg-[var(--color-line)] sm:py-2"
           :href="result.url"
         >
           <span class="block text-sm font-medium text-[var(--color-ink)]" x-text="result.label"></span>

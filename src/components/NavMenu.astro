@@ -1,0 +1,56 @@
+---
+import type { VersionId } from "../lib/versions";
+
+interface Props {
+  version: VersionId;
+}
+
+const { version } = Astro.props;
+
+const links = [
+  { href: `/${version}/#today`, label: "Today" },
+  { href: `/${version}/devotionals`, label: "Grow" },
+  { href: `/${version}/plans`, label: "Plans" },
+  { href: `/${version}/journey`, label: "Journey" },
+  { href: "/saved", label: "Saved" },
+];
+---
+
+<div class="relative" x-data="{ open: false }" @keydown.escape.window="open = false">
+  <button
+    type="button"
+    class="inline-flex h-9 items-center gap-1 rounded-lg px-2 text-sm text-[var(--color-ink-muted)] transition hover:bg-[var(--color-line)] hover:text-[var(--color-ink)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-primary)]"
+    @click="open = !open"
+    :aria-expanded="open.toString()"
+    aria-haspopup="menu"
+  >
+    Menu
+    <svg class="h-3.5 w-3.5 opacity-70" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+      <path
+        fill-rule="evenodd"
+        d="M5.23 7.21a.75.75 0 011.06.02L10 11.17l3.71-3.94a.75.75 0 111.08 1.04l-4.25 4.5a.75.75 0 01-1.08 0l-4.25-4.5a.75.75 0 01.02-1.06z"
+        clip-rule="evenodd"
+      ></path>
+    </svg>
+  </button>
+
+  <div
+    class="absolute right-0 z-50 mt-2 w-44 overflow-hidden rounded-xl border border-[var(--color-line)] bg-[var(--color-surface-elevated)] py-1 shadow-lg"
+    x-show="open"
+    x-cloak
+    @click.outside="open = false"
+    role="menu"
+  >
+    {links.map((link) => (
+      <a
+        href={link.href}
+        class="block px-3.5 py-2.5 text-sm text-[var(--color-ink)] transition hover:bg-[var(--color-line)]"
+        role="menuitem"
+        data-astro-prefetch
+        @click="open = false"
+      >
+        {link.label}
+      </a>
+    ))}
+  </div>
+</div>
