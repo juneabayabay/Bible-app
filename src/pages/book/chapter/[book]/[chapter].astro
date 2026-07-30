@@ -1,0 +1,45 @@
+---
+import { getBooks, getChapter } from "../../../lib/bible";
+
+export function getStaticPaths() {
+  return getBooks().flatMap((book) =>
+    book.chapters.map((chapter) => ({
+      params: {
+        book: book.slug,
+        chapter: String(chapter.number),
+      },
+      props: {
+        bookName: book.name,
+        bookSlug: book.slug,
+        chapterNumber: chapter.number,
+      },
+    }))
+  );
+}
+
+const { bookName, bookSlug, chapterNumber } = Astro.props;
+const chapter = getChapter(bookSlug, chapterNumber);
+
+if (!chapter) {
+  return Astro.redirect("/");
+}
+---
+
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width" />
+    <title>{bookName} {chapterNumber}</title>
+  </head>
+  <body>
+    <p><a href={`/book/${bookSlug}`}>← {bookName}</a></p>
+
+    <h1>{bookName} {chapterNumber}</h1>
+
+    {chapter.verses.map((verse) => (
+      <p>
+        <strong>{verse.number}</strong> {verse.text}
+      </p>
+    ))}
+  </body>
+</html>
