@@ -44,11 +44,23 @@ export function verseKey(
   chapter: number,
   verse: number,
 ) {
-  return `${version}:${slug}-${chapter}-${verse}`;
+  return `${version}|${slug}|${chapter}|${verse}`;
 }
 
 export function parseVerseKey(key: string) {
-  const withVersion = key.match(/^([a-z0-9]+):(.+)-(\d+)-(\d+)$/i);
+  // Current: web|john|3|16  (supports hyphenated version ids like es-rvr)
+  const pipe = key.match(/^([^|]+)\|([^|]+)\|(\d+)\|(\d+)$/);
+  if (pipe) {
+    return {
+      version: pipe[1],
+      slug: pipe[2],
+      chapter: Number(pipe[3]),
+      verse: Number(pipe[4]),
+    };
+  }
+
+  // Previous multi-version format: web:john-3-16 (breaks on es-rvr:…)
+  const withVersion = key.match(/^([a-z0-9-]+):(.+)-(\d+)-(\d+)$/i);
   if (withVersion) {
     return {
       version: withVersion[1],
@@ -93,7 +105,11 @@ export function loadAnnotations(): AnnotationMap {
 }
 
 export function saveAnnotations(map: AnnotationMap) {
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(map));
+  try {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(map));
+  } catch {
+    // Private mode / quota — keep in-memory map; caller still works this session
+  }
 }
 
 export function getAnnotation(map: AnnotationMap, key: string): Annotation {

@@ -73,6 +73,24 @@ body {
   background-color: var(--color-surface);
   color: var(--color-ink);
   font-family: var(--font-sans);
+  transition:
+    background-color 0.25s ease,
+    color 0.25s ease;
+}
+
+/* Smooth theme swaps for common surfaces */
+header,
+.ui-card,
+.btn-primary,
+.btn-secondary,
+input,
+select,
+textarea {
+  transition:
+    background-color 0.25s ease,
+    border-color 0.25s ease,
+    color 0.25s ease,
+    box-shadow 0.25s ease;
 }
 
 .font-scripture {
