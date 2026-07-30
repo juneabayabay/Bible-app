@@ -1,5 +1,17 @@
 {
   "buildCommand": "npm run build",
   "outputDirectory": "dist",
-  "framework": "astro"
+  "framework": "astro",
+  "redirects": [
+    {
+      "source": "/book/:book",
+      "destination": "/web/book/:book",
+      "permanent": false
+    },
+    {
+      "source": "/chapter/:book/:chapter",
+      "destination": "/web/chapter/:book/:chapter",
+      "permanent": false
+    }
+  ]
 }

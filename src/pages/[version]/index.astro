@@ -1,19 +1,33 @@
 ---
 import Layout from "../../layouts/Layout.astro";
 import SearchBar from "../../components/SearchBar.astro";
-import { getBooks, resolveVersionId } from "../../lib/bible";
+import { getBooks, resolveVersionId, clearBibleCache } from "../../lib/bible";
 import { VERSION_IDS, getVersion } from "../../lib/versions";
 import { isOldTestament } from "../../lib/books";
+import { resolveDailyVerse } from "../../lib/resolveDailyVerse";
 
 export function getStaticPaths() {
-  return VERSION_IDS.map((version) => ({
-    params: { version },
-  }));
+  return VERSION_IDS.map((version) => {
+    const books = getBooks(version);
+    const daily = resolveDailyVerse(version);
+    clearBibleCache(version);
+    return {
+      params: { version },
+      props: {
+        books: books.map((b) => ({ name: b.name, slug: b.slug })),
+        daily,
+      },
+    };
+  });
 }
 
 const version = resolveVersionId(Astro.params.version);
 const meta = getVersion(version);
-const books = getBooks(version);
+const { books, daily } = Astro.props as {
+  books: Array<{ name: string; slug: string }>;
+  daily: ReturnType<typeof resolveDailyVerse>;
+};
+
 const otBooks = books.filter((b) => isOldTestament(b.slug));
 const ntBooks = books.filter((b) => !isOldTestament(b.slug));
 const todayLabel = new Date().toLocaleDateString("en-US", {
@@ -21,46 +35,49 @@ const todayLabel = new Date().toLocaleDateString("en-US", {
   month: "long",
   day: "numeric",
 });
+const dailyCopyLabel = daily
+  ? `${daily.book} ${daily.chapter}:${daily.verse}`
+  : "";
 ---
 
 <Layout title={`Bible · ${meta.shortLabel}`} version={version}>
   <SearchBar slot="header" version={version} />
 
   <div class="space-y-10" x-data={`homeDashboard('${version}')`}>
-    <!-- Intro -->
     <section>
       <p class="text-sm text-[var(--color-ink-subtle)]">{todayLabel}</p>
-      <h1 class="mt-1 text-2xl font-semibold tracking-tight sm:text-3xl">Home</h1>
+      <h1 class="mt-1 text-2xl font-semibold tracking-tight sm:text-3xl">
+        {meta.shortLabel}
+      </h1>
       <p class="mt-2 max-w-xl text-sm text-[var(--color-ink-muted)] sm:text-base">
-        Read Scripture in {meta.shortLabel}. Search above, or start with today’s verse.
+        {meta.description}. Search above, continue where you left off, or start with today’s verse.
       </p>
     </section>
 
-    <!-- Verse of the Day -->
-    <section
-      class="border-y border-[var(--color-line)] py-8"
-      x-data={`dailyVerse('${version}')`}
-      aria-labelledby="votd-heading"
-    >
-      <p id="votd-heading" class="text-xs font-semibold uppercase tracking-wider text-[var(--color-accent)]">
-        Verse of the day
-      </p>
+    {daily && (
+      <section
+        class="border-y border-[var(--color-line)] py-8"
+        aria-labelledby="votd-heading"
+        x-data={`copyVerse(${JSON.stringify(daily.text)}, ${JSON.stringify(dailyCopyLabel)})`}
+      >
+        <p
+          id="votd-heading"
+          class="text-xs font-semibold uppercase tracking-wider text-[var(--color-accent)]"
+        >
+          Verse of the day
+        </p>
 
-      <p class="mt-4 text-sm text-[var(--color-ink-subtle)]" x-show="loading" x-cloak>Loading…</p>
-      <p class="mt-4 text-sm text-red-600 dark:text-red-400" x-show="error" x-text="error" x-cloak></p>
-
-      <div x-show="!loading && !error" x-cloak>
         <blockquote class="mt-4 text-xl leading-relaxed text-[var(--color-ink)] sm:text-2xl sm:leading-snug">
-          <span x-text="text"></span>
+          {daily.text}
         </blockquote>
         <p class="mt-4 text-sm font-medium text-[var(--color-ink-muted)]">
-          <span x-text="ref ? `${ref.book} ${ref.chapter}:${ref.verse}` : ''"></span>
+          {daily.book} {daily.chapter}:{daily.verse}
           <span class="text-[var(--color-ink-subtle)]"> · {meta.shortLabel}</span>
         </p>
         <div class="mt-6 flex flex-wrap gap-3">
           <a
             class="inline-flex min-h-10 items-center justify-center rounded-md bg-[var(--color-ink)] px-4 text-sm font-medium text-[var(--color-surface)] transition hover:opacity-90"
-            :href="url"
+            href={daily.url}
           >
             Read chapter
           </a>
@@ -69,58 +86,38 @@ const todayLabel = new Date().toLocaleDateString("en-US", {
             class="inline-flex min-h-10 items-center justify-center rounded-md border border-[var(--color-line)] bg-[var(--color-surface-elevated)] px-4 text-sm text-[var(--color-ink)] transition hover:bg-[var(--color-line)]"
             @click="copy()"
           >
-            Copy verse
+            <span x-text="copied ? 'Copied' : 'Copy verse'"></span>
           </button>
         </div>
-      </div>
+      </section>
+    )}
+
+    <section aria-label="Quick actions" class="flex flex-wrap gap-x-5 gap-y-2 text-sm">
+      <template x-if="continueUrl">
+        <a
+          class="font-medium text-[var(--color-accent)] hover:underline"
+          :href="continueUrl"
+        >
+          Continue <span class="capitalize" x-text="continueLabel"></span>
+        </a>
+      </template>
+      <a
+        class="text-[var(--color-ink-muted)] hover:text-[var(--color-ink)] hover:underline"
+        href="#books"
+      >
+        Browse books
+      </a>
+      <a
+        class="text-[var(--color-ink-muted)] hover:text-[var(--color-ink)] hover:underline"
+        href="/saved"
+      >
+        Saved (<span x-text="savedCount"></span>)
+      </a>
     </section>
 
-    <!-- Quick actions -->
-    <section aria-label="Quick actions">
-      <div class="grid gap-3 sm:grid-cols-3">
-        <a
-          class="block rounded-md border border-[var(--color-line)] bg-[var(--color-surface-elevated)] px-4 py-4 transition hover:border-[var(--color-accent)]"
-          href="#books"
-        >
-          <p class="text-sm font-semibold text-[var(--color-ink)]">Browse books</p>
-          <p class="mt-1 text-xs text-[var(--color-ink-muted)]">Old &amp; New Testament</p>
-        </a>
-
-        <a
-          class="block rounded-md border border-[var(--color-line)] bg-[var(--color-surface-elevated)] px-4 py-4 transition hover:border-[var(--color-accent)]"
-          href="/saved"
-        >
-          <p class="text-sm font-semibold text-[var(--color-ink)]">Saved</p>
-          <p class="mt-1 text-xs text-[var(--color-ink-muted)]">
-            <span x-text="savedCount"></span> highlights &amp; notes
-          </p>
-        </a>
-
-        <template x-if="continueUrl">
-          <a
-            class="block rounded-md border border-[var(--color-line)] bg-[var(--color-surface-elevated)] px-4 py-4 transition hover:border-[var(--color-accent)]"
-            :href="continueUrl"
-          >
-            <p class="text-sm font-semibold text-[var(--color-ink)]">Continue reading</p>
-            <p class="mt-1 text-xs capitalize text-[var(--color-ink-muted)]" x-text="continueLabel"></p>
-          </a>
-        </template>
-        <template x-if="!continueUrl">
-          <div class="block rounded-md border border-dashed border-[var(--color-line)] px-4 py-4">
-            <p class="text-sm font-semibold text-[var(--color-ink-muted)]">Continue reading</p>
-            <p class="mt-1 text-xs text-[var(--color-ink-subtle)]">Open any chapter to start</p>
-          </div>
-        </template>
-      </div>
-    </section>
-
-    <!-- Books -->
     <section id="books" class="scroll-mt-28" x-data={`{ tab: '${otBooks.length ? "ot" : "nt"}' }`}>
       <div class="flex flex-wrap items-end justify-between gap-3">
-        <div>
-          <h2 class="text-lg font-medium sm:text-xl">Books</h2>
-          <p class="mt-1 text-sm text-[var(--color-ink-muted)]">{meta.description}</p>
-        </div>
+        <h2 class="text-lg font-medium sm:text-xl">Books</h2>
         {(otBooks.length > 0 && ntBooks.length > 0) && (
           <div class="flex gap-1 rounded-md border border-[var(--color-line)] p-1" role="tablist">
             <button

@@ -20,16 +20,16 @@ import { DEFAULT_VERSION } from "../lib/versions";
     </a>
   </p>
 
-  <div class="mt-8" x-data="savedList" x-cloak>
-    <p class="text-sm text-[var(--color-ink-subtle)]" x-show="items.length === 0">
+  <div class="mt-8" x-data="savedList">
+    <p class="text-sm text-[var(--color-ink-subtle)]" x-show="items.length === 0" x-cloak>
       Nothing saved yet. Open a chapter and highlight a verse or add a note.
     </p>
 
-    <ul class="space-y-3 sm:space-y-4">
+    <ul class="space-y-3 sm:space-y-4" x-cloak>
       <template x-for="item in items" :key="item.key">
         <li class="rounded-md border border-[var(--color-line)] bg-[var(--color-surface-elevated)] p-4">
           <a
-            class="font-medium capitalize text-[var(--color-ink)] hover:underline"
+            class="font-medium text-[var(--color-ink)] hover:underline"
             :href="item.url"
             x-text="item.label"
           ></a>

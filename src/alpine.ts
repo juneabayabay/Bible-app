@@ -10,8 +10,8 @@ import {
   type AnnotationMap,
 } from "./lib/annotations";
 import { DEFAULT_VERSION, VERSIONS, type VersionId } from "./lib/versions";
-import { DAILY_VERSE_POOL, dayOfYearIndex } from "./lib/dailyVerse";
 import { loadLastRead, saveLastRead } from "./lib/reading";
+import { parseReference } from "./lib/parseReference";
 
 type SearchDoc = {
   id: string;
@@ -35,6 +35,13 @@ function resolveDark(): boolean {
 
 function versionLabel(id: string) {
   return VERSIONS[id as VersionId]?.shortLabel ?? id.toUpperCase();
+}
+
+function titleCaseSlug(slug: string) {
+  return slug
+    .split("-")
+    .map((part) => (part ? part[0].toUpperCase() + part.slice(1) : part))
+    .join(" ");
 }
 
 export default (Alpine: Alpine) => {
@@ -78,7 +85,6 @@ export default (Alpine: Alpine) => {
         return;
       }
 
-      // /{version}/book/... or /{version}/chapter/...
       if (parts[0] && parts[0] in VERSIONS) {
         parts[0] = next;
         window.location.href = "/" + parts.join("/");
@@ -89,55 +95,17 @@ export default (Alpine: Alpine) => {
     },
   }));
 
-  Alpine.data("dailyVerse", (version: string) => ({
-    version,
-    loading: true,
-    error: "",
-    ref: null as null | {
-      slug: string;
-      book: string;
-      chapter: number;
-      verse: number;
-    },
-    text: "",
-    url: "",
-
-    async init() {
-      const start = dayOfYearIndex();
-      for (let offset = 0; offset < DAILY_VERSE_POOL.length; offset++) {
-        const pick = DAILY_VERSE_POOL[(start + offset) % DAILY_VERSE_POOL.length];
-        this.ref = pick;
-        this.url = `/${this.version}/chapter/${pick.slug}/${pick.chapter}`;
-        try {
-          const res = await fetch(`/bibles/${this.version}/${pick.slug}.json`);
-          if (!res.ok) continue;
-          const book = (await res.json()) as {
-            name?: string;
-            chapters: Array<{
-              number: number;
-              verses: Array<{ number: number; text: string }>;
-            }>;
-          };
-          if (book.name) this.ref = { ...pick, book: book.name };
-          const chapter = book.chapters.find((c) => c.number === pick.chapter);
-          const verse = chapter?.verses.find((v) => v.number === pick.verse);
-          if (!verse?.text) continue;
-          this.text = verse.text;
-          this.loading = false;
-          return;
-        } catch {
-          /* try next */
-        }
-      }
-      this.error = "Could not load today’s verse for this version";
-      this.loading = false;
-    },
+  Alpine.data("copyVerse", (text: string, label: string) => ({
+    copied: false,
 
     async copy() {
-      if (!this.text || !this.ref) return;
-      const line = `"${this.text}" — ${this.ref.book} ${this.ref.chapter}:${this.ref.verse}`;
+      const line = `"${text}" — ${label}`;
       try {
         await navigator.clipboard.writeText(line);
+        this.copied = true;
+        setTimeout(() => {
+          this.copied = false;
+        }, 1600);
       } catch {
         /* ignore */
       }
@@ -168,39 +136,32 @@ export default (Alpine: Alpine) => {
       bookSlug,
       chapter,
       bookName,
-      verses: [] as Array<{ number: number; text: string }>,
-      loading: true,
-      error: "",
       annotations: {} as AnnotationMap,
       openNote: null as number | null,
+      flashVerse: null as number | null,
 
-      async init() {
+      init() {
         this.annotations = loadAnnotations();
-        try {
-          const res = await fetch(`/bibles/${this.version}/${this.bookSlug}.json`);
-          if (!res.ok) throw new Error("Could not load chapter");
-          const book = (await res.json()) as {
-            name?: string;
-            chapters: Array<{ number: number; verses: Array<{ number: number; text: string }> }>;
-          };
-          if (!this.bookName && book.name) this.bookName = book.name;
-          const found = book.chapters.find((c) => c.number === this.chapter);
-          this.verses = found?.verses ?? [];
-          if (!this.verses.length) {
-            this.error = "Chapter not found in this version.";
-          } else {
-            saveLastRead({
-              version: this.version,
-              slug: this.bookSlug,
-              book: String(this.bookName || this.bookSlug),
-              chapter: this.chapter,
-            });
-          }
-        } catch (e) {
-          this.error = e instanceof Error ? e.message : "Failed to load chapter";
-        } finally {
-          this.loading = false;
-        }
+        saveLastRead({
+          version: this.version,
+          slug: this.bookSlug,
+          book: this.bookName || titleCaseSlug(this.bookSlug),
+          chapter: this.chapter,
+        });
+        this.$nextTick(() => this.scrollToHash());
+      },
+
+      scrollToHash() {
+        const match = window.location.hash.match(/^#v(\d+)$/i);
+        if (!match) return;
+        const n = Number(match[1]);
+        const el = document.getElementById(`v${n}`);
+        if (!el) return;
+        el.scrollIntoView({ behavior: "smooth", block: "center" });
+        this.flashVerse = n;
+        window.setTimeout(() => {
+          if (this.flashVerse === n) this.flashVerse = null;
+        }, 2200);
       },
 
       key(verse: number) {
@@ -232,6 +193,16 @@ export default (Alpine: Alpine) => {
       toggleNote(verse: number) {
         this.openNote = this.openNote === verse ? null : verse;
       },
+
+      async copyVerse(verse: number, text: string) {
+        const label = `${this.bookName || titleCaseSlug(this.bookSlug)} ${this.chapter}:${verse}`;
+        const line = `"${text}" — ${label}`;
+        try {
+          await navigator.clipboard.writeText(line);
+        } catch {
+          /* ignore */
+        }
+      },
     }),
   );
 
@@ -254,12 +225,12 @@ export default (Alpine: Alpine) => {
         .map(([key, value]) => {
           const parsed = parseVerseKey(key);
           if (!parsed) return null;
-          const bookLabel = parsed.slug.replace(/-/g, " ");
+          const bookLabel = titleCaseSlug(parsed.slug);
           const label = `${versionLabel(parsed.version)} · ${bookLabel} ${parsed.chapter}:${parsed.verse}`;
           return {
             key,
             label,
-            url: `/${parsed.version}/chapter/${parsed.slug}/${parsed.chapter}`,
+            url: `/${parsed.version}/chapter/${parsed.slug}/${parsed.chapter}#v${parsed.verse}`,
             highlighted: value.highlighted,
             note: value.note,
           };
@@ -290,34 +261,89 @@ export default (Alpine: Alpine) => {
     error: "",
     index: null as lunr.Index | null,
     docsById: {} as Record<string, SearchDoc>,
+    loadPromise: null as Promise<void> | null,
 
-    async init() {
+    ensureLoaded() {
+      if (this.ready || this.loadPromise) return this.loadPromise;
       this.loading = true;
-      try {
-        const res = await fetch(`/search/${this.version}.json`);
-        if (!res.ok) throw new Error("Could not load search data");
-        const docs = (await res.json()) as SearchDoc[];
-        this.docsById = Object.fromEntries(docs.map((d) => [d.id, d]));
-        this.index = lunr(function () {
-          this.ref("id");
-          this.field("book");
-          this.field("text");
-          for (const doc of docs) {
-            this.add(doc);
-          }
-        });
-        this.ready = true;
-      } catch (e) {
-        this.error = e instanceof Error ? e.message : "Search failed to load";
-      } finally {
-        this.loading = false;
-      }
+      this.loadPromise = (async () => {
+        try {
+          const res = await fetch(`/search/${this.version}.json`);
+          if (!res.ok) throw new Error("Could not load search data");
+          const docs = (await res.json()) as SearchDoc[];
+          this.docsById = Object.fromEntries(docs.map((d) => [d.id, d]));
+          this.index = lunr(function () {
+            this.ref("id");
+            this.field("book");
+            this.field("text");
+            for (const doc of docs) {
+              this.add(doc);
+            }
+          });
+          this.ready = true;
+        } catch (e) {
+          this.error = e instanceof Error ? e.message : "Search failed to load";
+        } finally {
+          this.loading = false;
+        }
+      })();
+      return this.loadPromise;
     },
 
-    search() {
+    async onFocus() {
+      await this.ensureLoaded();
+      if (this.q.trim().length >= 2) this.search();
+    },
+
+    async search() {
       const query = this.q.trim();
-      if (!this.index || query.length < 2) {
+      if (query.length < 2) {
         this.results = [];
+        return;
+      }
+
+      await this.ensureLoaded();
+      if (!this.index) {
+        this.results = [];
+        return;
+      }
+
+      const ref = parseReference(query);
+      if (ref) {
+        const bookName =
+          Object.values(this.docsById).find((d) => d.slug === ref.slug)?.book ??
+          titleCaseSlug(ref.slug);
+        const hash = ref.verse ? `#v${ref.verse}` : "";
+        const url = `/${this.version}/chapter/${ref.slug}/${ref.chapter}${hash}`;
+
+        if (ref.verse) {
+          const doc = Object.values(this.docsById).find(
+            (d) =>
+              d.slug === ref.slug &&
+              d.chapter === ref.chapter &&
+              d.verse === ref.verse,
+          );
+          this.results = [
+            {
+              id: `ref-${ref.slug}-${ref.chapter}-${ref.verse}`,
+              label: `${bookName} ${ref.chapter}:${ref.verse}`,
+              snippet: doc?.text?.slice(0, 120)
+                ? doc.text.slice(0, 120) + (doc.text.length > 120 ? "…" : "")
+                : "Go to this verse",
+              url,
+            },
+          ];
+          return;
+        }
+
+        this.results = [
+          {
+            id: `ref-${ref.slug}-${ref.chapter}`,
+            label: `${bookName} ${ref.chapter}`,
+            snippet: "Open this chapter",
+            url,
+          },
+        ];
         return;
       }
 
@@ -329,7 +355,7 @@ export default (Alpine: Alpine) => {
             id: doc.id,
             label: `${doc.book} ${doc.chapter}:${doc.verse}`,
             snippet: doc.text.slice(0, 120) + (doc.text.length > 120 ? "…" : ""),
-            url: `/${this.version}/chapter/${doc.slug}/${doc.chapter}`,
+            url: `/${this.version}/chapter/${doc.slug}/${doc.chapter}#v${doc.verse}`,
           };
         });
       } catch {

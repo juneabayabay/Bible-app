@@ -1,0 +1,18 @@
+---
+import { getBooks } from "../../../lib/bible";
+import { DEFAULT_VERSION } from "../../../lib/versions";
+
+export function getStaticPaths() {
+  return getBooks(DEFAULT_VERSION).flatMap((book) =>
+    book.chapters.map((chapter) => ({
+      params: {
+        book: book.slug,
+        chapter: String(chapter.number),
+      },
+    })),
+  );
+}
+
+const { book, chapter } = Astro.params;
+return Astro.redirect(`/${DEFAULT_VERSION}/chapter/${book}/${chapter}`, 302);
+---
