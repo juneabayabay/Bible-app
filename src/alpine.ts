@@ -1,5 +1,13 @@
 import type { Alpine } from "alpinejs";
 import lunr from "lunr";
+import {
+  getAnnotation,
+  loadAnnotations,
+  saveAnnotations,
+  upsertAnnotation,
+  verseKey,
+  type AnnotationMap,
+} from "./lib/annotations";
 
 type SearchDoc = {
   id: string;
@@ -10,7 +18,98 @@ type SearchDoc = {
   text: string;
 };
 
+function parseVerseKey(key: string) {
+  const match = key.match(/^(.*)-(\d+)-(\d+)$/);
+  if (!match) return null;
+  return {
+    slug: match[1],
+    chapter: Number(match[2]),
+    verse: Number(match[3]),
+  };
+}
+
 export default (Alpine: Alpine) => {
+  Alpine.data("chapterReader", (bookSlug: string, chapter: number) => ({
+    bookSlug,
+    chapter,
+    annotations: {} as AnnotationMap,
+    openNote: null as number | null,
+
+    init() {
+      this.annotations = loadAnnotations();
+    },
+
+    key(verse: number) {
+      return verseKey(this.bookSlug, this.chapter, verse);
+    },
+
+    isHighlighted(verse: number) {
+      return getAnnotation(this.annotations, this.key(verse)).highlighted;
+    },
+
+    noteText(verse: number) {
+      return getAnnotation(this.annotations, this.key(verse)).note;
+    },
+
+    toggleHighlight(verse: number) {
+      this.annotations = upsertAnnotation(this.annotations, this.key(verse), {
+        highlighted: !this.isHighlighted(verse),
+      });
+      saveAnnotations(this.annotations);
+    },
+
+    setNote(verse: number, note: string) {
+      this.annotations = upsertAnnotation(this.annotations, this.key(verse), {
+        note,
+      });
+      saveAnnotations(this.annotations);
+    },
+
+    toggleNote(verse: number) {
+      this.openNote = this.openNote === verse ? null : verse;
+    },
+  }));
+
+  Alpine.data("savedList", () => ({
+    items: [] as Array<{
+      key: string;
+      label: string;
+      url: string;
+      highlighted: boolean;
+      note: string;
+    }>,
+
+    init() {
+      this.refresh();
+    },
+
+    refresh() {
+      const map = loadAnnotations();
+      this.items = Object.entries(map)
+        .map(([key, value]) => {
+          const parsed = parseVerseKey(key);
+          if (!parsed) return null;
+          const label = `${parsed.slug.replace(/-/g, " ")} ${parsed.chapter}:${parsed.verse}`;
+          return {
+            key,
+            label,
+            url: `/chapter/${parsed.slug}/${parsed.chapter}`,
+            highlighted: value.highlighted,
+            note: value.note,
+          };
+        })
+        .filter((item): item is NonNullable<typeof item> => item !== null)
+        .sort((a, b) => a.label.localeCompare(b.label));
+    },
+
+    remove(key: string) {
+      const map = loadAnnotations();
+      delete map[key];
+      saveAnnotations(map);
+      this.refresh();
+    },
+  }));
+
   Alpine.data("bibleSearch", () => ({
     q: "",
     results: [] as Array<{
