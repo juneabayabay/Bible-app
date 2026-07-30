@@ -72,10 +72,22 @@ const shell =
               Bible
             </a>
             <a
-              href={`/${version}/devotionals`}
+              href={`/${version}/#today`}
               class="shrink-0 text-sm text-[var(--color-ink-muted)] transition hover:text-[var(--color-ink)]"
             >
+              Today
+            </a>
+            <a
+              href={`/${version}/devotionals`}
+              class="hidden shrink-0 text-sm text-[var(--color-ink-muted)] transition hover:text-[var(--color-ink)] sm:inline"
+            >
               Grow
+            </a>
+            <a
+              href={`/${version}/plans`}
+              class="hidden shrink-0 text-sm text-[var(--color-ink-muted)] transition hover:text-[var(--color-ink)] md:inline"
+            >
+              Plans
             </a>
             <a
               href={`/${version}/journey`}

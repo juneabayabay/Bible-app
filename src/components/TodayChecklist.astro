@@ -1,0 +1,165 @@
+---
+import { getChallengeForDate } from "../lib/challenges";
+import { resolveDailyVerse } from "../lib/resolveDailyVerse";
+import type { VersionId } from "../lib/versions";
+
+interface Props {
+  version: VersionId;
+}
+
+const { version } = Astro.props;
+const challenge = getChallengeForDate();
+const daily = resolveDailyVerse(version);
+
+const ctaHref =
+  challenge.kind === "devotion"
+    ? `/${version}/devotionals`
+    : challenge.kind === "plan"
+      ? `/${version}/plans`
+      : challenge.kind === "read" && challenge.id === "todays-verse" && daily
+        ? daily.url
+        : `/${version}/#books`;
+---
+
+<section
+  id="today"
+  class="scroll-mt-28 border-t border-[var(--color-line)] pt-8 sm:pt-10"
+  aria-labelledby="today-heading"
+  x-data={`todayPanel('${version}', '${challenge.id}')`}
+  x-init="refresh()"
+>
+  <div class="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
+    <header class="max-w-xl">
+      <p class="eyebrow">Today</p>
+      <h2
+        id="today-heading"
+        class="font-scripture mt-2 text-2xl font-semibold tracking-tight sm:text-3xl"
+      >
+        Your 3-minute path
+      </h2>
+      <p class="mt-2 text-sm text-[var(--color-ink-muted)] sm:text-base">
+        Four simple steps. Come back tomorrow and keep going.
+      </p>
+    </header>
+    <p class="text-sm font-medium text-[var(--color-gold)]">
+      <span x-text="doneCount"></span> / <span x-text="total"></span> done
+      <span x-show="complete" x-cloak class="ml-2 text-[var(--color-success)]">· Complete</span>
+    </p>
+  </div>
+
+  <ul class="mt-6 space-y-3">
+    <li class="ui-card flex items-start gap-3 p-4 sm:items-center sm:p-5">
+      <span
+        class="mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-full border text-xs font-semibold"
+        :class="opened ? 'border-[var(--color-gold)] bg-[var(--color-highlight)] text-[var(--color-ink)]' : 'border-[var(--color-line)] text-[var(--color-ink-subtle)]'"
+        x-text="opened ? '✓' : '1'"
+      ></span>
+      <div class="min-w-0 flex-1">
+        <p class="font-medium text-[var(--color-ink)]">Open the app</p>
+        <p class="text-sm text-[var(--color-ink-muted)]">You’re here — streak updated for today.</p>
+      </div>
+    </li>
+
+    <li class="ui-card flex flex-col gap-3 p-4 sm:flex-row sm:items-center sm:p-5">
+      <div class="flex flex-1 items-start gap-3 sm:items-center">
+        <span
+          class="mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-full border text-xs font-semibold"
+          :class="read ? 'border-[var(--color-gold)] bg-[var(--color-highlight)] text-[var(--color-ink)]' : 'border-[var(--color-line)] text-[var(--color-ink-subtle)]'"
+          x-text="read ? '✓' : '2'"
+        ></span>
+        <div class="min-w-0">
+          <p class="font-medium text-[var(--color-ink)]">Read Scripture</p>
+          <p class="text-sm text-[var(--color-ink-muted)]" x-text="readNote"></p>
+        </div>
+      </div>
+      <a
+        class="btn-secondary !min-h-10 shrink-0 !px-4 text-sm"
+        :href="continueUrl || planUrl || booksUrl"
+        data-astro-prefetch
+      >
+        <span x-text="continueUrl ? 'Continue reading' : planUrl ? 'Continue plan' : 'Browse books'"></span>
+      </a>
+    </li>
+
+    <li class="ui-card flex flex-col gap-3 p-4 sm:flex-row sm:items-center sm:p-5">
+      <div class="flex flex-1 items-start gap-3 sm:items-center">
+        <span
+          class="mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-full border text-xs font-semibold"
+          :class="grow ? 'border-[var(--color-gold)] bg-[var(--color-highlight)] text-[var(--color-ink)]' : 'border-[var(--color-line)] text-[var(--color-ink-subtle)]'"
+          x-text="grow ? '✓' : '3'"
+        ></span>
+        <div class="min-w-0">
+          <p class="font-medium text-[var(--color-ink)]">Grow</p>
+          <p class="text-sm text-[var(--color-ink-muted)]">Finish a devotion, challenge, or quiz.</p>
+        </div>
+      </div>
+      <a
+        class="btn-secondary !min-h-10 shrink-0 !px-4 text-sm"
+        href={`/${version}/devotionals`}
+        data-astro-prefetch
+      >
+        Devotionals
+      </a>
+    </li>
+
+    <li class="ui-card p-4 sm:p-5">
+      <div class="flex flex-col gap-3 sm:flex-row sm:items-start">
+        <div class="flex flex-1 items-start gap-3">
+          <span
+            class="mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-full border text-xs font-semibold"
+            :class="challengeDone ? 'border-[var(--color-gold)] bg-[var(--color-highlight)] text-[var(--color-ink)]' : 'border-[var(--color-line)] text-[var(--color-ink-subtle)]'"
+            x-text="challengeDone ? '✓' : '4'"
+          ></span>
+          <div class="min-w-0">
+            <p class="text-xs font-semibold uppercase tracking-wide text-[var(--color-gold)]">
+              Daily challenge
+            </p>
+            <p class="mt-1 font-medium text-[var(--color-ink)]">{challenge.title}</p>
+            <p class="mt-1 text-sm text-[var(--color-ink-muted)]">{challenge.body}</p>
+          </div>
+        </div>
+      </div>
+
+      {challenge.kind === "reflect" ? (
+        <div class="mt-4 space-y-3 sm:pl-9">
+          <label class="sr-only" for="today-reflection">Your one-sentence prayer</label>
+          <textarea
+            id="today-reflection"
+            rows="2"
+            class="w-full rounded-md border border-[var(--color-line)] bg-[var(--color-surface)] p-3 text-sm text-[var(--color-ink)] outline-none ring-[var(--color-gold)] focus:ring-2"
+            placeholder="One sentence to God…"
+            x-model="reflection"
+          ></textarea>
+          <button
+            type="button"
+            class="btn-primary !min-h-10 !px-4 text-sm"
+            @click="saveReflectionText()"
+            x-show="!challengeDone"
+          >
+            Save &amp; complete
+          </button>
+          <p class="text-sm text-[var(--color-success)]" x-show="challengeDone" x-cloak>
+            Reflection saved for today.
+          </p>
+        </div>
+      ) : (
+        <div class="mt-4 flex flex-wrap gap-2 sm:pl-9">
+          <a class="btn-primary !min-h-10 !px-4 text-sm" href={ctaHref} data-astro-prefetch>
+            {challenge.ctaLabel}
+          </a>
+          <button
+            type="button"
+            class="btn-secondary !min-h-10 !px-4 text-sm"
+            x-show="!challengeDone"
+            @click="completeChallenge()"
+          >
+            Mark complete
+          </button>
+          <span class="inline-flex min-h-10 items-center text-sm text-[var(--color-success)]" x-show="challengeDone" x-cloak>
+            Challenge complete
+          </span>
+        </div>
+      )}
+    </li>
+  </ul>
+</section>

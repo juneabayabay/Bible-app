@@ -1,11 +1,42 @@
 const STORAGE_KEY = "bible-annotations";
 
+export const HIGHLIGHT_COLORS = [
+  { id: "gold", label: "Gold" },
+  { id: "sage", label: "Sage" },
+  { id: "sky", label: "Sky" },
+  { id: "rose", label: "Rose" },
+  { id: "lilac", label: "Lilac" },
+] as const;
+
+export type HighlightColorId = (typeof HIGHLIGHT_COLORS)[number]["id"];
+
 export type Annotation = {
-  highlighted: boolean;
+  highlightColor: HighlightColorId | null;
   note: string;
 };
 
 export type AnnotationMap = Record<string, Annotation>;
+
+type LegacyAnnotation = {
+  highlightColor?: HighlightColorId | null;
+  highlighted?: boolean;
+  note?: string;
+};
+
+function isHighlightColor(value: unknown): value is HighlightColorId {
+  return HIGHLIGHT_COLORS.some((c) => c.id === value);
+}
+
+export function normalizeAnnotation(raw: LegacyAnnotation | null | undefined): Annotation {
+  const note = typeof raw?.note === "string" ? raw.note : "";
+  if (isHighlightColor(raw?.highlightColor)) {
+    return { highlightColor: raw.highlightColor, note };
+  }
+  if (raw?.highlighted) {
+    return { highlightColor: "gold", note };
+  }
+  return { highlightColor: null, note };
+}
 
 export function verseKey(
   version: string,
@@ -45,8 +76,17 @@ export function loadAnnotations(): AnnotationMap {
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
     if (!raw) return {};
-    const parsed = JSON.parse(raw) as AnnotationMap;
-    return parsed && typeof parsed === "object" ? parsed : {};
+    const parsed = JSON.parse(raw) as Record<string, LegacyAnnotation>;
+    if (!parsed || typeof parsed !== "object") return {};
+
+    const map: AnnotationMap = {};
+    for (const [key, value] of Object.entries(parsed)) {
+      const next = normalizeAnnotation(value);
+      if (next.highlightColor || next.note.trim()) {
+        map[key] = next;
+      }
+    }
+    return map;
   } catch {
     return {};
   }
@@ -57,7 +97,7 @@ export function saveAnnotations(map: AnnotationMap) {
 }
 
 export function getAnnotation(map: AnnotationMap, key: string): Annotation {
-  return map[key] ?? { highlighted: false, note: "" };
+  return map[key] ?? { highlightColor: null, note: "" };
 }
 
 export function upsertAnnotation(
@@ -69,7 +109,7 @@ export function upsertAnnotation(
   const next = { ...current, ...patch };
   const copy = { ...map };
 
-  if (!next.highlighted && !next.note.trim()) {
+  if (!next.highlightColor && !next.note.trim()) {
     delete copy[key];
   } else {
     copy[key] = next;

@@ -30,10 +30,15 @@ import { DEFAULT_VERSION } from "../lib/versions";
                 x-text="item.label"
               ></a>
               <p
-                class="mt-1 text-xs font-medium uppercase tracking-wide text-[var(--color-accent)]"
+                class="mt-1.5 flex items-center gap-2 text-xs font-medium uppercase tracking-wide text-[var(--color-ink-muted)]"
                 x-show="item.highlighted"
               >
-                Highlighted
+                <span
+                  class="hl-swatch !h-3 !w-3 !border"
+                  :data-hl="item.highlightColor"
+                  aria-hidden="true"
+                ></span>
+                <span x-text="item.highlightColor ? `${item.highlightColor} highlight` : 'Highlighted'"></span>
               </p>
               <p
                 class="mt-2 whitespace-pre-wrap text-sm leading-relaxed text-[var(--color-ink-muted)]"

@@ -5,6 +5,7 @@ import { getBook, getChapter, resolveVersionId } from "../../../../lib/bible";
 import { getCompareVersionId } from "../../../../lib/compare";
 import { getVersion } from "../../../../lib/versions";
 import { getChapterStaticPaths } from "../../../../lib/staticPaths";
+import { getQuiz } from "../../../../lib/quizzes";
 
 export function getStaticPaths() {
   return getChapterStaticPaths();
@@ -64,6 +65,8 @@ const readerConfig = JSON.stringify({
 });
 
 const navBtn = "btn-secondary !min-h-11 flex-1 sm:flex-none";
+
+const quiz = getQuiz(bookSlug, chapterNumber);
 ---
 
 <Layout title={`${bookName} ${chapterNumber}`} version={version}>
@@ -100,12 +103,12 @@ const navBtn = "btn-secondary !min-h-11 flex-1 sm:flex-none";
           ~{minutes} min · {chapterIndex + 1}/{book.chapters.length} · {meta.shortLabel}
         </p>
         <p class="mt-2 text-sm text-[var(--color-ink-subtle)]" x-show="showTip" x-cloak>
-          Tip: tap the verse text or <strong>Highlight</strong>. Use <strong>Share</strong> for Facebook / Messenger / download.
+          Tip: press and hold a verse for Highlight, Notes, Copy, and Copy link. Right‑click works on desktop.
           <button type="button" class="ml-1 font-medium text-[var(--color-primary)] underline" @click="dismissTip()">
             Got it
           </button>
         </p>
-        <p class="mt-2 text-sm text-[var(--color-gold)]" x-show="shareStatus" x-text="shareStatus" x-cloak></p>
+        <p class="mt-2 text-sm text-[var(--color-gold)]" x-show="actionStatus" x-text="actionStatus" x-cloak></p>
       </div>
 
       <div class="flex w-full flex-col gap-2 sm:w-auto">
@@ -148,19 +151,42 @@ const navBtn = "btn-secondary !min-h-11 flex-1 sm:flex-none";
       {verses.map((verse) => (
         <div
           id={`v${verse.number}`}
-          class="group scroll-mt-28 rounded-xl px-1.5 py-2.5 transition sm:px-2 sm:py-2"
-          :class={`(isHighlighted(${verse.number}) ? 'bg-[var(--color-highlight)] ' : '') + (flashVerse === ${verse.number} ? 'verse-flash' : '')`}
+          class="group scroll-mt-28 rounded-xl px-1.5 py-2.5 transition select-none sm:px-2 sm:py-2 [-webkit-touch-callout:none]"
+          :class={`(flashVerse === ${verse.number} ? 'verse-flash ' : '') + (activeMenu === ${verse.number} ? 'ring-1 ring-[var(--color-line)] ' : '')`}
+          :data-hl={`highlightColor(${verse.number}) || ''`}
+          @touchstart.passive={`onPressStart(${verse.number}, $event)`}
+          @touchmove.passive="onPressMove($event)"
+          @touchend.passive="onPressEnd()"
+          @touchcancel.passive="onPressEnd()"
+          @mousedown={`if ($event.button === 0) onPressStart(${verse.number}, $event)`}
+          @mousemove="onPressMove($event)"
+          @mouseup="onPressEnd()"
+          @mouseleave="onPressEnd()"
+          @contextmenu={`onContextMenu(${verse.number}, $event)`}
         >
           <div class="flex gap-2.5 sm:gap-3">
             <button
               type="button"
               class="mt-0.5 inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-lg text-sm font-semibold tabular-nums transition sm:mt-1 sm:h-auto sm:w-8 sm:justify-start"
-              :class={`isHighlighted(${verse.number}) ? 'bg-[var(--color-gold)] text-[#152238]' : 'text-[var(--color-ink-subtle)] hover:bg-[var(--color-line)] hover:text-[var(--color-primary)]'`}
-              title="Highlight this verse"
-              aria-label={`Highlight verse ${verse.number}`}
-              @click={`toggleHighlight(${verse.number})`}
+              :class={`isHighlighted(${verse.number}) ? 'text-[var(--color-ink)]' : 'text-[var(--color-ink-subtle)] hover:bg-[var(--color-line)] hover:text-[var(--color-primary)]'`}
+              :data-hl={`highlightColor(${verse.number}) || ''`}
+              title="Verse actions"
+              aria-label={`Actions for verse ${verse.number}`}
+              aria-haspopup="menu"
+              :aria-expanded={`(activeMenu === ${verse.number}).toString()`}
+              @click.stop={`openMenu(${verse.number})`}
+              @mousedown.stop
+              @touchstart.stop.passive
             >
-              {verse.number}
+              <span class="relative">
+                {verse.number}
+                <span
+                  class="absolute -right-1 -top-0.5 h-1.5 w-1.5 rounded-full bg-[var(--color-gold)]"
+                  x-show={`noteText(${verse.number}).trim()`}
+                  x-cloak
+                  aria-hidden="true"
+                ></span>
+              </span>
             </button>
             <div class="min-w-0 flex-1">
               <div
@@ -175,9 +201,8 @@ const navBtn = "btn-secondary !min-h-11 flex-1 sm:flex-none";
                     {meta.shortLabel}
                   </p>
                   <p
-                    class="font-scripture cursor-pointer text-[1.125rem] leading-[1.8] text-[var(--color-ink)] sm:text-[1.2rem] sm:leading-[1.85]"
-                    title="Tap to highlight"
-                    @click={`toggleHighlight(${verse.number})`}
+                    class="font-scripture text-[1.125rem] leading-[1.8] text-[var(--color-ink)] sm:text-[1.2rem] sm:leading-[1.85]"
+                    title="Press and hold for options"
                   >
                     {verse.text}
                   </p>
@@ -197,45 +222,99 @@ const navBtn = "btn-secondary !min-h-11 flex-1 sm:flex-none";
                 </div>
               </div>
 
-              <div class="mt-2.5 flex flex-wrap items-center gap-2">
-                <button
-                  type="button"
-                  class="inline-flex min-h-9 items-center rounded-lg border border-[var(--color-line)] px-2.5 text-xs font-medium transition sm:min-h-8"
-                  :class={`isHighlighted(${verse.number}) ? 'border-[var(--color-gold)] bg-[var(--color-highlight)] text-[var(--color-ink)]' : 'text-[var(--color-ink-muted)] hover:text-[var(--color-ink)]'`}
-                  @click={`toggleHighlight(${verse.number})`}
-                >
-                  <span x-text={`isHighlighted(${verse.number}) ? 'Highlighted' : 'Highlight'`}></span>
-                </button>
-                <button
-                  type="button"
-                  class="inline-flex min-h-9 items-center rounded-lg border border-[var(--color-line)] px-2.5 text-xs font-medium text-[var(--color-ink-muted)] transition hover:text-[var(--color-ink)] sm:min-h-8"
-                  @click={`toggleNote(${verse.number})`}
-                >
-                  Note
-                </button>
-                <button
-                  type="button"
-                  class="inline-flex min-h-9 items-center rounded-lg border border-[var(--color-line)] px-2.5 text-xs font-medium text-[var(--color-ink-muted)] transition hover:text-[var(--color-ink)] sm:min-h-8"
-                  @click={`copyVerse(${verse.number}, ${JSON.stringify(verse.text)})`}
-                >
-                  Copy
-                </button>
-                <button
-                  type="button"
-                  class="inline-flex min-h-9 items-center rounded-lg border border-[var(--color-gold)]/40 bg-[color-mix(in_srgb,var(--color-gold)_12%,transparent)] px-2.5 text-xs font-medium text-[var(--color-ink)] transition hover:bg-[color-mix(in_srgb,var(--color-gold)_20%,transparent)] sm:min-h-8"
-                  @click={`shareVerse(${verse.number}, ${JSON.stringify(verse.text)})`}
-                >
-                  Share
-                </button>
-                <span
-                  class="text-xs text-[var(--color-gold)]"
-                  x-show={`noteText(${verse.number}).trim()`}
-                  x-cloak
-                >
-                  Has note
-                </span>
+              <div
+                class="mt-2.5 rounded-xl border border-[var(--color-line)] bg-[var(--color-surface-elevated)] p-2 shadow-sm"
+                x-show={`activeMenu === ${verse.number}`}
+                x-cloak
+                @click.stop
+                @mousedown.stop
+                @touchstart.stop.passive
+                @click.outside={`if (activeMenu === ${verse.number}) closeMenu()`}
+                role="menu"
+                aria-label={`Verse ${verse.number} actions`}
+              >
+                <div class="flex flex-wrap items-center gap-1.5" x-show="menuPanel === 'actions'">
+                  <button
+                    type="button"
+                    class="inline-flex min-h-9 items-center rounded-lg border border-[var(--color-line)] px-2.5 text-xs font-medium text-[var(--color-ink-muted)] transition hover:text-[var(--color-ink)] sm:min-h-8"
+                    role="menuitem"
+                    @click={`copyVerseLink(${verse.number})`}
+                  >
+                    Copy link
+                  </button>
+                  <button
+                    type="button"
+                    class="inline-flex min-h-9 items-center rounded-lg border border-[var(--color-line)] px-2.5 text-xs font-medium text-[var(--color-ink-muted)] transition hover:text-[var(--color-ink)] sm:min-h-8"
+                    role="menuitem"
+                    @click={`copyVerse(${verse.number}, ${JSON.stringify(verse.text)})`}
+                  >
+                    Copy
+                  </button>
+                  <button
+                    type="button"
+                    class="inline-flex min-h-9 items-center rounded-lg border border-[var(--color-line)] px-2.5 text-xs font-medium text-[var(--color-ink-muted)] transition hover:text-[var(--color-ink)] sm:min-h-8"
+                    role="menuitem"
+                    @click={`openNotePanel(${verse.number})`}
+                  >
+                    Notes
+                  </button>
+                  <button
+                    type="button"
+                    class="inline-flex min-h-9 items-center gap-1.5 rounded-lg border border-[var(--color-line)] px-2.5 text-xs font-medium transition sm:min-h-8"
+                    :class={`isHighlighted(${verse.number}) ? 'border-[var(--color-gold)] text-[var(--color-ink)]' : 'text-[var(--color-ink-muted)] hover:text-[var(--color-ink)]'`}
+                    role="menuitem"
+                    @click={`showColors(${verse.number})`}
+                  >
+                    <span
+                      class="hl-swatch !h-3.5 !w-3.5 !border"
+                      :data-hl={`highlightColor(${verse.number}) || 'gold'`}
+                      x-show={`isHighlighted(${verse.number})`}
+                      aria-hidden="true"
+                    ></span>
+                    Highlight
+                  </button>
+                </div>
+
+                <div x-show="menuPanel === 'colors'" x-cloak>
+                  <div class="mb-2.5 flex items-center justify-between gap-2 px-0.5">
+                    <p class="text-xs font-medium text-[var(--color-ink)]">Choose a color</p>
+                    <button
+                      type="button"
+                      class="text-xs text-[var(--color-ink-subtle)] hover:text-[var(--color-ink)]"
+                      @click="menuPanel = 'actions'"
+                    >
+                      Back
+                    </button>
+                  </div>
+                  <div class="flex flex-wrap items-center gap-2.5">
+                    <template x-for="color in highlightColors" :key="color.id">
+                      <button
+                        type="button"
+                        class="hl-swatch"
+                        :class={`highlightColor(${verse.number}) === color.id ? 'is-active' : ''`}
+                        :data-hl="color.id"
+                        :title="color.label"
+                        :aria-label="`Highlight ${color.label}`"
+                        :aria-pressed={`(highlightColor(${verse.number}) === color.id).toString()`}
+                        @click.stop={`setHighlight(${verse.number}, color.id)`}
+                      ></button>
+                    </template>
+                    <button
+                      type="button"
+                      class="inline-flex min-h-9 items-center rounded-lg border border-[var(--color-line)] px-2.5 text-xs font-medium text-[var(--color-ink-muted)] transition hover:text-[var(--color-ink)] sm:min-h-8"
+                      @click.stop={`setHighlight(${verse.number}, null)`}
+                      x-show={`isHighlighted(${verse.number})`}
+                    >
+                      Clear
+                    </button>
+                  </div>
+                  <p class="mt-2.5 px-0.5 text-[0.7rem] text-[var(--color-ink-subtle)]">
+                    Gold · Sage · Sky · Rose · Lilac
+                  </p>
+                </div>
               </div>
-              <div class="mt-2" x-show={`openNote === ${verse.number}`} x-cloak>
+
+              <div class="mt-2" x-show={`openNote === ${verse.number}`} x-cloak @mousedown.stop @touchstart.stop.passive>
                 <textarea
                   class="w-full rounded-2xl border border-[var(--color-line)] bg-[var(--color-surface-elevated)] p-3 text-sm text-[var(--color-ink)] outline-none ring-[var(--color-primary)] placeholder:text-[var(--color-ink-subtle)] focus:ring-2"
                   rows="3"
@@ -249,6 +328,65 @@ const navBtn = "btn-secondary !min-h-11 flex-1 sm:flex-none";
         </div>
       ))}
     </div>
+
+    {quiz && (
+      <section
+        class="mt-10 border-t border-[var(--color-line)] pt-8"
+        aria-labelledby="quiz-heading"
+        x-data={`chapterQuiz('${bookSlug}', ${chapterNumber})`}
+      >
+        <div class="flex flex-wrap items-end justify-between gap-3">
+          <div>
+            <p class="eyebrow">Check understanding</p>
+            <h2 id="quiz-heading" class="font-scripture mt-1 text-xl font-semibold sm:text-2xl">
+              {quiz.title}
+            </h2>
+            <p class="mt-1 text-sm text-[var(--color-ink-muted)]">
+              Soft questions—reveal answers when you’re ready. No score, just growth.
+            </p>
+          </div>
+          <button type="button" class="btn-secondary !min-h-10 !px-4 text-sm" @click="toggle()">
+            <span x-text="open ? 'Hide' : (done ? 'Review' : 'Start')"></span>
+          </button>
+        </div>
+
+        <div class="mt-5 space-y-4" x-show="open" x-cloak>
+          {quiz.questions.map((q, i) => (
+            <div class="rounded-xl border border-[var(--color-line)] bg-[var(--color-surface-elevated)] p-4">
+              <p class="font-medium text-[var(--color-ink)]">
+                {i + 1}. {q.prompt}
+              </p>
+              <button
+                type="button"
+                class="mt-3 text-sm font-medium text-[var(--color-primary)] hover:underline"
+                x-show={`!revealed[${i}]`}
+                @click={`reveal(${i})`}
+              >
+                Reveal answer
+              </button>
+              <p
+                class="mt-3 text-sm leading-relaxed text-[var(--color-ink-muted)]"
+                x-show={`revealed[${i}]`}
+                x-cloak
+              >
+                {q.answer}
+              </p>
+            </div>
+          ))}
+          <button
+            type="button"
+            class="btn-primary !min-h-10 !px-4 text-sm"
+            x-show="!done"
+            @click="finish()"
+          >
+            Mark quiz complete
+          </button>
+          <p class="text-sm text-[var(--color-success)]" x-show="done" x-cloak>
+            Quiz complete — counted toward today’s Grow step.
+          </p>
+        </div>
+      </section>
+    )}
 
     <nav
       class="mt-8 flex items-center justify-between gap-3 border-t border-[var(--color-line)] pt-6 sm:mt-10"

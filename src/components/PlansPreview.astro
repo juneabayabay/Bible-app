@@ -1,0 +1,64 @@
+---
+import { getPlans } from "../lib/plans";
+
+interface Props {
+  version: string;
+}
+
+const { version } = Astro.props;
+const plans = getPlans();
+---
+
+<section
+  class="border-t border-[var(--color-line)] pt-10 sm:pt-12"
+  aria-labelledby="plans-preview-heading"
+  x-data="plansPanel"
+  x-init="refresh()"
+>
+  <div class="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
+    <header class="max-w-xl">
+      <p class="eyebrow">Plans</p>
+      <h2
+        id="plans-preview-heading"
+        class="font-scripture mt-2 text-2xl font-semibold tracking-tight sm:text-3xl"
+      >
+        Guided reading
+      </h2>
+      <p class="mt-2 text-sm text-[var(--color-ink-muted)] sm:text-base">
+        Short tracks so you always know the next chapter—not an endless list.
+      </p>
+    </header>
+    <a
+      class="btn-secondary !min-h-10 shrink-0 !px-4 text-sm"
+      href={`/${version}/plans`}
+      data-astro-prefetch
+    >
+      All plans
+    </a>
+  </div>
+
+  <ul class="mt-8 grid gap-4 sm:grid-cols-2">
+    {plans.map((plan) => (
+      <li>
+        <a
+          class="ui-card flex h-full flex-col p-5 transition hover:border-[var(--color-gold)]"
+          href={`/${version}/plans/${plan.id}`}
+          data-astro-prefetch
+        >
+          <h3 class="font-scripture text-xl font-semibold">{plan.title}</h3>
+          <p class="mt-2 flex-1 text-sm leading-relaxed text-[var(--color-ink-muted)]">
+            {plan.summary}
+          </p>
+          <p class="mt-4 text-sm text-[var(--color-gold)]">
+            {plan.days.length} days →
+          </p>
+        </a>
+      </li>
+    ))}
+  </ul>
+
+  <p class="mt-4 text-sm text-[var(--color-ink-subtle)]" x-show="activeLabel" x-cloak>
+    Active: <span class="font-medium text-[var(--color-ink-muted)]" x-text="activeLabel"></span>
+    · <span x-text="activeProgress"></span>
+  </p>
+</section>

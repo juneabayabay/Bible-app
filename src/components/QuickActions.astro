@@ -10,13 +10,21 @@
 
     <div class="flex flex-wrap gap-2">
       <a
-        class="btn-secondary !min-h-10 !px-3.5 text-sm"
-        :href="continueUrl || '#books'"
+        class="btn-primary !min-h-10 !px-3.5 text-sm"
+        :href="continueUrl || '#today'"
         data-astro-prefetch
-        x-show="continueUrl"
-        x-cloak
       >
-        Continue <span class="font-medium" x-text="continueLabel"></span>
+        <span x-show="continueUrl" x-cloak>
+          Continue <span class="font-medium" x-text="continueLabel"></span>
+        </span>
+        <span x-show="!continueUrl">Start today’s path</span>
+      </a>
+
+      <a
+        class="btn-secondary !min-h-10 !px-3.5 text-sm"
+        href="#today"
+      >
+        Today
       </a>
 
       <a

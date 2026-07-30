@@ -1,0 +1,114 @@
+---
+import Layout from "../../../layouts/Layout.astro";
+import SearchBar from "../../../components/SearchBar.astro";
+import { resolveVersionId } from "../../../lib/bible";
+import { getVersion, VERSION_IDS } from "../../../lib/versions";
+import { getPlan, getPlans } from "../../../lib/plans";
+
+export function getStaticPaths() {
+  return VERSION_IDS.flatMap((version) =>
+    getPlans().map((plan) => ({
+      params: { version, plan: plan.id },
+    })),
+  );
+}
+
+const version = resolveVersionId(Astro.params.version);
+const planId = Astro.params.plan!;
+const meta = getVersion(version);
+const plan = getPlan(planId);
+
+if (!plan) {
+  return Astro.redirect(`/${version}/plans`);
+}
+---
+
+<Layout title={`${plan.title} · Plans`} version={version}>
+  <SearchBar slot="header" version={version} />
+
+  <div
+    class="space-y-10"
+    x-data={`planDetail('${version}', '${plan.id}', ${plan.days.length})`}
+    x-init="refresh()"
+  >
+    <header>
+      <p class="text-sm text-[var(--color-ink-muted)]">
+        <a href={`/${version}/plans`} class="hover:underline" data-astro-prefetch>← All plans</a>
+      </p>
+      <p class="eyebrow mt-6">Plan</p>
+      <h1 class="font-scripture mt-2 text-3xl font-semibold tracking-tight sm:text-4xl">
+        {plan.title}
+      </h1>
+      <p class="mt-3 max-w-2xl text-base text-[var(--color-ink-muted)]">{plan.summary}</p>
+      <div class="mt-5 flex flex-wrap items-center gap-3">
+        <button
+          type="button"
+          class="btn-primary !min-h-10 !px-4 text-sm"
+          @click="startPlan()"
+          x-show="!isActive"
+        >
+          Start this plan
+        </button>
+        <span class="text-sm font-medium text-[var(--color-gold)]" x-show="isActive" x-cloak>
+          Active · <span x-text="doneCount"></span> / {plan.days.length} days
+        </span>
+        <a
+          class="btn-secondary !min-h-10 !px-4 text-sm"
+          x-show="nextUrl"
+          x-cloak
+          :href="nextUrl"
+          data-astro-prefetch
+        >
+          Continue: <span x-text="nextLabel"></span>
+        </a>
+      </div>
+      <div class="mt-4 h-2 overflow-hidden rounded-full bg-[var(--color-line)]">
+        <div
+          class="h-full rounded-full bg-[var(--color-primary)] transition-all"
+          :style="`width: ${Math.round((doneCount / ${plan.days.length}) * 100)}%`"
+        ></div>
+      </div>
+    </header>
+
+    <ol class="space-y-2">
+      {plan.days.map((day) => (
+        <li
+          class="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-[var(--color-line)] bg-[var(--color-surface-elevated)] px-4 py-3"
+          :class={`doneSet.includes(${day.day}) ? 'border-[var(--color-gold)]' : ''`}
+        >
+          <div class="min-w-0">
+            <p class="text-xs font-semibold uppercase tracking-wide text-[var(--color-ink-subtle)]">
+              Day {day.day}
+            </p>
+            <p class="font-medium text-[var(--color-ink)]">{day.label}</p>
+          </div>
+          <div class="flex flex-wrap gap-2">
+            <a
+              class="btn-secondary !min-h-9 !px-3 text-sm"
+              href={`/${version}/chapter/${day.slug}/${day.chapter}`}
+              data-astro-prefetch
+              @click={`markDay(${day.day})`}
+            >
+              Read
+            </a>
+            <button
+              type="button"
+              class="btn-secondary !min-h-9 !px-3 text-sm"
+              x-show={`!doneSet.includes(${day.day})`}
+              @click={`markDay(${day.day})`}
+            >
+              Mark done
+            </button>
+            <span
+              class="inline-flex min-h-9 items-center text-sm text-[var(--color-success)]"
+              x-show={`doneSet.includes(${day.day})`}
+              x-cloak
+            >
+              Done
+            </span>
+          </div>
+        </li>
+      ))}
+    </ol>
+  </div>
+</Layout>

@@ -22,13 +22,15 @@ const theme = getDevotionTheme(themeSlug);
 if (!theme) {
   return Astro.redirect(`/${version}/devotionals`);
 }
+
+const verseCount = theme.relatedVerses.length;
 ---
 
 <Layout title={`${theme.title} · Devotionals`} version={version}>
   <SearchBar slot="header" version={version} />
 
   <div
-    class="space-y-10"
+    class="space-y-12"
     x-data={`devotionTheme('${theme.slug}', ${JSON.stringify(theme.entries.map((e) => e.id))})`}
   >
     <header>
@@ -49,87 +51,133 @@ if (!theme) {
         {theme.summary}
       </p>
       <p class="mt-2 text-sm text-[var(--color-ink-subtle)]">{theme.focus}</p>
-      <p class="mt-4 text-sm font-medium text-[var(--color-gold)]">
-        <span x-text="doneCount"></span> / {theme.entries.length} completed
-      </p>
     </header>
 
-    <div class="space-y-8">
-      {theme.entries.map((entry, index) => (
-        <article
-          class="ui-card scroll-mt-28 p-5 sm:p-7"
-          id={entry.id}
-          :class={`completed.includes('${entry.id}') ? 'border-[var(--color-gold)]' : ''`}
-        >
-          <div class="flex flex-wrap items-start justify-between gap-3">
-            <div>
-              <p class="text-xs font-semibold uppercase tracking-[0.1em] text-[var(--color-ink-subtle)]">
-                Reading {index + 1}
-              </p>
-              <h2 class="font-scripture mt-1 text-2xl font-semibold">{entry.title}</h2>
-            </div>
-            <span
-              class="rounded-full bg-[var(--color-highlight)] px-3 py-1 text-xs font-medium text-[var(--color-ink-muted)]"
-              x-show={`completed.includes('${entry.id}')`}
-              x-cloak
-            >
-              Completed
-            </span>
-          </div>
+    <!-- Choose a verse -->
+    <section aria-labelledby="verses-heading">
+      <div class="flex flex-wrap items-end justify-between gap-3">
+        <div>
+          <h2 id="verses-heading" class="font-scripture text-xl font-semibold sm:text-2xl">
+            Choose a verse
+          </h2>
+          <p class="mt-1 text-sm text-[var(--color-ink-muted)]">
+            {verseCount} Scriptures on {theme.title.toLowerCase()}. Pick one to read in context.
+          </p>
+        </div>
+        <p class="text-sm text-[var(--color-gold)]">{meta.shortLabel}</p>
+      </div>
 
-          <blockquote class="font-scripture mt-6 border-l-2 border-[var(--color-primary)] pl-4">
-            <p class="text-lg leading-relaxed text-[var(--color-ink)] sm:text-xl">
-              “{entry.verse.text}”
-            </p>
-            <p class="mt-3 text-sm text-[var(--color-ink-muted)]">
-              {entry.verse.book} {entry.verse.chapter}:{entry.verse.verse}
-            </p>
-          </blockquote>
-
-          <div class="mt-6 space-y-4 text-sm leading-relaxed text-[var(--color-ink-muted)] sm:text-base">
-            <div>
-              <h3 class="text-xs font-semibold uppercase tracking-wide text-[var(--color-ink-subtle)]">
-                Reflection
-              </h3>
-              <p class="mt-2 text-[var(--color-ink)]">{entry.reflection}</p>
-            </div>
-            <div>
-              <h3 class="text-xs font-semibold uppercase tracking-wide text-[var(--color-ink-subtle)]">
-                Prayer
-              </h3>
-              <p class="mt-2 italic text-[var(--color-ink)]">{entry.prayer}</p>
-            </div>
-          </div>
-
-          <div class="mt-6 flex flex-wrap gap-3">
+      <ul class="mt-6 space-y-3">
+        {theme.relatedVerses.map((v) => (
+          <li>
             <a
-              class="btn-secondary !min-h-10 !px-4 text-sm"
-              href={`/${version}/chapter/${entry.verse.slug}/${entry.verse.chapter}#v${entry.verse.verse}`}
+              class="ui-card group flex flex-col gap-3 p-4 transition hover:border-[var(--color-gold)] sm:flex-row sm:items-center sm:justify-between sm:gap-6 sm:p-5"
+              href={`/${version}/chapter/${v.slug}/${v.chapter}#v${v.verse}`}
               data-astro-prefetch
             >
-              Read in Bible
+              <div class="min-w-0 flex-1">
+                <p class="text-sm font-semibold text-[var(--color-primary)] group-hover:text-[var(--color-gold)]">
+                  {v.book} {v.chapter}:{v.verse}
+                </p>
+                <p class="font-scripture mt-1.5 text-base leading-relaxed text-[var(--color-ink)] sm:text-lg">
+                  “{v.text}”
+                </p>
+              </div>
+              <span class="shrink-0 text-sm font-medium text-[var(--color-gold)]">
+                Read →
+              </span>
             </a>
-            <button
-              type="button"
-              class="btn-primary !min-h-10 !px-4 text-sm"
-              x-show={`!completed.includes('${entry.id}')`}
-              @click={`markDone('${entry.id}')`}
-            >
-              Mark complete
-            </button>
-            <button
-              type="button"
-              class="btn-secondary !min-h-10 !px-4 text-sm"
-              x-show={`completed.includes('${entry.id}')`}
-              x-cloak
-              @click={`markDone('${entry.id}')`}
-              disabled
-            >
-              Completed
-            </button>
-          </div>
-        </article>
-      ))}
-    </div>
+          </li>
+        ))}
+      </ul>
+    </section>
+
+    <!-- Guided readings -->
+    <section aria-labelledby="readings-heading" class="border-t border-[var(--color-line)] pt-10">
+      <h2 id="readings-heading" class="font-scripture text-xl font-semibold sm:text-2xl">
+        Guided readings
+      </h2>
+      <p class="mt-1 text-sm text-[var(--color-ink-muted)]">
+        Short devotionals with reflection and prayer.
+        <span class="text-[var(--color-gold)]">
+          <span x-text="doneCount"></span> / {theme.entries.length} completed
+        </span>
+      </p>
+
+      <div class="mt-8 space-y-8">
+        {theme.entries.map((entry, index) => (
+          <article
+            class="ui-card scroll-mt-28 p-5 sm:p-7"
+            id={entry.id}
+            :class={`completed.includes('${entry.id}') ? 'border-[var(--color-gold)]' : ''`}
+          >
+            <div class="flex flex-wrap items-start justify-between gap-3">
+              <div>
+                <p class="text-xs font-semibold uppercase tracking-[0.1em] text-[var(--color-ink-subtle)]">
+                  Reading {index + 1}
+                </p>
+                <h3 class="font-scripture mt-1 text-2xl font-semibold">{entry.title}</h3>
+              </div>
+              <span
+                class="rounded-full bg-[var(--color-highlight)] px-3 py-1 text-xs font-medium text-[var(--color-ink-muted)]"
+                x-show={`completed.includes('${entry.id}')`}
+                x-cloak
+              >
+                Completed
+              </span>
+            </div>
+
+            <blockquote class="font-scripture mt-6 border-l-2 border-[var(--color-primary)] pl-4">
+              <p class="text-lg leading-relaxed text-[var(--color-ink)] sm:text-xl">
+                “{entry.verse.text}”
+              </p>
+              <p class="mt-3 text-sm text-[var(--color-ink-muted)]">
+                {entry.verse.book} {entry.verse.chapter}:{entry.verse.verse}
+              </p>
+            </blockquote>
+
+            <div class="mt-6 space-y-4 text-sm leading-relaxed text-[var(--color-ink-muted)] sm:text-base">
+              <div>
+                <h4 class="text-xs font-semibold uppercase tracking-wide text-[var(--color-ink-subtle)]">
+                  Reflection
+                </h4>
+                <p class="mt-2 text-[var(--color-ink)]">{entry.reflection}</p>
+              </div>
+              <div>
+                <h4 class="text-xs font-semibold uppercase tracking-wide text-[var(--color-ink-subtle)]">
+                  Prayer
+                </h4>
+                <p class="mt-2 italic text-[var(--color-ink)]">{entry.prayer}</p>
+              </div>
+            </div>
+
+            <div class="mt-6 flex flex-wrap gap-3">
+              <a
+                class="btn-secondary !min-h-10 !px-4 text-sm"
+                href={`/${version}/chapter/${entry.verse.slug}/${entry.verse.chapter}#v${entry.verse.verse}`}
+                data-astro-prefetch
+              >
+                Read in Bible
+              </a>
+              <button
+                type="button"
+                class="btn-primary !min-h-10 !px-4 text-sm"
+                x-show={`!completed.includes('${entry.id}')`}
+                @click={`markDone('${entry.id}')`}
+              >
+                Mark complete
+              </button>
+              <span
+                class="inline-flex min-h-10 items-center text-sm text-[var(--color-success)]"
+                x-show={`completed.includes('${entry.id}')`}
+                x-cloak
+              >
+                Completed
+              </span>
+            </div>
+          </article>
+        ))}
+      </div>
+    </section>
   </div>
 </Layout>

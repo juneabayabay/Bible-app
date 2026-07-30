@@ -3,7 +3,9 @@ import Layout from "../../layouts/Layout.astro";
 import SearchBar from "../../components/SearchBar.astro";
 import HomeHero from "../../components/HomeHero.astro";
 import QuickActions from "../../components/QuickActions.astro";
+import TodayChecklist from "../../components/TodayChecklist.astro";
 import JourneyPreview from "../../components/JourneyPreview.astro";
+import PlansPreview from "../../components/PlansPreview.astro";
 import DevotionalsPreview from "../../components/DevotionalsPreview.astro";
 import BookIndex from "../../components/BookIndex.astro";
 import FaithEncouragement from "../../components/FaithEncouragement.astro";
@@ -35,20 +37,22 @@ const startHref = daily?.url ?? (books[0] ? `/${version}/book/${books[0].slug}` 
 
   <!--
     Home flow:
-    1) Hero + today’s verse
-    2) Quick actions
-    3) Journey (streak / levels / trophies)
-    4) Devotionals by theme
-    5) Books
-    6) Encouragement
+    1) Hero
+    2) Quick continue
+    3) Today checklist + challenge
+    4) Journey preview
+    5) Plans
+    6) Devotionals
+    7) Books
+    8) Encouragement
   -->
   <div x-data={`homeDashboard('${version}')`}>
     <HomeHero
       headline="Open God’s Word today"
-      subcopy="Read calmly. Highlight what speaks to you. Keep notes on this device."
+      subcopy="One clear path: continue reading, finish Today’s steps, grow a little each day."
       ctaHref={startHref}
       ctaLabel={daily ? "Read today’s chapter" : "Start reading"}
-      booksHref="#books"
+      booksHref="#today"
       verseText={daily?.text}
       verseCite={daily ? `${daily.book} ${daily.chapter}:${daily.verse} · ${meta.shortLabel}` : undefined}
       verseUrl={daily?.url}
@@ -57,7 +61,11 @@ const startHref = daily?.url ?? (books[0] ? `/${version}/book/${books[0].slug}` 
     <div class="space-y-10 sm:space-y-12">
       <QuickActions />
 
+      <TodayChecklist version={version} />
+
       <JourneyPreview version={version} />
+
+      <PlansPreview version={version} />
 
       <DevotionalsPreview version={version} />
 

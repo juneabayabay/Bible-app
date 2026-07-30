@@ -64,6 +64,39 @@ const devotionTotal = totalDevotionEntries();
       </article>
     </section>
 
+    <!-- This week -->
+    <section aria-labelledby="week-heading">
+      <h2 id="week-heading" class="font-scripture text-xl font-semibold sm:text-2xl">This week</h2>
+      <p class="mt-1 text-sm text-[var(--color-ink-muted)]">
+        Last 7 days on this device — simple progress, not a scoreboard.
+      </p>
+      <div class="mt-5 grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
+        <article class="rounded-xl border border-[var(--color-line)] bg-[var(--color-surface-elevated)] p-4">
+          <p class="text-xs uppercase tracking-wide text-[var(--color-ink-subtle)]">Opened</p>
+          <p class="mt-1 font-scripture text-2xl font-semibold"><span x-text="weekOpened"></span>/7</p>
+        </article>
+        <article class="rounded-xl border border-[var(--color-line)] bg-[var(--color-surface-elevated)] p-4">
+          <p class="text-xs uppercase tracking-wide text-[var(--color-ink-subtle)]">Read</p>
+          <p class="mt-1 font-scripture text-2xl font-semibold"><span x-text="weekRead"></span>/7</p>
+        </article>
+        <article class="rounded-xl border border-[var(--color-line)] bg-[var(--color-surface-elevated)] p-4">
+          <p class="text-xs uppercase tracking-wide text-[var(--color-ink-subtle)]">Grew</p>
+          <p class="mt-1 font-scripture text-2xl font-semibold"><span x-text="weekGrow"></span>/7</p>
+        </article>
+        <article class="rounded-xl border border-[var(--color-line)] bg-[var(--color-surface-elevated)] p-4">
+          <p class="text-xs uppercase tracking-wide text-[var(--color-ink-subtle)]">Challenges</p>
+          <p class="mt-1 font-scripture text-2xl font-semibold"><span x-text="weekChallenges"></span>/7</p>
+        </article>
+        <article class="rounded-xl border border-[var(--color-line)] bg-[var(--color-surface-elevated)] p-4">
+          <p class="text-xs uppercase tracking-wide text-[var(--color-ink-subtle)]">Full days</p>
+          <p class="mt-1 font-scripture text-2xl font-semibold"><span x-text="weekComplete"></span>/7</p>
+        </article>
+      </div>
+      <p class="mt-3 text-sm text-[var(--color-ink-subtle)]">
+        Chapters visited (all time): <span class="font-medium text-[var(--color-ink-muted)]" x-text="chaptersRead"></span>
+      </p>
+    </section>
+
     <!-- Progress to next level -->
     <section aria-labelledby="level-path-heading">
       <h2 id="level-path-heading" class="font-scripture text-xl font-semibold sm:text-2xl">Level path</h2>
@@ -133,9 +166,15 @@ const devotionTotal = totalDevotionEntries();
       </ul>
     </section>
 
-    <p class="text-center">
-      <a class="btn-primary" href={`/${version}/devotionals`} data-astro-prefetch>
-        Explore devotionals
+    <p class="text-center flex flex-wrap justify-center gap-3">
+      <a class="btn-primary" href={`/${version}/#today`} data-astro-prefetch>
+        Today’s path
+      </a>
+      <a class="btn-secondary" href={`/${version}/plans`} data-astro-prefetch>
+        Reading plans
+      </a>
+      <a class="btn-secondary" href={`/${version}/devotionals`} data-astro-prefetch>
+        Devotionals
       </a>
     </p>
   </div>

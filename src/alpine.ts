@@ -2,15 +2,16 @@ import type { Alpine } from "alpinejs";
 import lunr from "lunr";
 import {
   getAnnotation,
+  HIGHLIGHT_COLORS,
   loadAnnotations,
   parseVerseKey,
   saveAnnotations,
   upsertAnnotation,
   verseKey,
   type AnnotationMap,
+  type HighlightColorId,
 } from "./lib/annotations";
 import { DEFAULT_VERSION, VERSIONS, type VersionId } from "./lib/versions";
-import { shareOrDownloadCard } from "./lib/shareCard";
 import { loadLastRead, loadStreak, saveLastRead } from "./lib/reading";
 import { parseReference } from "./lib/parseReference";
 import {
@@ -20,6 +21,24 @@ import {
   recordAppOpen,
   TROPHIES,
 } from "./lib/journey";
+import {
+  getTodayStatus,
+  getWeekStats,
+  isChallengeDone,
+  loadProgress,
+  markChallengeDone,
+  markGrow,
+  markOpened,
+  markPlanDay,
+  markQuizDone,
+  markRead,
+  planCompletedCount,
+  saveReflection,
+  setActivePlan,
+  isQuizDone,
+} from "./lib/progress";
+import { getChallengeForDate } from "./lib/challenges";
+import { getPlan, nextPlanDay } from "./lib/plans";
 
 type SearchDoc = {
   id: string;
@@ -130,15 +149,180 @@ export default (Alpine: Alpine) => {
 
     init() {
       const journey = recordAppOpen();
+      markOpened();
       const last = loadLastRead();
+      const progress = loadProgress();
       if (last) {
         this.continueUrl = `/${last.version}/chapter/${last.slug}/${last.chapter}`;
         this.continueLabel = `${last.book} ${last.chapter}`;
-        this.welcome = "Welcome back. Your journey of faith continues today.";
+        this.welcome = "Welcome back. Continue today when you’re ready.";
+      } else if (progress.activePlanId) {
+        const plan = getPlan(progress.activePlanId);
+        if (plan) {
+          const next = nextPlanDay(plan, progress.planDaysDone);
+          if (next) {
+            this.continueUrl = `/${version}/chapter/${next.slug}/${next.chapter}`;
+            this.continueLabel = `Plan · ${next.label}`;
+            this.welcome = "Welcome. Your reading plan is ready.";
+          }
+        }
       }
       const map = loadAnnotations();
       this.savedCount = Object.keys(map).length;
       this.streak = journey.streak || loadStreak().count;
+    },
+  }));
+
+  Alpine.data("todayPanel", (version: string, challengeId: string) => ({
+    version,
+    challengeId,
+    opened: false,
+    read: false,
+    grow: false,
+    challengeDone: false,
+    doneCount: 0,
+    total: 4,
+    complete: false,
+    continueUrl: "",
+    planUrl: "",
+    booksUrl: `/${version}/#books`,
+    readNote: "Open any chapter to check this off.",
+    reflection: "",
+
+    refresh() {
+      recordAppOpen();
+      markOpened();
+      const status = getTodayStatus();
+      this.opened = status.opened;
+      this.read = status.read;
+      this.grow = status.grow;
+      this.challengeDone = status.challenge || isChallengeDone(this.challengeId);
+      this.doneCount = status.doneCount;
+      this.total = status.total;
+      this.complete = status.complete;
+
+      const last = loadLastRead();
+      if (last) {
+        this.continueUrl = `/${last.version}/chapter/${last.slug}/${last.chapter}`;
+        this.readNote = status.read
+          ? `Read today · last open ${last.book} ${last.chapter}`
+          : `Continue ${last.book} ${last.chapter}`;
+      }
+
+      const progress = loadProgress();
+      if (progress.activePlanId) {
+        this.planUrl = `/${version}/plans/${progress.activePlanId}`;
+        const plan = getPlan(progress.activePlanId);
+        if (plan) {
+          const next = nextPlanDay(plan, progress.planDaysDone);
+          if (next && !this.continueUrl) {
+            this.continueUrl = `/${version}/chapter/${next.slug}/${next.chapter}`;
+            this.readNote = `Next plan day: ${next.label}`;
+          }
+        }
+      }
+
+      this.reflection = progress.reflections[status.date] || "";
+    },
+
+    completeChallenge() {
+      markChallengeDone(this.challengeId);
+      this.refresh();
+    },
+
+    saveReflectionText() {
+      if (!this.reflection.trim()) return;
+      saveReflection(this.reflection);
+      markChallengeDone(this.challengeId);
+      this.refresh();
+    },
+  }));
+
+  Alpine.data("plansPanel", () => ({
+    activeLabel: "",
+    activeProgress: "",
+
+    refresh() {
+      const progress = loadProgress();
+      if (!progress.activePlanId) {
+        this.activeLabel = "";
+        this.activeProgress = "";
+        return;
+      }
+      const plan = getPlan(progress.activePlanId);
+      if (!plan) return;
+      const done = planCompletedCount(plan.id);
+      this.activeLabel = plan.title;
+      this.activeProgress = `${done} / ${plan.days.length} days`;
+    },
+  }));
+
+  Alpine.data("planDetail", (version: string, planId: string, totalDays: number) => ({
+    version,
+    planId,
+    totalDays,
+    isActive: false,
+    doneCount: 0,
+    doneSet: [] as number[],
+    nextUrl: "",
+    nextLabel: "",
+
+    refresh() {
+      const progress = loadProgress();
+      this.isActive = progress.activePlanId === this.planId;
+      this.doneCount = planCompletedCount(this.planId);
+      this.doneSet = progress.planDaysDone
+        .filter((k) => k.startsWith(`${this.planId}:`))
+        .map((k) => Number(k.split(":")[1]))
+        .filter((n) => Number.isFinite(n));
+
+      const plan = getPlan(this.planId);
+      if (!plan) return;
+      const next = nextPlanDay(plan, progress.planDaysDone);
+      if (next) {
+        this.nextUrl = `/${this.version}/chapter/${next.slug}/${next.chapter}`;
+        this.nextLabel = next.label;
+      } else {
+        this.nextUrl = "";
+        this.nextLabel = "";
+      }
+    },
+
+    startPlan() {
+      setActivePlan(this.planId);
+      this.refresh();
+    },
+
+    markDay(dayNumber: number) {
+      setActivePlan(this.planId);
+      markPlanDay(this.planId, dayNumber);
+      this.refresh();
+    },
+  }));
+
+  Alpine.data("chapterQuiz", (slug: string, chapter: number) => ({
+    slug,
+    chapter,
+    open: false,
+    revealed: {} as Record<number, boolean>,
+    done: false,
+
+    init() {
+      this.done = isQuizDone(this.slug, this.chapter);
+    },
+
+    toggle() {
+      this.open = !this.open;
+    },
+
+    reveal(i: number) {
+      this.revealed = { ...this.revealed, [i]: true };
+    },
+
+    finish() {
+      markQuizDone(this.slug, this.chapter);
+      markGrow();
+      this.done = true;
     },
   }));
 
@@ -155,9 +339,16 @@ export default (Alpine: Alpine) => {
     trophyTotal: TROPHIES.length,
     trophies: [] as string[],
     devotionDone: 0,
+    weekOpened: 0,
+    weekRead: 0,
+    weekGrow: 0,
+    weekChallenges: 0,
+    weekComplete: 0,
+    chaptersRead: 0,
 
     refresh() {
       const state = recordAppOpen();
+      markOpened();
       const prog = journeyProgress(state.streak);
       this.streak = state.streak;
       this.totalDays = state.totalDays;
@@ -169,14 +360,18 @@ export default (Alpine: Alpine) => {
       this.trophyCount = state.trophies.length;
       this.devotionDone = state.completedDevotions.length;
       this.streakNote =
-        state.streak <= 0
-          ? "Open today to begin."
-          : state.lastDay
-            ? "Keep coming back each day."
-            : "Keep coming back each day.";
+        state.streak <= 0 ? "Open today to begin." : "Keep coming back each day.";
       this.nextLevelNote = prog.next
         ? `${prog.remaining} more day${prog.remaining === 1 ? "" : "s"} to reach ${prog.next.name}.`
         : "You have reached the highest level. Stay faithful.";
+
+      const week = getWeekStats();
+      this.weekOpened = week.opened;
+      this.weekRead = week.read;
+      this.weekGrow = week.grow;
+      this.weekChallenges = week.challenges;
+      this.weekComplete = week.completeDays;
+      this.chaptersRead = loadProgress().chaptersRead.length;
     },
   }));
 
@@ -188,6 +383,7 @@ export default (Alpine: Alpine) => {
 
     init() {
       recordAppOpen();
+      markOpened();
       this.sync();
     },
 
@@ -202,6 +398,11 @@ export default (Alpine: Alpine) => {
 
     markDone(entryId: string) {
       completeDevotion(this.theme, entryId);
+      markGrow();
+      const challenge = getChallengeForDate();
+      if (challenge.id === "one-devotion") {
+        markChallengeDone(challenge.id);
+      }
       this.sync();
     },
   }));
@@ -225,19 +426,27 @@ export default (Alpine: Alpine) => {
       compareLabel: config.compareLabel || null,
       compareVerses: config.compareVerses || null,
       showCompare: false,
-      shareStatus: "" as string,
+      actionStatus: "" as string,
       annotations: {} as AnnotationMap,
       openNote: null as number | null,
+      activeMenu: null as number | null,
+      menuPanel: "actions" as "actions" | "colors",
+      highlightColors: HIGHLIGHT_COLORS,
       flashVerse: null as number | null,
       showTip: false,
       fontScale: 1,
       progress: 0,
       _onScroll: null as null | (() => void),
+      _pressTimer: null as ReturnType<typeof setTimeout> | null,
+      _pressVerse: null as number | null,
+      _pressX: 0,
+      _pressY: 0,
+      _statusTimer: null as ReturnType<typeof setTimeout> | null,
 
       init() {
         this.annotations = loadAnnotations();
         try {
-          this.showTip = localStorage.getItem("bible-tip-seen") !== "1";
+          this.showTip = localStorage.getItem("bible-tip-press-seen") !== "1";
         } catch {
           this.showTip = true;
         }
@@ -258,6 +467,20 @@ export default (Alpine: Alpine) => {
           book: this.bookName || titleCaseSlug(this.bookSlug),
           chapter: this.chapter,
         });
+        markRead(this.version, this.bookSlug, this.chapter);
+        markOpened();
+        const challenge = getChallengeForDate();
+        if (challenge.id === "read-chapter" || challenge.id === "todays-verse") {
+          // Reading counts toward challenge; user can still mark explicitly on Today
+        }
+        const progress = loadProgress();
+        if (progress.activePlanId) {
+          const plan = getPlan(progress.activePlanId);
+          const match = plan?.days.find(
+            (d) => d.slug === this.bookSlug && d.chapter === this.chapter,
+          );
+          if (match) markPlanDay(progress.activePlanId, match.day);
+        }
         this._onScroll = () => {
           const doc = document.documentElement;
           const max = doc.scrollHeight - window.innerHeight;
@@ -267,6 +490,14 @@ export default (Alpine: Alpine) => {
         window.addEventListener("scroll", this._onScroll, { passive: true });
         this._onScroll();
         this.$nextTick(() => this.scrollToHash());
+      },
+
+      destroy() {
+        this.clearPress();
+        if (this._statusTimer) clearTimeout(this._statusTimer);
+        if (this._onScroll) {
+          window.removeEventListener("scroll", this._onScroll);
+        }
       },
 
       hasCompare() {
@@ -301,10 +532,18 @@ export default (Alpine: Alpine) => {
       dismissTip() {
         this.showTip = false;
         try {
-          localStorage.setItem("bible-tip-seen", "1");
+          localStorage.setItem("bible-tip-press-seen", "1");
         } catch {
           /* ignore */
         }
+      },
+
+      flashStatus(message: string) {
+        this.actionStatus = message;
+        if (this._statusTimer) clearTimeout(this._statusTimer);
+        this._statusTimer = setTimeout(() => {
+          this.actionStatus = "";
+        }, 2200);
       },
 
       scrollToHash() {
@@ -325,19 +564,96 @@ export default (Alpine: Alpine) => {
       },
 
       isHighlighted(verse: number) {
-        return getAnnotation(this.annotations, this.key(verse)).highlighted;
+        return Boolean(this.highlightColor(verse));
+      },
+
+      highlightColor(verse: number): HighlightColorId | null {
+        return getAnnotation(this.annotations, this.key(verse)).highlightColor;
       },
 
       noteText(verse: number) {
         return getAnnotation(this.annotations, this.key(verse)).note;
       },
 
-      toggleHighlight(verse: number) {
+      clearPress() {
+        if (this._pressTimer) {
+          clearTimeout(this._pressTimer);
+          this._pressTimer = null;
+        }
+        this._pressVerse = null;
+      },
+
+      onPressStart(verse: number, event: MouseEvent | TouchEvent) {
+        this.clearPress();
+        this._pressVerse = verse;
+        const point =
+          "touches" in event ? event.touches[0] : (event as MouseEvent);
+        this._pressX = point?.clientX ?? 0;
+        this._pressY = point?.clientY ?? 0;
+        this._pressTimer = setTimeout(() => {
+          if (this._pressVerse === verse) {
+            this.openMenu(verse);
+            try {
+              navigator.vibrate?.(12);
+            } catch {
+              /* ignore */
+            }
+          }
+        }, 450);
+      },
+
+      onPressMove(event: MouseEvent | TouchEvent) {
+        if (!this._pressTimer) return;
+        const point =
+          "touches" in event
+            ? event.touches[0] || event.changedTouches[0]
+            : (event as MouseEvent);
+        if (!point) return;
+        const dx = point.clientX - this._pressX;
+        const dy = point.clientY - this._pressY;
+        if (dx * dx + dy * dy > 100) this.clearPress();
+      },
+
+      onPressEnd() {
+        this.clearPress();
+      },
+
+      openMenu(verse: number, panel: "actions" | "colors" = "actions") {
+        this.activeMenu = verse;
+        this.menuPanel = panel;
+        if (this.showTip) this.dismissTip();
+      },
+
+      closeMenu() {
+        this.activeMenu = null;
+        this.menuPanel = "actions";
+      },
+
+      onContextMenu(verse: number, event: MouseEvent) {
+        event.preventDefault();
+        this.openMenu(verse);
+      },
+
+      showColors(verse: number) {
+        this.openMenu(verse, "colors");
+      },
+
+      setHighlight(verse: number, color: HighlightColorId | null) {
+        const current = this.highlightColor(verse);
+        const next =
+          color === null ? null : current === color ? null : color;
         this.annotations = upsertAnnotation(this.annotations, this.key(verse), {
-          highlighted: !this.isHighlighted(verse),
+          highlightColor: next,
         });
         saveAnnotations(this.annotations);
-        if (this.showTip) this.dismissTip();
+        if (next) {
+          this.flashStatus(
+            `Highlighted · ${next.charAt(0).toUpperCase()}${next.slice(1)}`,
+          );
+        } else {
+          this.flashStatus("Highlight cleared");
+        }
+        this.closeMenu();
       },
 
       setNote(verse: number, note: string) {
@@ -347,8 +663,17 @@ export default (Alpine: Alpine) => {
         saveAnnotations(this.annotations);
       },
 
+      openNotePanel(verse: number) {
+        this.closeMenu();
+        this.openNote = verse;
+      },
+
       toggleNote(verse: number) {
         this.openNote = this.openNote === verse ? null : verse;
+      },
+
+      verseUrl(verse: number) {
+        return `${window.location.origin}${window.location.pathname}#v${verse}`;
       },
 
       async copyVerse(verse: number, text: string) {
@@ -356,60 +681,21 @@ export default (Alpine: Alpine) => {
         const line = `"${text}" — ${label}`;
         try {
           await navigator.clipboard.writeText(line);
+          this.flashStatus("Copied verse");
         } catch {
-          /* ignore */
+          this.flashStatus("Couldn’t copy");
         }
+        this.closeMenu();
       },
 
-      async shareVerse(verse: number, text: string) {
-        const label = `${this.bookName || titleCaseSlug(this.bookSlug)} ${this.chapter}:${verse}`;
-        const line = `"${text}" — ${label}`;
-        const pageUrl = `${window.location.origin}${window.location.pathname}#v${verse}`;
-        this.shareStatus = "Preparing…";
+      async copyVerseLink(verse: number) {
         try {
-          const result = await shareOrDownloadCard(
-            {
-              text,
-              cite: label,
-              versionLabel: this.versionLabel || undefined,
-            },
-            `${line}\n${pageUrl}`,
-          );
-          if (result === "shared") {
-            this.shareStatus = "Opened share — pick Facebook, Messenger, etc.";
-          } else if (result === "downloaded") {
-            this.shareStatus = "Card downloaded — attach it in Facebook / Messenger";
-            // Also open Facebook composer with the verse link (desktop fallback)
-            window.open(
-              `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(pageUrl)}`,
-              "_blank",
-              "noopener,noreferrer",
-            );
-          } else {
-            this.shareStatus = "";
-          }
+          await navigator.clipboard.writeText(this.verseUrl(verse));
+          this.flashStatus("Copied link");
         } catch {
-          try {
-            if (navigator.share) {
-              await navigator.share({ title: label, text: line, url: pageUrl });
-              this.shareStatus = "Opened share — pick Facebook, Messenger, etc.";
-            } else {
-              await this.copyVerse(verse, text);
-              window.open(
-                `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(pageUrl)}`,
-                "_blank",
-                "noopener,noreferrer",
-              );
-              this.shareStatus = "Copied verse + opened Facebook";
-            }
-          } catch {
-            await this.copyVerse(verse, text);
-            this.shareStatus = "Copied verse text";
-          }
+          this.flashStatus("Couldn’t copy link");
         }
-        window.setTimeout(() => {
-          this.shareStatus = "";
-        }, 4000);
+        this.closeMenu();
       },
     }),
   );
@@ -420,6 +706,7 @@ export default (Alpine: Alpine) => {
       label: string;
       url: string;
       highlighted: boolean;
+      highlightColor: HighlightColorId | null;
       note: string;
     }>,
 
@@ -439,7 +726,8 @@ export default (Alpine: Alpine) => {
             key,
             label,
             url: `/${parsed.version}/chapter/${parsed.slug}/${parsed.chapter}#v${parsed.verse}`,
-            highlighted: value.highlighted,
+            highlighted: Boolean(value.highlightColor),
+            highlightColor: value.highlightColor,
             note: value.note,
           };
         })
