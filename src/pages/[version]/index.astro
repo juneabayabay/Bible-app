@@ -1,32 +1,20 @@
 ---
 import Layout from "../../layouts/Layout.astro";
 import SearchBar from "../../components/SearchBar.astro";
-import { getBooks, resolveVersionId, clearBibleCache } from "../../lib/bible";
-import { VERSION_IDS, getVersion } from "../../lib/versions";
+import { getBookCatalog, resolveVersionId } from "../../lib/bible";
+import { getVersion } from "../../lib/versions";
 import { isOldTestament } from "../../lib/books";
 import { resolveDailyVerse } from "../../lib/resolveDailyVerse";
+import { getVersionHomePaths } from "../../lib/staticPaths";
 
 export function getStaticPaths() {
-  return VERSION_IDS.map((version) => {
-    const books = getBooks(version);
-    const daily = resolveDailyVerse(version);
-    clearBibleCache(version);
-    return {
-      params: { version },
-      props: {
-        books: books.map((b) => ({ name: b.name, slug: b.slug })),
-        daily,
-      },
-    };
-  });
+  return getVersionHomePaths();
 }
 
 const version = resolveVersionId(Astro.params.version);
 const meta = getVersion(version);
-const { books, daily } = Astro.props as {
-  books: Array<{ name: string; slug: string }>;
-  daily: ReturnType<typeof resolveDailyVerse>;
-};
+const books = getBookCatalog(version);
+const daily = resolveDailyVerse(version);
 
 const otBooks = books.filter((b) => isOldTestament(b.slug));
 const ntBooks = books.filter((b) => !isOldTestament(b.slug));
@@ -78,6 +66,7 @@ const dailyCopyLabel = daily
           <a
             class="inline-flex min-h-10 items-center justify-center rounded-md bg-[var(--color-ink)] px-4 text-sm font-medium text-[var(--color-surface)] transition hover:opacity-90"
             href={daily.url}
+            data-astro-prefetch
           >
             Read chapter
           </a>
@@ -97,6 +86,7 @@ const dailyCopyLabel = daily
         <a
           class="font-medium text-[var(--color-accent)] hover:underline"
           :href="continueUrl"
+          data-astro-prefetch
         >
           Continue <span class="capitalize" x-text="continueLabel"></span>
         </a>
@@ -110,6 +100,7 @@ const dailyCopyLabel = daily
       <a
         class="text-[var(--color-ink-muted)] hover:text-[var(--color-ink)] hover:underline"
         href="/saved"
+        data-astro-prefetch
       >
         Saved (<span x-text="savedCount"></span>)
       </a>
@@ -154,6 +145,7 @@ const dailyCopyLabel = daily
                 <a
                   class="inline-block py-0.5 text-sm text-[var(--color-ink)] underline-offset-2 transition hover:underline sm:text-base"
                   href={`/${version}/book/${book.slug}`}
+                  data-astro-prefetch
                 >
                   {book.name}
                 </a>
@@ -174,6 +166,7 @@ const dailyCopyLabel = daily
                   <a
                     class="inline-block py-0.5 text-sm text-[var(--color-ink)] underline-offset-2 transition hover:underline sm:text-base"
                     href={`/${version}/book/${book.slug}`}
+                    data-astro-prefetch
                   >
                     {book.name}
                   </a>
@@ -190,6 +183,7 @@ const dailyCopyLabel = daily
                 <a
                   class="inline-block py-0.5 text-sm text-[var(--color-ink)] underline-offset-2 transition hover:underline sm:text-base"
                   href={`/${version}/book/${book.slug}`}
+                  data-astro-prefetch
                 >
                   {book.name}
                 </a>

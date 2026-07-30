@@ -1,29 +1,21 @@
 ---
 import Layout from "../../../layouts/Layout.astro";
 import SearchBar from "../../../components/SearchBar.astro";
-import { getBooks, resolveVersionId, clearBibleCache } from "../../../lib/bible";
-import { VERSION_IDS, type VersionId } from "../../../lib/versions";
-import type { Book } from "../../../lib/bible";
+import { getBookCatalog, resolveVersionId } from "../../../lib/bible";
+import { getBookStaticPaths } from "../../../lib/staticPaths";
 
 export function getStaticPaths() {
-  const paths = [];
-  for (const version of VERSION_IDS) {
-    for (const book of getBooks(version)) {
-      paths.push({
-        params: { version, book: book.slug },
-        props: { book, version },
-      });
-    }
-    clearBibleCache(version);
-  }
-  return paths;
+  return getBookStaticPaths();
 }
 
-const { book, version: versionProp } = Astro.props as {
-  book: Book;
-  version: VersionId;
-};
-const version = resolveVersionId(versionProp);
+const version = resolveVersionId(Astro.params.version);
+const bookSlug = Astro.params.book!;
+const catalog = getBookCatalog(version);
+const book = catalog.find((b) => b.slug === bookSlug);
+
+if (!book) {
+  return Astro.redirect(`/${version}/`);
+}
 ---
 
 <Layout title={book.name} version={version}>
@@ -33,6 +25,7 @@ const version = resolveVersionId(versionProp);
     <a
       class="text-[var(--color-ink-muted)] transition hover:text-[var(--color-ink)] hover:underline"
       href={`/${version}/`}
+      data-astro-prefetch
     >
       ← All books
     </a>
@@ -46,9 +39,10 @@ const version = resolveVersionId(versionProp);
       <li>
         <a
           class="inline-flex h-10 w-full items-center justify-center rounded-md border border-[var(--color-line)] bg-[var(--color-surface-elevated)] text-sm text-[var(--color-ink)] transition hover:border-[var(--color-accent)] hover:bg-[var(--color-line)] active:scale-[0.98] sm:h-9"
-          href={`/${version}/chapter/${book.slug}/${chapter.number}`}
+          href={`/${version}/chapter/${book.slug}/${chapter}`}
+          data-astro-prefetch
         >
-          {chapter.number}
+          {chapter}
         </a>
       </li>
     ))}

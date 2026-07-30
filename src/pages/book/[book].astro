@@ -1,9 +1,9 @@
 ---
-import { getBooks } from "../../lib/bible";
+import { getBookCatalog } from "../../lib/bible";
 import { DEFAULT_VERSION } from "../../lib/versions";
 
 export function getStaticPaths() {
-  return getBooks(DEFAULT_VERSION).map((book) => ({
+  return getBookCatalog(DEFAULT_VERSION).map((book) => ({
     params: { book: book.slug },
   }));
 }

@@ -1,13 +1,13 @@
 ---
-import { getBooks } from "../../../lib/bible";
+import { getBookCatalog } from "../../../lib/bible";
 import { DEFAULT_VERSION } from "../../../lib/versions";
 
 export function getStaticPaths() {
-  return getBooks(DEFAULT_VERSION).flatMap((book) =>
+  return getBookCatalog(DEFAULT_VERSION).flatMap((book) =>
     book.chapters.map((chapter) => ({
       params: {
         book: book.slug,
-        chapter: String(chapter.number),
+        chapter: String(chapter),
       },
     })),
   );
