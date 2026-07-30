@@ -14,6 +14,10 @@ const { version } = Astro.props;
 const groups = versionsByLanguage();
 const current = getVersion(version);
 const badge = languageBadge(current.language);
+
+function plainName(description: string) {
+  return description.replace(/\s*\([^)]*\)\s*$/, "").trim();
+}
 ---
 
 <div
@@ -21,24 +25,25 @@ const badge = languageBadge(current.language);
   x-data={`versionPicker(${JSON.stringify(version)})`}
   @keydown.escape.window="open = false"
 >
+  <!-- Compact trigger: language + version -->
   <button
     type="button"
     id="bible-version"
-    class="inline-flex h-9 max-w-[11rem] items-center gap-1.5 rounded-lg border border-[var(--color-line)] bg-[var(--color-surface-elevated)] py-1 pr-2 pl-1.5 text-[var(--color-ink)] shadow-sm outline-none transition hover:border-[var(--color-primary)]/35 focus-visible:ring-2 focus-visible:ring-[var(--color-primary)] sm:max-w-[13rem]"
+    class="inline-flex h-9 items-center gap-2 rounded-lg border border-[var(--color-line)] bg-[var(--color-surface-elevated)] py-1 pr-2 pl-1.5 text-[var(--color-ink)] shadow-sm outline-none transition hover:border-[var(--color-primary)]/40 focus-visible:ring-2 focus-visible:ring-[var(--color-primary)]"
     @click="open = !open"
     :aria-expanded="open.toString()"
     aria-haspopup="listbox"
     aria-controls="bible-version-list"
-    title={`${current.label} · ${current.languageName}`}
+    title={`${current.languageName} · ${current.shortLabel}`}
   >
     <span
-      class="inline-flex h-6 min-w-6 shrink-0 items-center justify-center rounded-md bg-[var(--color-primary)] px-1 text-[0.65rem] font-bold tracking-wide text-white dark:text-[#0b1220]"
+      class="inline-flex h-6 min-w-[1.75rem] items-center justify-center rounded-md bg-[var(--color-primary)] px-1.5 text-[0.7rem] font-bold tracking-wide text-white dark:text-[#0b1220]"
       aria-hidden="true"
     >
       {badge}
     </span>
-    <span class="min-w-0 truncate text-xs font-semibold sm:text-sm">{current.shortLabel}</span>
-    <svg class="ml-auto h-3.5 w-3.5 shrink-0 text-[var(--color-ink-subtle)]" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+    <span class="text-sm font-semibold">{current.shortLabel}</span>
+    <svg class="h-3.5 w-3.5 text-[var(--color-ink-subtle)]" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
       <path
         fill-rule="evenodd"
         d="M5.23 7.21a.75.75 0 011.06.02L10 11.17l3.71-3.94a.75.75 0 111.08 1.04l-4.25 4.5a.75.75 0 01-1.08 0l-4.25-4.5a.75.75 0 01.02-1.06z"
@@ -49,55 +54,66 @@ const badge = languageBadge(current.language);
 
   <div
     id="bible-version-list"
-    class="absolute right-0 z-50 mt-2 max-h-[min(24rem,70vh)] w-[min(18.5rem,calc(100vw-1.5rem))] overflow-auto rounded-xl border border-[var(--color-line)] bg-[var(--color-surface-elevated)] py-1.5 shadow-lg"
+    class="absolute right-0 z-50 mt-2 max-h-[min(24rem,70vh)] w-[min(17.5rem,calc(100vw-1.5rem))] overflow-auto rounded-xl border border-[var(--color-line)] bg-[var(--color-surface-elevated)] shadow-lg"
     x-show="open"
     x-cloak
     @click.outside="open = false"
     role="listbox"
     aria-labelledby="bible-version"
   >
-    {groups.map((group) => (
-      <div class="px-1.5 pb-1.5">
-        <p class="px-2.5 pt-2 pb-1 text-[0.65rem] font-semibold uppercase tracking-[0.12em] text-[var(--color-ink-subtle)]">
-          {group.languageName}
-        </p>
-        {group.versions.map((opt) => (
-          <button
-            type="button"
-            class:list={[
-              "flex w-full items-center gap-2.5 rounded-lg px-2.5 py-2 text-left transition hover:bg-[var(--color-line)]",
-              opt.id === version && "bg-[color-mix(in_srgb,var(--color-primary)_10%,transparent)]",
-            ]}
-            role="option"
-            aria-selected={opt.id === version ? "true" : "false"}
-            @click={`switchTo(${JSON.stringify(opt.id)})`}
-          >
+    <p class="border-b border-[var(--color-line)] px-3.5 py-2.5 text-xs text-[var(--color-ink-muted)]">
+      Choose language &amp; version
+    </p>
+
+    {groups.map((group) => {
+      const langCode = languageBadge(group.versions[0]?.language ?? "");
+      return (
+        <div class="border-b border-[var(--color-line)] last:border-b-0">
+          {/* One language logo per group — not repeated on every row */}
+          <div class="flex items-center gap-2 px-3.5 pt-3 pb-1.5">
             <span
-              class="inline-flex h-7 min-w-7 shrink-0 items-center justify-center rounded-md bg-[var(--color-primary)] px-1 text-[0.65rem] font-bold tracking-wide text-white dark:text-[#0b1220]"
+              class="inline-flex h-6 min-w-[1.75rem] items-center justify-center rounded-md bg-[var(--color-primary)] px-1.5 text-[0.7rem] font-bold tracking-wide text-white dark:text-[#0b1220]"
               aria-hidden="true"
             >
-              {languageBadge(opt.language)}
+              {langCode}
             </span>
-            <span class="min-w-0 flex-1">
-              <span class="block truncate text-sm font-medium text-[var(--color-ink)]">
-                {opt.shortLabel}
-              </span>
-              <span class="block truncate text-xs text-[var(--color-ink-subtle)]">
-                {opt.description}
-              </span>
+            <span class="text-xs font-semibold uppercase tracking-[0.1em] text-[var(--color-ink-muted)]">
+              {group.languageName}
             </span>
-            {opt.id === version && (
-              <svg class="h-4 w-4 shrink-0 text-[var(--color-primary)]" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
-                <path
-                  fill-rule="evenodd"
-                  d="M16.704 4.153a.75.75 0 01.143 1.052l-8 10.5a.75.75 0 01-1.127.075l-4.5-4.5a.75.75 0 011.06-1.06l3.894 3.893 7.48-9.817a.75.75 0 011.05-.143z"
-                  clip-rule="evenodd"
-                ></path>
-              </svg>
-            )}
-          </button>
-        ))}
-      </div>
-    ))}
+          </div>
+
+          <div class="px-1.5 pb-2">
+            {group.versions.map((opt) => (
+              <button
+                type="button"
+                class:list={[
+                  "flex w-full items-center gap-3 rounded-lg px-2.5 py-2 text-left transition",
+                  opt.id === version
+                    ? "bg-[color-mix(in_srgb,var(--color-primary)_12%,transparent)]"
+                    : "hover:bg-[color-mix(in_srgb,var(--color-line)_55%,transparent)]",
+                ]}
+                role="option"
+                aria-selected={opt.id === version ? "true" : "false"}
+                @click={`switchTo(${JSON.stringify(opt.id)})`}
+              >
+                <span class="min-w-0 flex-1">
+                  <span class="block text-sm font-semibold text-[var(--color-ink)]">
+                    {opt.shortLabel}
+                  </span>
+                  <span class="block truncate text-xs text-[var(--color-ink-subtle)]">
+                    {plainName(opt.description)}
+                  </span>
+                </span>
+                {opt.id === version ? (
+                  <span class="shrink-0 text-xs font-semibold text-[var(--color-primary)]">
+                    Current
+                  </span>
+                ) : null}
+              </button>
+            ))}
+          </div>
+        </div>
+      );
+    })}
   </div>
 </div>

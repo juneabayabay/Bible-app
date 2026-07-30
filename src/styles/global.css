@@ -130,9 +130,15 @@ textarea {
 /* Interactive surfaces */
 .ui-card {
   border-radius: 1rem;
-  border: 1px solid var(--color-line);
-  background: var(--color-surface-elevated);
-  box-shadow: 0 1px 2px rgb(18 28 46 / 0.05), 0 10px 28px rgb(30 58 138 / 0.08);
+  border: 1px solid color-mix(in srgb, var(--color-line) 80%, white);
+  background: linear-gradient(
+    165deg,
+    color-mix(in srgb, var(--color-surface-elevated) 88%, white) 0%,
+    var(--color-surface-elevated) 100%
+  );
+  box-shadow:
+    0 1px 2px rgb(16 26 44 / 0.06),
+    0 12px 32px rgb(26 52 120 / 0.1);
   transition:
     transform 0.2s ease,
     box-shadow 0.2s ease,
@@ -140,6 +146,8 @@ textarea {
 }
 
 .dark .ui-card {
+  background: var(--color-surface-elevated);
+  border-color: var(--color-line);
   box-shadow: 0 1px 2px rgb(0 0 0 / 0.25), 0 8px 24px rgb(0 0 0 / 0.2);
 }
 
