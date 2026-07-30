@@ -1,0 +1,72 @@
+---
+/**
+ * Compact home strip: streak / level preview + links into Journey & Devotionals.
+ */
+interface Props {
+  version: string;
+}
+
+const { version } = Astro.props;
+---
+
+<section
+  class="mt-8 border-t border-[var(--color-line)] pt-8 sm:mt-10 sm:pt-10"
+  aria-labelledby="grow-heading"
+  x-data="journeyPanel"
+  x-init="refresh()"
+>
+  <div class="flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between">
+    <header class="max-w-xl">
+      <p class="eyebrow">Grow</p>
+      <h2
+        id="grow-heading"
+        class="font-scripture mt-2 text-2xl font-semibold tracking-tight text-[var(--color-ink)] sm:text-3xl"
+      >
+        Your journey with God
+      </h2>
+      <p class="mt-2 text-sm leading-relaxed text-[var(--color-ink-muted)] sm:text-base">
+        Open the app each day to keep your streak. Earn trophies, rise in level, and walk themed devotionals.
+      </p>
+    </header>
+
+    <div class="flex flex-wrap gap-2">
+      <a class="btn-primary !min-h-10 !px-4 text-sm" href={`/${version}/journey`} data-astro-prefetch>
+        View journey
+      </a>
+      <a class="btn-secondary !min-h-10 !px-4 text-sm" href={`/${version}/devotionals`} data-astro-prefetch>
+        Devotionals
+      </a>
+    </div>
+  </div>
+
+  <div class="mt-6 grid gap-4 sm:grid-cols-3">
+    <article class="ui-card p-5">
+      <p class="text-xs font-semibold uppercase tracking-[0.1em] text-[var(--color-ink-subtle)]">Streak</p>
+      <p class="mt-2 font-scripture text-3xl font-semibold text-[var(--color-ink)]">
+        <span x-text="streak"></span><span class="text-lg text-[var(--color-ink-muted)]"> days</span>
+      </p>
+      <p class="mt-1 text-sm text-[var(--color-ink-muted)]" x-text="streakNote"></p>
+    </article>
+
+    <article class="ui-card p-5">
+      <p class="text-xs font-semibold uppercase tracking-[0.1em] text-[var(--color-ink-subtle)]">Level</p>
+      <p class="mt-2 font-scripture text-3xl font-semibold text-[var(--color-ink)]" x-text="levelName"></p>
+      <p class="mt-1 text-sm text-[var(--color-ink-muted)]" x-text="levelBlurb"></p>
+      <div class="mt-3 h-1.5 overflow-hidden rounded-full bg-[var(--color-line)]">
+        <div
+          class="h-full rounded-full bg-[var(--color-gold)] transition-all duration-500"
+          :style="`width: ${Math.round(progress * 100)}%`"
+        ></div>
+      </div>
+    </article>
+
+    <article class="ui-card p-5">
+      <p class="text-xs font-semibold uppercase tracking-[0.1em] text-[var(--color-ink-subtle)]">Trophies</p>
+      <p class="mt-2 font-scripture text-3xl font-semibold text-[var(--color-ink)]">
+        <span x-text="trophyCount"></span>
+        <span class="text-lg text-[var(--color-ink-muted)]"> / <span x-text="trophyTotal"></span></span>
+      </p>
+      <p class="mt-1 text-sm text-[var(--color-ink-muted)]">Unlock verses as your streak grows.</p>
+    </article>
+  </div>
+</section>

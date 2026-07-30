@@ -1,7 +1,9 @@
 ---
 import Layout from "../../../../layouts/Layout.astro";
 import SearchBar from "../../../../components/SearchBar.astro";
-import { getBook, resolveVersionId } from "../../../../lib/bible";
+import { getBook, getChapter, resolveVersionId } from "../../../../lib/bible";
+import { getCompareVersionId } from "../../../../lib/compare";
+import { getVersion } from "../../../../lib/versions";
 import { getChapterStaticPaths } from "../../../../lib/staticPaths";
 
 export function getStaticPaths() {
@@ -9,6 +11,7 @@ export function getStaticPaths() {
 }
 
 const version = resolveVersionId(Astro.params.version);
+const meta = getVersion(version);
 const bookSlug = Astro.params.book!;
 const chapterNumber = Number(Astro.params.chapter);
 
@@ -37,16 +40,36 @@ const wordCount = verses.reduce(
 );
 const minutes = Math.max(1, Math.ceil(wordCount / 200));
 
-const safeBookName = JSON.stringify(bookName);
-const navBtn =
-  "btn-secondary !min-h-11 flex-1 sm:flex-none";
+const compareVersion = getCompareVersionId(version);
+const compareMeta = compareVersion ? getVersion(compareVersion) : null;
+const compareChapter =
+  compareVersion && compareVersion !== version
+    ? getChapter(compareVersion, bookSlug, chapterNumber)
+    : null;
+
+const compareVerses =
+  compareChapter?.verses?.length
+    ? Object.fromEntries(compareChapter.verses.map((v) => [String(v.number), v.text]))
+    : null;
+
+const readerConfig = JSON.stringify({
+  version,
+  bookSlug,
+  chapter: chapterNumber,
+  bookName,
+  versionLabel: meta.shortLabel,
+  compareVersion: compareVerses ? compareVersion : null,
+  compareLabel: compareVerses && compareMeta ? compareMeta.shortLabel : null,
+  compareVerses,
+});
+
+const navBtn = "btn-secondary !min-h-11 flex-1 sm:flex-none";
 ---
 
 <Layout title={`${bookName} ${chapterNumber}`} version={version}>
   <SearchBar slot="header" version={version} />
 
-  <div x-data={`chapterReader('${version}', '${bookSlug}', ${chapterNumber}, ${safeBookName})`}>
-    <!-- Reading progress -->
+  <div x-data={`chapterReader(${readerConfig})`}>
     <div
       class="fixed inset-x-0 top-0 z-50 h-0.5 bg-[var(--color-line)]"
       aria-hidden="true"
@@ -67,27 +90,40 @@ const navBtn =
       </a>
     </nav>
 
-    <div class="flex flex-col gap-5 sm:flex-row sm:items-end sm:justify-between">
+    <div class="flex flex-col gap-5 lg:flex-row lg:items-end lg:justify-between">
       <div class="min-w-0">
         <h1 class="font-scripture text-2xl font-semibold tracking-tight sm:text-3xl">
           {bookName}
           <span class="text-[var(--color-ink-muted)]">{chapterNumber}</span>
         </h1>
         <p class="mt-2 text-sm text-[var(--color-ink-muted)]">
-          ~{minutes} min · {chapterIndex + 1}/{book.chapters.length}
+          ~{minutes} min · {chapterIndex + 1}/{book.chapters.length} · {meta.shortLabel}
         </p>
         <p class="mt-2 text-sm text-[var(--color-ink-subtle)]" x-show="showTip" x-cloak>
-          Tap a verse number to highlight.
+          Tap a verse number to highlight. Use Share for a verse card.
           <button type="button" class="ml-1 font-medium text-[var(--color-primary)] underline" @click="dismissTip()">
             Got it
           </button>
         </p>
+        <p class="mt-2 text-sm text-[var(--color-gold)]" x-show="shareStatus" x-text="shareStatus" x-cloak></p>
       </div>
 
       <div class="flex w-full flex-col gap-2 sm:w-auto">
-        <div class="flex items-center gap-2" aria-label="Text size">
-          <button type="button" class="btn-secondary !min-h-10 !px-3" @click="bump(-0.08)" aria-label="Smaller text">A−</button>
-          <button type="button" class="btn-secondary !min-h-10 !px-3" @click="bump(0.08)" aria-label="Larger text">A+</button>
+        <div class="flex flex-wrap items-center gap-2">
+          <div class="flex items-center gap-2" aria-label="Text size">
+            <button type="button" class="btn-secondary !min-h-10 !px-3" @click="bump(-0.08)" aria-label="Smaller text">A−</button>
+            <button type="button" class="btn-secondary !min-h-10 !px-3" @click="bump(0.08)" aria-label="Larger text">A+</button>
+          </div>
+          {compareVerses && (
+            <button
+              type="button"
+              class="btn-secondary !min-h-10 !px-3"
+              @click="toggleCompare()"
+              :aria-pressed="showCompare.toString()"
+            >
+              <span x-text={`showCompare ? 'Hide ${compareMeta?.shortLabel}' : 'Compare ${compareMeta?.shortLabel}'`}></span>
+            </button>
+          )}
         </div>
         <div class="flex gap-2" aria-label="Chapter">
           {prevChapter ? (
@@ -105,7 +141,8 @@ const navBtn =
     </div>
 
     <div
-      class="mt-8 max-w-prose space-y-0.5 sm:mt-10"
+      class="mt-8 space-y-1 sm:mt-10"
+      :class="showCompare && hasCompare() ? 'max-w-4xl' : 'max-w-prose'"
       :style="`font-size: ${fontScale}rem`"
     >
       {verses.map((verse) => (
@@ -125,9 +162,36 @@ const navBtn =
               {verse.number}
             </button>
             <div class="min-w-0 flex-1">
-              <p class="font-scripture text-[1.125rem] leading-[1.8] text-[var(--color-ink)] sm:text-[1.2rem] sm:leading-[1.85]">
-                {verse.text}
-              </p>
+              <div
+                class="grid gap-3"
+                :class="showCompare && compareText(${verse.number}) ? 'md:grid-cols-2 md:gap-5' : ''"
+              >
+                <div>
+                  <p class="mb-1 hidden text-[0.65rem] font-semibold uppercase tracking-[0.1em] text-[var(--color-ink-subtle)] md:block"
+                    x-show="showCompare && compareText(${verse.number})"
+                    x-cloak
+                  >
+                    {meta.shortLabel}
+                  </p>
+                  <p class="font-scripture text-[1.125rem] leading-[1.8] text-[var(--color-ink)] sm:text-[1.2rem] sm:leading-[1.85]">
+                    {verse.text}
+                  </p>
+                </div>
+                <div
+                  class="border-t border-[var(--color-line)] pt-3 md:border-t-0 md:border-l md:pt-0 md:pl-5"
+                  x-show={`showCompare && compareText(${verse.number})`}
+                  x-cloak
+                >
+                  <p class="mb-1 text-[0.65rem] font-semibold uppercase tracking-[0.1em] text-[var(--color-gold)]">
+                    {compareMeta?.shortLabel}
+                  </p>
+                  <p
+                    class="font-scripture text-[1.05rem] leading-[1.75] text-[var(--color-ink-muted)] sm:text-[1.1rem]"
+                    x-text={`compareText(${verse.number})`}
+                  ></p>
+                </div>
+              </div>
+
               <div class="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1">
                 <button
                   type="button"
@@ -149,7 +213,7 @@ const navBtn =
                   class="min-h-9 text-xs font-medium text-[var(--color-ink-subtle)] transition hover:text-[var(--color-ink)] sm:min-h-8 sm:opacity-0 sm:group-hover:opacity-100 sm:focus:opacity-100 sm:group-focus-within:opacity-100"
                   @click={`shareVerse(${verse.number}, ${JSON.stringify(verse.text)})`}
                 >
-                  Share
+                  Share card
                 </button>
                 <span
                   class="text-xs text-[var(--color-gold)]"
@@ -173,10 +237,6 @@ const navBtn =
         </div>
       ))}
     </div>
-
-    <p class="mt-8 max-w-prose text-sm text-[var(--color-ink-muted)]">
-      Take a breath. Every verse is a step closer to Him.
-    </p>
 
     <nav
       class="mt-8 flex items-center justify-between gap-3 border-t border-[var(--color-line)] pt-6 sm:mt-10"

@@ -42,11 +42,20 @@ export function loadLastRead(): LastRead | null {
 export function saveLastRead(entry: Omit<LastRead, "updatedAt">) {
   const payload: LastRead = { ...entry, updatedAt: Date.now() };
   localStorage.setItem(LAST_READ_KEY, JSON.stringify(payload));
+  // Keep legacy streak key in sync for older UI bits
   touchStreak();
 }
 
 export function loadStreak(): StreakData {
   try {
+    // Prefer journey streak when available
+    const journeyRaw = localStorage.getItem("bible-journey");
+    if (journeyRaw) {
+      const j = JSON.parse(journeyRaw) as { streak?: number; lastDay?: string };
+      if (typeof j.streak === "number") {
+        return { count: j.streak, lastDay: j.lastDay ?? "" };
+      }
+    }
     const raw = localStorage.getItem(STREAK_KEY);
     if (!raw) return { count: 0, lastDay: "" };
     const parsed = JSON.parse(raw) as StreakData;

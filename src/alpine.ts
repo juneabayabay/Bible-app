@@ -10,6 +10,7 @@ import {
   type AnnotationMap,
 } from "./lib/annotations";
 import { DEFAULT_VERSION, VERSIONS, type VersionId } from "./lib/versions";
+import { shareOrDownloadCard } from "./lib/shareCard";
 import { loadLastRead, loadStreak, saveLastRead } from "./lib/reading";
 import { parseReference } from "./lib/parseReference";
 
@@ -133,13 +134,26 @@ export default (Alpine: Alpine) => {
     },
   }));
 
-  Alpine.data(
-    "chapterReader",
-    (version: string, bookSlug: string, chapter: number, bookName = "") => ({
-      version,
-      bookSlug,
-      chapter,
-      bookName,
+  Alpine.data("chapterReader", (config: {
+    version: string;
+    bookSlug: string;
+    chapter: number;
+    bookName?: string;
+    versionLabel?: string;
+    compareVersion?: string | null;
+    compareLabel?: string | null;
+    compareVerses?: Record<string, string> | null;
+  }) => ({
+      version: config.version,
+      bookSlug: config.bookSlug,
+      chapter: config.chapter,
+      bookName: config.bookName || "",
+      versionLabel: config.versionLabel || "",
+      compareVersion: config.compareVersion || null,
+      compareLabel: config.compareLabel || null,
+      compareVerses: config.compareVerses || null,
+      showCompare: false,
+      shareStatus: "" as string,
       annotations: {} as AnnotationMap,
       openNote: null as number | null,
       flashVerse: null as number | null,
@@ -161,6 +175,11 @@ export default (Alpine: Alpine) => {
         } catch {
           /* ignore */
         }
+        try {
+          this.showCompare = localStorage.getItem("bible-show-compare") === "1";
+        } catch {
+          /* ignore */
+        }
         saveLastRead({
           version: this.version,
           slug: this.bookSlug,
@@ -176,6 +195,23 @@ export default (Alpine: Alpine) => {
         window.addEventListener("scroll", this._onScroll, { passive: true });
         this._onScroll();
         this.$nextTick(() => this.scrollToHash());
+      },
+
+      hasCompare() {
+        return Boolean(this.compareVerses && Object.keys(this.compareVerses).length);
+      },
+
+      compareText(verse: number) {
+        return this.compareVerses?.[String(verse)] || "";
+      },
+
+      toggleCompare() {
+        this.showCompare = !this.showCompare;
+        try {
+          localStorage.setItem("bible-show-compare", this.showCompare ? "1" : "0");
+        } catch {
+          /* ignore */
+        }
       },
 
       bump(delta: number) {
@@ -256,15 +292,39 @@ export default (Alpine: Alpine) => {
       async shareVerse(verse: number, text: string) {
         const label = `${this.bookName || titleCaseSlug(this.bookSlug)} ${this.chapter}:${verse}`;
         const line = `"${text}" — ${label}`;
+        this.shareStatus = "Creating card…";
         try {
-          if (navigator.share) {
-            await navigator.share({ title: label, text: line });
-            return;
-          }
+          const result = await shareOrDownloadCard(
+            {
+              text,
+              cite: label,
+              versionLabel: this.versionLabel || undefined,
+            },
+            line,
+          );
+          this.shareStatus =
+            result === "shared"
+              ? "Shared"
+              : result === "downloaded"
+                ? "Card saved"
+                : "";
         } catch {
-          /* user cancelled or unsupported */
+          try {
+            if (navigator.share) {
+              await navigator.share({ title: label, text: line });
+              this.shareStatus = "Shared";
+            } else {
+              await this.copyVerse(verse, text);
+              this.shareStatus = "Copied";
+            }
+          } catch {
+            await this.copyVerse(verse, text);
+            this.shareStatus = "Copied";
+          }
         }
-        await this.copyVerse(verse, text);
+        window.setTimeout(() => {
+          this.shareStatus = "";
+        }, 2200);
       },
     }),
   );
