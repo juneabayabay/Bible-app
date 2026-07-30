@@ -1,4 +1,6 @@
 ---
+import Layout from "../../../layouts/Layout.astro";
+import SearchBar from "../../../components/SearchBar.astro";
 import { getBooks, getChapter } from "../../../lib/bible";
 
 export function getStaticPaths() {
@@ -25,21 +27,25 @@ if (!chapter) {
 }
 ---
 
-<html lang="en">
-  <head>
-    <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width" />
-    <title>{bookName} {chapterNumber}</title>
-  </head>
-  <body>
-    <p><a href={`/book/${bookSlug}`}>← {bookName}</a></p>
+<Layout title={`${bookName} ${chapterNumber}`}>
+  <SearchBar slot="header" />
 
-    <h1>{bookName} {chapterNumber}</h1>
+  <p class="mb-4 text-sm">
+    <a class="text-stone-600 hover:underline" href={`/book/${bookSlug}`}>
+      ← {bookName}
+    </a>
+  </p>
 
+  <h1 class="text-3xl font-semibold tracking-tight">
+    {bookName} {chapterNumber}
+  </h1>
+
+  <div class="mt-6 space-y-4 leading-relaxed">
     {chapter.verses.map((verse) => (
       <p>
-        <strong>{verse.number}</strong> {verse.text}
+        <strong class="mr-2 text-stone-500">{verse.number}</strong>
+        {verse.text}
       </p>
     ))}
-  </body>
-</html>
+  </div>
+</Layout>

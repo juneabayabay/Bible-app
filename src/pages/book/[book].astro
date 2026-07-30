@@ -1,4 +1,6 @@
 ---
+import Layout from "../../layouts/Layout.astro";
+import SearchBar from "../../components/SearchBar.astro";
 import { getBooks } from "../../lib/bible";
 import type { Book } from "../../lib/bible";
 
@@ -12,26 +14,26 @@ export function getStaticPaths() {
 const { book } = Astro.props as { book: Book };
 ---
 
-<html lang="en">
-  <head>
-    <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width" />
-    <title>{book.name}</title>
-  </head>
-  <body>
-    <p><a href="/">← All books</a></p>
+<Layout title={book.name}>
+  <SearchBar slot="header" />
 
-    <h1>{book.name}</h1>
+  <p class="mb-4 text-sm">
+    <a class="text-stone-600 hover:underline" href="/">← All books</a>
+  </p>
 
-    <h2>Chapters</h2>
-    <ul>
-      {book.chapters.map((chapter) => (
-        <li>
-          <a href={`/chapter/${book.slug}/${chapter.number}`}>
-            Chapter {chapter.number}
-          </a>
-        </li>
-      ))}
-    </ul>
-  </body>
-</html>
+  <h1 class="text-3xl font-semibold tracking-tight">{book.name}</h1>
+
+  <h2 class="mt-8 text-xl font-medium">Chapters</h2>
+  <ul class="mt-4 flex flex-wrap gap-2">
+    {book.chapters.map((chapter) => (
+      <li>
+        <a
+          class="inline-flex min-w-10 items-center justify-center rounded border border-stone-300 bg-white px-2 py-1 text-sm hover:bg-stone-100"
+          href={`/chapter/${book.slug}/${chapter.number}`}
+        >
+          {chapter.number}
+        </a>
+      </li>
+    ))}
+  </ul>
+</Layout>

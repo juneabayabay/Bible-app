@@ -7,9 +7,10 @@
   },
   "scripts": {
     "dev": "astro dev",
-    "build": "astro build",
+    "build": "npm run search-docs && astro build",
     "preview": "astro preview",
-    "astro": "astro"
+    "astro": "astro",
+    "search-docs": "node scripts/build-search-docs.mjs"
   },
   "dependencies": {
     "@astrojs/alpinejs": "^1.0.0",
@@ -19,5 +20,8 @@
     "astro": "^7.1.6",
     "lunr": "^2.3.9",
     "tailwindcss": "^4.3.3"
+  },
+  "devDependencies": {
+    "@types/lunr": "^2.3.7"
   }
 }

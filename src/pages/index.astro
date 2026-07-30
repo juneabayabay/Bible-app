@@ -1,26 +1,27 @@
 ---
+import Layout from "../layouts/Layout.astro";
+import SearchBar from "../components/SearchBar.astro";
 import { getBooks } from "../lib/bible";
 
 const books = getBooks();
 ---
 
-<html lang="en">
-  <head>
-    <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width" />
-    <title>Bible App</title>
-  </head>
-  <body>
-    <h1>Bible</h1>
-    <p>Read the World English Bible (public domain).</p>
+<Layout title="Bible App">
+  <SearchBar slot="header" />
 
-    <h2>Books</h2>
-    <ul>
-      {books.map((book) => (
-        <li>
-          <a href={`/book/${book.slug}`}>{book.name}</a>
-        </li>
-      ))}
-    </ul>
-  </body>
-</html>
+  <h1 class="text-3xl font-semibold tracking-tight">Bible</h1>
+  <p class="mt-2 text-stone-600">
+    Read the World English Bible (public domain).
+  </p>
+
+  <h2 class="mt-8 text-xl font-medium">Books</h2>
+  <ul class="mt-4 columns-2 gap-x-8 sm:columns-3">
+    {books.map((book) => (
+      <li class="mb-1 break-inside-avoid">
+        <a class="text-stone-800 underline-offset-2 hover:underline" href={`/book/${book.slug}`}>
+          {book.name}
+        </a>
+      </li>
+    ))}
+  </ul>
+</Layout>
