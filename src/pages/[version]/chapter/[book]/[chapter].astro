@@ -65,9 +65,9 @@ const readerConfig = JSON.stringify({
 });
 
 const toolbarBtn =
-  "inline-flex min-h-10 items-center justify-center rounded-lg border border-[var(--color-line)] bg-[var(--color-surface)] px-3 text-sm font-semibold text-[var(--color-ink)] transition hover:border-[color-mix(in_srgb,var(--color-primary)_40%,var(--color-line))] hover:bg-[color-mix(in_srgb,var(--color-primary)_6%,var(--color-surface-elevated))]";
+  "inline-flex min-h-10 w-full items-center justify-center rounded-lg border border-[var(--color-line)] bg-[var(--color-surface)] px-3 text-sm font-semibold text-[var(--color-ink)] transition hover:border-[color-mix(in_srgb,var(--color-primary)_40%,var(--color-line))] hover:bg-[color-mix(in_srgb,var(--color-primary)_6%,var(--color-surface-elevated))] sm:w-auto";
 const chapterNavBtn =
-  "inline-flex min-h-11 flex-1 items-center justify-center gap-2 rounded-xl border border-[var(--color-line)] bg-[var(--color-surface)] px-3.5 text-sm font-semibold text-[var(--color-ink)] transition hover:border-[color-mix(in_srgb,var(--color-primary)_40%,var(--color-line))] hover:bg-[color-mix(in_srgb,var(--color-primary)_6%,var(--color-surface-elevated))] sm:min-w-[10rem] sm:flex-none";
+  "inline-flex min-h-11 flex-1 items-center justify-center gap-2 rounded-xl border border-[var(--color-line)] bg-[var(--color-surface)] px-3 text-sm font-semibold text-[var(--color-ink)] transition hover:border-[color-mix(in_srgb,var(--color-primary)_40%,var(--color-line))] hover:bg-[color-mix(in_srgb,var(--color-primary)_6%,var(--color-surface-elevated))] sm:min-w-[9.75rem] sm:flex-none sm:px-3.5";
 const footerNavBtn = "btn-secondary !min-h-11 flex-1 sm:flex-none";
 
 const quiz = getQuiz(bookSlug, chapterNumber);
@@ -126,8 +126,8 @@ const quiz = getQuiz(bookSlug, chapterNumber);
         role="toolbar"
         aria-label="Reading controls"
       >
-        <div class="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between lg:gap-4">
-          <div class="flex flex-wrap items-center gap-2.5 sm:gap-3">
+        <div class="flex flex-col gap-3">
+          <div class="flex flex-col gap-2.5 sm:flex-row sm:flex-wrap sm:items-center sm:gap-3">
             <div class="flex items-center gap-2" role="group" aria-label="Text size">
               <span class="text-[0.65rem] font-semibold uppercase tracking-[0.1em] text-[var(--color-ink-subtle)]">
                 Text
@@ -155,8 +155,8 @@ const quiz = getQuiz(bookSlug, chapterNumber);
             </div>
 
             {compareVerses && (
-              <div class="flex items-center gap-2.5" role="group" aria-label="Side-by-side translation">
-                <span class="hidden h-5 w-px bg-[var(--color-line)] sm:block" aria-hidden="true"></span>
+              <div class="flex min-w-0 flex-1 items-center sm:max-w-none" role="group" aria-label="Side-by-side translation">
+                <span class="mx-1 hidden h-5 w-px bg-[var(--color-line)] sm:mx-0 sm:mr-3 sm:block" aria-hidden="true"></span>
                 <button
                   type="button"
                   class={toolbarBtn}
@@ -164,18 +164,15 @@ const quiz = getQuiz(bookSlug, chapterNumber);
                   :aria-pressed="showCompare.toString()"
                   :class="showCompare ? '!border-[var(--color-gold)] !bg-[color-mix(in_srgb,var(--color-gold)_14%,var(--color-surface))]' : ''"
                 >
-                  <span x-show="!showCompare">
-                    Side by side · {compareMeta?.shortLabel}
-                  </span>
-                  <span x-show="showCompare" x-cloak>
-                    Hide {compareMeta?.shortLabel}
-                  </span>
+                  <span
+                    x-text={`showCompare ? 'Hide ${compareMeta?.shortLabel}' : 'Side by side · ${compareMeta?.shortLabel}'`}
+                  ></span>
                 </button>
               </div>
             )}
           </div>
 
-          <nav class="flex w-full gap-2 lg:w-auto" aria-label="Nearby chapters">
+          <nav class="flex w-full gap-2 border-t border-[var(--color-line)] pt-3" aria-label="Nearby chapters">
             {prevChapter ? (
               <a
                 class={chapterNavBtn}
@@ -188,7 +185,7 @@ const quiz = getQuiz(bookSlug, chapterNumber);
                   <span class="block text-[0.65rem] font-semibold uppercase tracking-[0.08em] text-[var(--color-ink-subtle)]">
                     Previous
                   </span>
-                  <span>Chapter {prevChapter.number}</span>
+                  <span class="tabular-nums">Ch. {prevChapter.number}</span>
                 </span>
               </a>
             ) : (
@@ -213,7 +210,7 @@ const quiz = getQuiz(bookSlug, chapterNumber);
                   <span class="block text-[0.65rem] font-semibold uppercase tracking-[0.08em] text-[var(--color-ink-subtle)]">
                     Next
                   </span>
-                  <span>Chapter {nextChapter.number}</span>
+                  <span class="tabular-nums">Ch. {nextChapter.number}</span>
                 </span>
                 <span aria-hidden="true">→</span>
               </a>
@@ -497,7 +494,7 @@ const quiz = getQuiz(bookSlug, chapterNumber);
           href={`/${version}/chapter/${bookSlug}/${prevChapter.number}`}
           data-astro-prefetch
         >
-          ← Chapter {prevChapter.number}
+          ← Ch. {prevChapter.number}
         </a>
       ) : (
         <span></span>
@@ -515,7 +512,7 @@ const quiz = getQuiz(bookSlug, chapterNumber);
           href={`/${version}/chapter/${bookSlug}/${nextChapter.number}`}
           data-astro-prefetch
         >
-          Chapter {nextChapter.number} →
+          Ch. {nextChapter.number} →
         </a>
       ) : (
         <span></span>

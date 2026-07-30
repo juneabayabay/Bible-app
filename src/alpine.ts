@@ -630,20 +630,15 @@ export default (Alpine: Alpine) => {
       onPressStart(verse: number, event: PointerEvent) {
         if (event.pointerType === "mouse" && event.button !== 0) return;
         if (this._activePointerId != null) return;
+        // Don't steal the gesture from real controls inside the verse row
+        const target = event.target as HTMLElement | null;
+        if (target?.closest("button, a, textarea, input, [role='menu']")) return;
 
         this.clearPress();
         this._activePointerId = event.pointerId;
         this._pressVerse = verse;
         this._pressX = event.clientX;
         this._pressY = event.clientY;
-
-        try {
-          (event.currentTarget as Element | null)?.setPointerCapture?.(
-            event.pointerId,
-          );
-        } catch {
-          /* ignore */
-        }
 
         this._pressTimer = setTimeout(() => {
           if (this._pressVerse === verse) {
@@ -662,7 +657,11 @@ export default (Alpine: Alpine) => {
         if (!this._pressTimer) return;
         const dx = event.clientX - this._pressX;
         const dy = event.clientY - this._pressY;
-        if (dx * dx + dy * dy > 100) this.clearPress();
+        // Cancel before ~10px so scrolling stays smooth
+        if (dx * dx + dy * dy > 100) {
+          this._activePointerId = null;
+          this.clearPress();
+        }
       },
 
       onPressEnd(event: PointerEvent) {
