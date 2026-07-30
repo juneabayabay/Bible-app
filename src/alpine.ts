@@ -464,10 +464,13 @@ export default (Alpine: Alpine) => {
       fontScale: 1,
       progress: 0,
       _onScroll: null as null | (() => void),
+      _onKeydown: null as null | ((e: KeyboardEvent) => void),
       _pressTimer: null as ReturnType<typeof setTimeout> | null,
       _pressVerse: null as number | null,
       _pressX: 0,
       _pressY: 0,
+      _activePointerId: null as number | null,
+      _ignoreOutsideUntil: 0,
       _statusTimer: null as ReturnType<typeof setTimeout> | null,
 
       init() {
@@ -516,6 +519,17 @@ export default (Alpine: Alpine) => {
         };
         window.addEventListener("scroll", this._onScroll, { passive: true });
         this._onScroll();
+        this._onKeydown = (e: KeyboardEvent) => {
+          if (e.key !== "Escape") return;
+          if (this.activeMenu != null) {
+            this.closeMenu();
+            e.preventDefault();
+          } else if (this.openNote != null) {
+            this.openNote = null;
+            e.preventDefault();
+          }
+        };
+        window.addEventListener("keydown", this._onKeydown);
         this.$nextTick(() => this.scrollToHash());
       },
 
@@ -524,6 +538,9 @@ export default (Alpine: Alpine) => {
         if (this._statusTimer) clearTimeout(this._statusTimer);
         if (this._onScroll) {
           window.removeEventListener("scroll", this._onScroll);
+        }
+        if (this._onKeydown) {
+          window.removeEventListener("keydown", this._onKeydown);
         }
       },
 
@@ -610,13 +627,24 @@ export default (Alpine: Alpine) => {
         this._pressVerse = null;
       },
 
-      onPressStart(verse: number, event: MouseEvent | TouchEvent) {
+      onPressStart(verse: number, event: PointerEvent) {
+        if (event.pointerType === "mouse" && event.button !== 0) return;
+        if (this._activePointerId != null) return;
+
         this.clearPress();
+        this._activePointerId = event.pointerId;
         this._pressVerse = verse;
-        const point =
-          "touches" in event ? event.touches[0] : (event as MouseEvent);
-        this._pressX = point?.clientX ?? 0;
-        this._pressY = point?.clientY ?? 0;
+        this._pressX = event.clientX;
+        this._pressY = event.clientY;
+
+        try {
+          (event.currentTarget as Element | null)?.setPointerCapture?.(
+            event.pointerId,
+          );
+        } catch {
+          /* ignore */
+        }
+
         this._pressTimer = setTimeout(() => {
           if (this._pressVerse === verse) {
             this.openMenu(verse);
@@ -629,31 +657,41 @@ export default (Alpine: Alpine) => {
         }, 450);
       },
 
-      onPressMove(event: MouseEvent | TouchEvent) {
+      onPressMove(event: PointerEvent) {
+        if (this._activePointerId !== event.pointerId) return;
         if (!this._pressTimer) return;
-        const point =
-          "touches" in event
-            ? event.touches[0] || event.changedTouches[0]
-            : (event as MouseEvent);
-        if (!point) return;
-        const dx = point.clientX - this._pressX;
-        const dy = point.clientY - this._pressY;
+        const dx = event.clientX - this._pressX;
+        const dy = event.clientY - this._pressY;
         if (dx * dx + dy * dy > 100) this.clearPress();
       },
 
-      onPressEnd() {
+      onPressEnd(event: PointerEvent) {
+        if (
+          this._activePointerId != null &&
+          event.pointerId !== this._activePointerId
+        ) {
+          return;
+        }
+        this._activePointerId = null;
         this.clearPress();
       },
 
       openMenu(verse: number, panel: "actions" | "colors" = "actions") {
         this.activeMenu = verse;
         this.menuPanel = panel;
+        // Suppress the release/synthetic click that would close via click.outside
+        this._ignoreOutsideUntil = Date.now() + 550;
         if (this.showTip) this.dismissTip();
       },
 
       closeMenu() {
         this.activeMenu = null;
         this.menuPanel = "actions";
+      },
+
+      closeMenuOutside() {
+        if (Date.now() < this._ignoreOutsideUntil) return;
+        this.closeMenu();
       },
 
       onContextMenu(verse: number, event: MouseEvent) {
@@ -693,6 +731,10 @@ export default (Alpine: Alpine) => {
       openNotePanel(verse: number) {
         this.closeMenu();
         this.openNote = verse;
+      },
+
+      closeNote() {
+        this.openNote = null;
       },
 
       toggleNote(verse: number) {
