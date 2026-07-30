@@ -10,6 +10,8 @@ export type ReadingPlan = {
   id: string;
   title: string;
   summary: string;
+  image: string;
+  imageAlt: string;
   days: PlanDay[];
 };
 
@@ -58,12 +60,16 @@ export const READING_PLANS: ReadingPlan[] = [
     id: "gospels-21",
     title: "Gospels in 21 days",
     summary: "A gentle walk through Matthew, Mark, Luke, and John—one chapter a day.",
+    image: "/images/plans/gospels-21.png",
+    imageAlt: "Dawn light over hills, suggesting the four Gospels",
     days: gospelDays(),
   },
   {
     id: "psalms-30",
     title: "Psalms in 30 days",
     summary: "Begin the songbook of Scripture—one psalm each day for a month.",
+    image: "/images/plans/psalms-30.png",
+    imageAlt: "Quiet hillside at dusk, suggesting the Psalms",
     days: psalmDays(),
   },
 ];

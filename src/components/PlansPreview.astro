@@ -41,17 +41,29 @@ const plans = getPlans();
     {plans.map((plan) => (
       <li>
         <a
-          class="ui-card flex h-full flex-col p-5 transition hover:border-[var(--color-gold)]"
+          class="ui-card group flex h-full flex-col overflow-hidden p-0 transition hover:border-[var(--color-gold)]"
           href={`/${version}/plans/${plan.id}`}
           data-astro-prefetch
         >
-          <h3 class="font-scripture text-xl font-semibold">{plan.title}</h3>
-          <p class="mt-2 flex-1 text-sm leading-relaxed text-[var(--color-ink-muted)]">
-            {plan.summary}
-          </p>
-          <p class="mt-4 text-sm text-[var(--color-gold)]">
-            {plan.days.length} days →
-          </p>
+          <div class="aspect-[16/9] overflow-hidden">
+            <img
+              src={plan.image}
+              alt={plan.imageAlt}
+              width="480"
+              height="270"
+              loading="lazy"
+              class="h-full w-full object-cover transition duration-500 group-hover:scale-[1.03]"
+            />
+          </div>
+          <div class="flex flex-1 flex-col p-5">
+            <h3 class="font-scripture text-xl font-semibold">{plan.title}</h3>
+            <p class="mt-2 flex-1 text-sm leading-relaxed text-[var(--color-ink-muted)]">
+              {plan.summary}
+            </p>
+            <p class="mt-4 text-sm text-[var(--color-gold)]">
+              {plan.days.length} days →
+            </p>
+          </div>
         </a>
       </li>
     ))}
