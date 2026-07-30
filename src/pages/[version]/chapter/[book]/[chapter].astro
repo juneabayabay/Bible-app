@@ -100,7 +100,7 @@ const navBtn = "btn-secondary !min-h-11 flex-1 sm:flex-none";
           ~{minutes} min · {chapterIndex + 1}/{book.chapters.length} · {meta.shortLabel}
         </p>
         <p class="mt-2 text-sm text-[var(--color-ink-subtle)]" x-show="showTip" x-cloak>
-          Tap a verse number to highlight. Use Share for a verse card.
+          Tip: tap the verse text or <strong>Highlight</strong>. Use <strong>Share</strong> for Facebook / Messenger / download.
           <button type="button" class="ml-1 font-medium text-[var(--color-primary)] underline" @click="dismissTip()">
             Got it
           </button>
@@ -154,8 +154,9 @@ const navBtn = "btn-secondary !min-h-11 flex-1 sm:flex-none";
           <div class="flex gap-2.5 sm:gap-3">
             <button
               type="button"
-              class="mt-0.5 inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-lg text-sm font-semibold tabular-nums text-[var(--color-ink-subtle)] transition hover:bg-[var(--color-line)] hover:text-[var(--color-primary)] sm:mt-1 sm:h-auto sm:w-8 sm:justify-start"
-              title="Toggle highlight"
+              class="mt-0.5 inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-lg text-sm font-semibold tabular-nums transition sm:mt-1 sm:h-auto sm:w-8 sm:justify-start"
+              :class={`isHighlighted(${verse.number}) ? 'bg-[var(--color-gold)] text-[#152238]' : 'text-[var(--color-ink-subtle)] hover:bg-[var(--color-line)] hover:text-[var(--color-primary)]'`}
+              title="Highlight this verse"
               aria-label={`Highlight verse ${verse.number}`}
               @click={`toggleHighlight(${verse.number})`}
             >
@@ -173,7 +174,11 @@ const navBtn = "btn-secondary !min-h-11 flex-1 sm:flex-none";
                   >
                     {meta.shortLabel}
                   </p>
-                  <p class="font-scripture text-[1.125rem] leading-[1.8] text-[var(--color-ink)] sm:text-[1.2rem] sm:leading-[1.85]">
+                  <p
+                    class="font-scripture cursor-pointer text-[1.125rem] leading-[1.8] text-[var(--color-ink)] sm:text-[1.2rem] sm:leading-[1.85]"
+                    title="Tap to highlight"
+                    @click={`toggleHighlight(${verse.number})`}
+                  >
                     {verse.text}
                   </p>
                 </div>
@@ -192,28 +197,35 @@ const navBtn = "btn-secondary !min-h-11 flex-1 sm:flex-none";
                 </div>
               </div>
 
-              <div class="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1">
+              <div class="mt-2.5 flex flex-wrap items-center gap-2">
                 <button
                   type="button"
-                  class="min-h-9 text-xs font-medium text-[var(--color-ink-subtle)] transition hover:text-[var(--color-ink)] sm:min-h-8 sm:opacity-0 sm:group-hover:opacity-100 sm:focus:opacity-100 sm:group-focus-within:opacity-100"
-                  :class={`noteText(${verse.number}).trim() || openNote === ${verse.number} ? 'sm:opacity-100' : ''`}
+                  class="inline-flex min-h-9 items-center rounded-lg border border-[var(--color-line)] px-2.5 text-xs font-medium transition sm:min-h-8"
+                  :class={`isHighlighted(${verse.number}) ? 'border-[var(--color-gold)] bg-[var(--color-highlight)] text-[var(--color-ink)]' : 'text-[var(--color-ink-muted)] hover:text-[var(--color-ink)]'`}
+                  @click={`toggleHighlight(${verse.number})`}
+                >
+                  <span x-text={`isHighlighted(${verse.number}) ? 'Highlighted' : 'Highlight'`}></span>
+                </button>
+                <button
+                  type="button"
+                  class="inline-flex min-h-9 items-center rounded-lg border border-[var(--color-line)] px-2.5 text-xs font-medium text-[var(--color-ink-muted)] transition hover:text-[var(--color-ink)] sm:min-h-8"
                   @click={`toggleNote(${verse.number})`}
                 >
                   Note
                 </button>
                 <button
                   type="button"
-                  class="min-h-9 text-xs font-medium text-[var(--color-ink-subtle)] transition hover:text-[var(--color-ink)] sm:min-h-8 sm:opacity-0 sm:group-hover:opacity-100 sm:focus:opacity-100 sm:group-focus-within:opacity-100"
+                  class="inline-flex min-h-9 items-center rounded-lg border border-[var(--color-line)] px-2.5 text-xs font-medium text-[var(--color-ink-muted)] transition hover:text-[var(--color-ink)] sm:min-h-8"
                   @click={`copyVerse(${verse.number}, ${JSON.stringify(verse.text)})`}
                 >
                   Copy
                 </button>
                 <button
                   type="button"
-                  class="min-h-9 text-xs font-medium text-[var(--color-ink-subtle)] transition hover:text-[var(--color-ink)] sm:min-h-8 sm:opacity-0 sm:group-hover:opacity-100 sm:focus:opacity-100 sm:group-focus-within:opacity-100"
+                  class="inline-flex min-h-9 items-center rounded-lg border border-[var(--color-gold)]/40 bg-[color-mix(in_srgb,var(--color-gold)_12%,transparent)] px-2.5 text-xs font-medium text-[var(--color-ink)] transition hover:bg-[color-mix(in_srgb,var(--color-gold)_20%,transparent)] sm:min-h-8"
                   @click={`shareVerse(${verse.number}, ${JSON.stringify(verse.text)})`}
                 >
-                  Share card
+                  Share
                 </button>
                 <span
                   class="text-xs text-[var(--color-gold)]"

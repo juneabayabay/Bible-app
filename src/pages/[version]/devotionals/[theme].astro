@@ -1,10 +1,9 @@
 ---
-import Layout from "../../../../layouts/Layout.astro";
-import SearchBar from "../../../../components/SearchBar.astro";
-import { resolveVersionId } from "../../../../lib/bible";
-import { getVersion } from "../../../../lib/versions";
-import { VERSION_IDS } from "../../../../lib/versions";
-import { getDevotionTheme, getDevotionThemes } from "../../../../lib/devotionals";
+import Layout from "../../../layouts/Layout.astro";
+import SearchBar from "../../../components/SearchBar.astro";
+import { resolveVersionId } from "../../../lib/bible";
+import { getVersion, VERSION_IDS } from "../../../lib/versions";
+import { getDevotionTheme, getDevotionThemes } from "../../../lib/devotionals";
 
 export function getStaticPaths() {
   const themes = getDevotionThemes();

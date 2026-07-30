@@ -166,6 +166,26 @@ export function recordAppOpen(): JourneyState {
   const today = todayKey();
   let state = loadJourney();
 
+  // One-time bridge from legacy streak key
+  if (!state.lastDay && !state.streak) {
+    try {
+      const legacyRaw = localStorage.getItem("bible-streak");
+      if (legacyRaw) {
+        const legacy = JSON.parse(legacyRaw) as { count?: number; lastDay?: string };
+        if (legacy.count && legacy.count > 0) {
+          state = {
+            ...state,
+            streak: Number(legacy.count) || 0,
+            lastDay: typeof legacy.lastDay === "string" ? legacy.lastDay : "",
+            totalDays: Math.max(state.totalDays, Number(legacy.count) || 0),
+          };
+        }
+      }
+    } catch {
+      /* ignore */
+    }
+  }
+
   if (state.lastDay === today) {
     return unlockTrophies(state);
   }
@@ -181,6 +201,17 @@ export function recordAppOpen(): JourneyState {
     updatedAt: Date.now(),
   });
   saveJourney(state);
+
+  // Keep legacy key aligned
+  try {
+    localStorage.setItem(
+      "bible-streak",
+      JSON.stringify({ count: state.streak, lastDay: state.lastDay }),
+    );
+  } catch {
+    /* ignore */
+  }
+
   return state;
 }
 

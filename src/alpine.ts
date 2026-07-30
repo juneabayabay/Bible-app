@@ -13,6 +13,13 @@ import { DEFAULT_VERSION, VERSIONS, type VersionId } from "./lib/versions";
 import { shareOrDownloadCard } from "./lib/shareCard";
 import { loadLastRead, loadStreak, saveLastRead } from "./lib/reading";
 import { parseReference } from "./lib/parseReference";
+import {
+  completeDevotion,
+  journeyProgress,
+  loadJourney,
+  recordAppOpen,
+  TROPHIES,
+} from "./lib/journey";
 
 type SearchDoc = {
   id: string;
@@ -122,6 +129,7 @@ export default (Alpine: Alpine) => {
     welcome: "Welcome. God’s Word is waiting for you.",
 
     init() {
+      const journey = recordAppOpen();
       const last = loadLastRead();
       if (last) {
         this.continueUrl = `/${last.version}/chapter/${last.slug}/${last.chapter}`;
@@ -130,7 +138,71 @@ export default (Alpine: Alpine) => {
       }
       const map = loadAnnotations();
       this.savedCount = Object.keys(map).length;
-      this.streak = loadStreak().count;
+      this.streak = journey.streak || loadStreak().count;
+    },
+  }));
+
+  Alpine.data("journeyPanel", () => ({
+    streak: 0,
+    totalDays: 0,
+    levelName: "Seed",
+    levelBlurb: "",
+    progress: 0,
+    remaining: 0,
+    nextLevelNote: "",
+    streakNote: "Open today to begin.",
+    trophyCount: 0,
+    trophyTotal: TROPHIES.length,
+    trophies: [] as string[],
+    devotionDone: 0,
+
+    refresh() {
+      const state = recordAppOpen();
+      const prog = journeyProgress(state.streak);
+      this.streak = state.streak;
+      this.totalDays = state.totalDays;
+      this.levelName = prog.current.name;
+      this.levelBlurb = prog.current.blurb;
+      this.progress = prog.ratio;
+      this.remaining = prog.remaining;
+      this.trophies = state.trophies;
+      this.trophyCount = state.trophies.length;
+      this.devotionDone = state.completedDevotions.length;
+      this.streakNote =
+        state.streak <= 0
+          ? "Open today to begin."
+          : state.lastDay
+            ? "Keep coming back each day."
+            : "Keep coming back each day.";
+      this.nextLevelNote = prog.next
+        ? `${prog.remaining} more day${prog.remaining === 1 ? "" : "s"} to reach ${prog.next.name}.`
+        : "You have reached the highest level. Stay faithful.";
+    },
+  }));
+
+  Alpine.data("devotionTheme", (theme: string, entryIds: string[] = []) => ({
+    theme,
+    entryIds,
+    completed: [] as string[],
+    doneCount: 0,
+
+    init() {
+      recordAppOpen();
+      this.sync();
+    },
+
+    sync() {
+      const state = loadJourney();
+      const prefix = `${this.theme}:`;
+      this.completed = state.completedDevotions
+        .filter((k) => k.startsWith(prefix))
+        .map((k) => k.slice(prefix.length));
+      this.doneCount = this.completed.length;
+    },
+
+    markDone(entryId: string) {
+      completeDevotion(this.theme, entryId);
+      this.sync();
     },
   }));
 
@@ -292,7 +364,8 @@ export default (Alpine: Alpine) => {
       async shareVerse(verse: number, text: string) {
         const label = `${this.bookName || titleCaseSlug(this.bookSlug)} ${this.chapter}:${verse}`;
         const line = `"${text}" — ${label}`;
-        this.shareStatus = "Creating card…";
+        const pageUrl = `${window.location.origin}${window.location.pathname}#v${verse}`;
+        this.shareStatus = "Preparing…";
         try {
           const result = await shareOrDownloadCard(
             {
@@ -300,31 +373,43 @@ export default (Alpine: Alpine) => {
               cite: label,
               versionLabel: this.versionLabel || undefined,
             },
-            line,
+            `${line}\n${pageUrl}`,
           );
-          this.shareStatus =
-            result === "shared"
-              ? "Shared"
-              : result === "downloaded"
-                ? "Card saved"
-                : "";
+          if (result === "shared") {
+            this.shareStatus = "Opened share — pick Facebook, Messenger, etc.";
+          } else if (result === "downloaded") {
+            this.shareStatus = "Card downloaded — attach it in Facebook / Messenger";
+            // Also open Facebook composer with the verse link (desktop fallback)
+            window.open(
+              `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(pageUrl)}`,
+              "_blank",
+              "noopener,noreferrer",
+            );
+          } else {
+            this.shareStatus = "";
+          }
         } catch {
           try {
             if (navigator.share) {
-              await navigator.share({ title: label, text: line });
-              this.shareStatus = "Shared";
+              await navigator.share({ title: label, text: line, url: pageUrl });
+              this.shareStatus = "Opened share — pick Facebook, Messenger, etc.";
             } else {
               await this.copyVerse(verse, text);
-              this.shareStatus = "Copied";
+              window.open(
+                `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(pageUrl)}`,
+                "_blank",
+                "noopener,noreferrer",
+              );
+              this.shareStatus = "Copied verse + opened Facebook";
             }
           } catch {
             await this.copyVerse(verse, text);
-            this.shareStatus = "Copied";
+            this.shareStatus = "Copied verse text";
           }
         }
         window.setTimeout(() => {
           this.shareStatus = "";
-        }, 2200);
+        }, 4000);
       },
     }),
   );

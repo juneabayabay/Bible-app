@@ -3,6 +3,8 @@ import Layout from "../../layouts/Layout.astro";
 import SearchBar from "../../components/SearchBar.astro";
 import HomeHero from "../../components/HomeHero.astro";
 import QuickActions from "../../components/QuickActions.astro";
+import JourneyPreview from "../../components/JourneyPreview.astro";
+import DevotionalsPreview from "../../components/DevotionalsPreview.astro";
 import BookIndex from "../../components/BookIndex.astro";
 import FaithEncouragement from "../../components/FaithEncouragement.astro";
 import { getBookCatalog, resolveVersionId } from "../../lib/bible";
@@ -32,11 +34,13 @@ const startHref = daily?.url ?? (books[0] ? `/${version}/book/${books[0].slug}` 
   <SearchBar slot="header" version={version} />
 
   <!--
-    Simple home flow:
+    Home flow:
     1) Hero + today’s verse
-    2) Quick actions (continue / saved / streak)
-    3) Books
-    4) Short encouragement
+    2) Quick actions
+    3) Journey (streak / levels / trophies)
+    4) Devotionals by theme
+    5) Books
+    6) Encouragement
   -->
   <div x-data={`homeDashboard('${version}')`}>
     <HomeHero
@@ -52,6 +56,10 @@ const startHref = daily?.url ?? (books[0] ? `/${version}/book/${books[0].slug}` 
 
     <div class="space-y-10 sm:space-y-12">
       <QuickActions />
+
+      <JourneyPreview version={version} />
+
+      <DevotionalsPreview version={version} />
 
       <BookIndex
         version={version}
