@@ -7,28 +7,32 @@
   --font-serif: "Source Serif 4", "Iowan Old Style", "Palatino Linotype", Palatino, serif;
 
   /* Faith palette — trust, glory, peace */
-  --color-primary: #1e3a8a;
-  --color-primary-soft: #243f96;
-  --color-gold: #c9a227;
-  --color-gold-soft: #d4af37;
-  --color-sage: #7e9e7e;
-  --color-sage-soft: #8faf8f;
+  --color-primary: #1a3478;
+  --color-primary-soft: #2a4a9a;
+  --color-gold: #b8922a;
+  --color-gold-soft: #c9a227;
+  --color-sage: #6f8f72;
+  --color-sage-soft: #8aa88a;
 
-  /* Soft cool parchment — not pure white */
-  --color-surface: #e9eef5;
-  --color-surface-elevated: #f5f7fb;
-  --color-ink: #142033;
-  --color-ink-muted: #3a4658;
-  --color-ink-subtle: #5a687a;
-  --color-line: #d2dae6;
-  --color-accent: #c9a227;
-  --color-highlight: #ebe4cf;
-  --color-success: #2f8a5f;
-  --color-warning: #c9923a;
+  /*
+    Light mode: cool slate page + ivory panels.
+    Intentionally tinted — not near-white.
+  */
+  --color-surface: #b7c5d8;
+  --color-surface-elevated: #eef1f6;
+  --color-ink: #101a2c;
+  --color-ink-muted: #2f3d52;
+  --color-ink-subtle: #45566d;
+  --color-line: #93a4bb;
+  --color-accent: #b8922a;
+  --color-highlight: #e4d6a8;
+  --color-success: #2a7d56;
+  --color-warning: #b8832e;
 
-  --color-page-glow: #dce6f2;
-  --color-page-base: #e9eef5;
-  --color-page-wash: #f0eee8;
+  --color-page-glow: #9db4d2;
+  --color-page-base: #a8bbd4;
+  --color-page-mid: #b9c7d9;
+  --color-page-wash: #c5c8b8;
 
   /* Highlight swatches */
   --hl-gold: #f5e6a8;
@@ -59,6 +63,7 @@
 
   --color-page-glow: #0f1a2e;
   --color-page-base: #0b1220;
+  --color-page-mid: #0b1220;
   --color-page-wash: #0b1220;
 
   --hl-gold: #5a4a1a;
@@ -81,8 +86,15 @@ html.dark {
 body {
   background-color: var(--color-surface);
   background-image:
-    radial-gradient(ellipse 110% 70% at 50% -15%, var(--color-page-glow), transparent 58%),
-    linear-gradient(180deg, var(--color-page-base) 0%, var(--color-surface) 42%, var(--color-page-wash) 100%);
+    radial-gradient(ellipse 85% 55% at 8% -5%, #8fa9c8 0%, transparent 52%),
+    radial-gradient(ellipse 70% 50% at 100% 0%, #b7c4a8 0%, transparent 48%),
+    radial-gradient(ellipse 55% 40% at 70% 100%, #cbbd92 0%, transparent 55%),
+    linear-gradient(
+      155deg,
+      var(--color-page-base) 0%,
+      var(--color-page-mid) 48%,
+      var(--color-page-wash) 100%
+    );
   background-attachment: fixed;
   color: var(--color-ink);
   font-family: var(--font-sans);
@@ -119,8 +131,8 @@ textarea {
 .ui-card {
   border-radius: 1rem;
   border: 1px solid var(--color-line);
-  background: color-mix(in srgb, var(--color-surface-elevated) 92%, white);
-  box-shadow: 0 1px 2px rgb(20 32 51 / 0.04), 0 10px 28px rgb(30 58 138 / 0.06);
+  background: var(--color-surface-elevated);
+  box-shadow: 0 1px 2px rgb(18 28 46 / 0.05), 0 10px 28px rgb(30 58 138 / 0.08);
   transition:
     transform 0.2s ease,
     box-shadow 0.2s ease,
@@ -128,7 +140,6 @@ textarea {
 }
 
 .dark .ui-card {
-  background: var(--color-surface-elevated);
   box-shadow: 0 1px 2px rgb(0 0 0 / 0.25), 0 8px 24px rgb(0 0 0 / 0.2);
 }
 

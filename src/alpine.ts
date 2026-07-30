@@ -101,8 +101,10 @@ export default (Alpine: Alpine) => {
 
   Alpine.data("versionPicker", (initial: string) => ({
     current: initial,
+    open: false,
 
     switchTo(next: string) {
+      this.open = false;
       localStorage.setItem(VERSION_KEY, next);
       const path = window.location.pathname.replace(/\/+$/, "") || "/";
       const parts = path.split("/").filter(Boolean);

@@ -1,5 +1,10 @@
 ---
-import { versionsByLanguage, getVersion, type VersionId } from "../lib/versions";
+import {
+  versionsByLanguage,
+  getVersion,
+  languageBadge,
+  type VersionId,
+} from "../lib/versions";
 
 interface Props {
   version: VersionId;
@@ -8,25 +13,91 @@ interface Props {
 const { version } = Astro.props;
 const groups = versionsByLanguage();
 const current = getVersion(version);
+const badge = languageBadge(current.language);
 ---
 
-<div class="shrink-0" x-data={`versionPicker(${JSON.stringify(version)})`}>
-  <label class="sr-only" for="bible-version">Bible version</label>
-  <select
+<div
+  class="relative shrink-0"
+  x-data={`versionPicker(${JSON.stringify(version)})`}
+  @keydown.escape.window="open = false"
+>
+  <button
+    type="button"
     id="bible-version"
-    class="h-9 max-w-[5.5rem] rounded-lg border border-[var(--color-line)] bg-[var(--color-surface-elevated)] px-2 text-xs text-[var(--color-ink)] outline-none ring-[var(--color-primary)] focus:ring-2 sm:max-w-[7.5rem] sm:text-sm"
-    x-model="current"
-    @change="switchTo(current)"
-    title={current.label}
+    class="inline-flex h-9 max-w-[11rem] items-center gap-1.5 rounded-lg border border-[var(--color-line)] bg-[var(--color-surface-elevated)] py-1 pr-2 pl-1.5 text-[var(--color-ink)] shadow-sm outline-none transition hover:border-[var(--color-primary)]/35 focus-visible:ring-2 focus-visible:ring-[var(--color-primary)] sm:max-w-[13rem]"
+    @click="open = !open"
+    :aria-expanded="open.toString()"
+    aria-haspopup="listbox"
+    aria-controls="bible-version-list"
+    title={`${current.label} · ${current.languageName}`}
+  >
+    <span
+      class="inline-flex h-6 min-w-6 shrink-0 items-center justify-center rounded-md bg-[var(--color-primary)] px-1 text-[0.65rem] font-bold tracking-wide text-white dark:text-[#0b1220]"
+      aria-hidden="true"
+    >
+      {badge}
+    </span>
+    <span class="min-w-0 truncate text-xs font-semibold sm:text-sm">{current.shortLabel}</span>
+    <svg class="ml-auto h-3.5 w-3.5 shrink-0 text-[var(--color-ink-subtle)]" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+      <path
+        fill-rule="evenodd"
+        d="M5.23 7.21a.75.75 0 011.06.02L10 11.17l3.71-3.94a.75.75 0 111.08 1.04l-4.25 4.5a.75.75 0 01-1.08 0l-4.25-4.5a.75.75 0 01.02-1.06z"
+        clip-rule="evenodd"
+      ></path>
+    </svg>
+  </button>
+
+  <div
+    id="bible-version-list"
+    class="absolute right-0 z-50 mt-2 max-h-[min(24rem,70vh)] w-[min(18.5rem,calc(100vw-1.5rem))] overflow-auto rounded-xl border border-[var(--color-line)] bg-[var(--color-surface-elevated)] py-1.5 shadow-lg"
+    x-show="open"
+    x-cloak
+    @click.outside="open = false"
+    role="listbox"
+    aria-labelledby="bible-version"
   >
     {groups.map((group) => (
-      <optgroup label={group.languageName}>
+      <div class="px-1.5 pb-1.5">
+        <p class="px-2.5 pt-2 pb-1 text-[0.65rem] font-semibold uppercase tracking-[0.12em] text-[var(--color-ink-subtle)]">
+          {group.languageName}
+        </p>
         {group.versions.map((opt) => (
-          <option value={opt.id} selected={opt.id === version}>
-            {opt.shortLabel}
-          </option>
+          <button
+            type="button"
+            class:list={[
+              "flex w-full items-center gap-2.5 rounded-lg px-2.5 py-2 text-left transition hover:bg-[var(--color-line)]",
+              opt.id === version && "bg-[color-mix(in_srgb,var(--color-primary)_10%,transparent)]",
+            ]}
+            role="option"
+            aria-selected={opt.id === version ? "true" : "false"}
+            @click={`switchTo(${JSON.stringify(opt.id)})`}
+          >
+            <span
+              class="inline-flex h-7 min-w-7 shrink-0 items-center justify-center rounded-md bg-[var(--color-primary)] px-1 text-[0.65rem] font-bold tracking-wide text-white dark:text-[#0b1220]"
+              aria-hidden="true"
+            >
+              {languageBadge(opt.language)}
+            </span>
+            <span class="min-w-0 flex-1">
+              <span class="block truncate text-sm font-medium text-[var(--color-ink)]">
+                {opt.shortLabel}
+              </span>
+              <span class="block truncate text-xs text-[var(--color-ink-subtle)]">
+                {opt.description}
+              </span>
+            </span>
+            {opt.id === version && (
+              <svg class="h-4 w-4 shrink-0 text-[var(--color-primary)]" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+                <path
+                  fill-rule="evenodd"
+                  d="M16.704 4.153a.75.75 0 01.143 1.052l-8 10.5a.75.75 0 01-1.127.075l-4.5-4.5a.75.75 0 011.06-1.06l3.894 3.893 7.48-9.817a.75.75 0 011.05-.143z"
+                  clip-rule="evenodd"
+                ></path>
+              </svg>
+            )}
+          </button>
         ))}
-      </optgroup>
+      </div>
     ))}
-  </select>
+  </div>
 </div>

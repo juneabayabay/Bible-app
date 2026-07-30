@@ -329,6 +329,37 @@ export function getVersion(id: string): BibleVersion {
   return VERSIONS[id] ?? VERSIONS[DEFAULT_VERSION];
 }
 
+/** Compact language mark for UI badges (EN, TL, ES, …). */
+export function languageBadge(language: string): string {
+  const map: Record<string, string> = {
+    en: "EN",
+    tl: "TL",
+    es: "ES",
+    fr: "FR",
+    de: "DE",
+    pt: "PT",
+    zh: "ZH",
+    ru: "RU",
+    uk: "UK",
+    it: "IT",
+    ro: "RO",
+    nl: "NL",
+    nb: "NO",
+    sv: "SV",
+    da: "DA",
+    cs: "CS",
+    hu: "HU",
+    pl: "PL",
+    ar: "AR",
+    vi: "VI",
+    eo: "EO",
+    la: "LA",
+    gr: "EL",
+    he: "HE",
+  };
+  return map[language] ?? language.toUpperCase().slice(0, 2);
+}
+
 export function versionsByLanguage(): Array<{
   languageName: string;
   versions: BibleVersion[];
