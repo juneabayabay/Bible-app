@@ -20,7 +20,7 @@ const themes = getDevotionThemes();
 
   <div class="space-y-10" x-data="journeyPanel" x-init="refresh()">
     <section
-      class="relative left-1/2 w-screen max-w-[100vw] -translate-x-1/2 overflow-hidden"
+      class="full-bleed overflow-hidden"
       aria-labelledby="devotionals-heading"
     >
       <div class="absolute inset-0">
@@ -37,7 +37,7 @@ const themes = getDevotionThemes();
         <div class="hero-fade" aria-hidden="true"></div>
       </div>
 
-      <div class="relative mx-auto w-full max-w-6xl px-4 pb-10 pt-10 sm:px-6 sm:pb-12 sm:pt-14 lg:max-w-7xl lg:px-8">
+      <div class="relative mx-auto w-full max-w-6xl px-4 pb-12 pt-10 sm:px-6 sm:pb-14 sm:pt-14 lg:max-w-7xl lg:px-8">
         <p class="animate-soft-rise hero-ink-subtle text-sm">
           <a href={`/${version}/`} class="hero-ink hover:underline" data-astro-prefetch>
             ← Home

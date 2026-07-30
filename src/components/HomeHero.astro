@@ -24,7 +24,7 @@ const {
 ---
 
 <section
-  class="relative left-1/2 w-screen max-w-[100vw] -translate-x-1/2 overflow-hidden"
+  class="full-bleed overflow-hidden"
   aria-labelledby="hero-heading"
 >
   <div class="absolute inset-0">
@@ -42,7 +42,7 @@ const {
     <div class="hero-fade" aria-hidden="true"></div>
   </div>
 
-  <div class="relative mx-auto grid w-full max-w-6xl gap-8 px-4 pb-10 pt-14 sm:gap-10 sm:px-6 sm:pb-12 sm:pt-16 lg:max-w-7xl lg:grid-cols-12 lg:items-end lg:gap-12 lg:px-8 lg:pb-14 lg:pt-20">
+  <div class="relative mx-auto grid w-full max-w-6xl gap-8 px-4 pb-12 pt-14 sm:gap-10 sm:px-6 sm:pb-14 sm:pt-16 lg:max-w-7xl lg:grid-cols-12 lg:items-end lg:gap-12 lg:px-8 lg:pb-16 lg:pt-20">
     <div class="animate-soft-rise lg:col-span-5">
       <h1
         id="hero-heading"
@@ -54,11 +54,7 @@ const {
         {subcopy}
       </p>
       <div class="mt-7 flex flex-wrap gap-3">
-        <a
-          class="btn-primary !bg-[var(--color-gold)] !text-[#152238] hover:!opacity-95"
-          href={ctaHref}
-          data-astro-prefetch
-        >
+        <a class="hero-btn-primary" href={ctaHref} data-astro-prefetch>
           {ctaLabel}
         </a>
         <a class="hero-btn-secondary" href={booksHref}>

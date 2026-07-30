@@ -62,24 +62,31 @@ const shell =
     </script>
   </head>
   <body class="flex min-h-screen flex-col antialiased transition-colors duration-200">
-    <header class="sticky top-0 z-40 border-b border-[var(--color-line)]/70 bg-[color-mix(in_srgb,var(--color-surface-elevated)_82%,var(--color-page-glow))] backdrop-blur-md supports-[padding:max(0px)]:pt-[env(safe-area-inset-top)]">
-      <div class:list={[shell, "flex items-center gap-2 py-2.5 sm:gap-3 sm:py-3"]}>
-        <a
-          href={`/${version}/`}
-          class="shrink-0 text-base font-semibold tracking-tight text-[var(--color-ink)] transition hover:opacity-75 sm:text-lg"
-          data-astro-prefetch
-        >
-          Bible
-        </a>
+    <header class="sticky top-0 z-40 border-b border-[var(--color-line)] bg-[var(--color-surface-elevated)]/92 backdrop-blur-md supports-[padding:max(0px)]:pt-[env(safe-area-inset-top)]">
+      <div class:list={[shell, "py-2.5 sm:py-3"]}>
+        <!--
+          Mobile:  row 1 = brand + actions, row 2 = full-width search
+          sm+:     single row = brand | search | actions
+        -->
+        <div class="flex flex-wrap items-center gap-x-2 gap-y-2 sm:gap-x-3">
+          <a
+            href={`/${version}/`}
+            data-home-link
+            class="order-1 shrink-0 font-scripture text-lg font-semibold tracking-tight text-[var(--color-ink)] transition hover:text-[var(--color-primary)] sm:text-xl"
+            data-astro-prefetch
+          >
+            Bible
+          </a>
 
-        <div class="min-w-0 flex-1">
-          <slot name="header" />
-        </div>
+          <div class="order-3 w-full min-w-0 sm:order-2 sm:w-auto sm:flex-1">
+            <slot name="header" />
+          </div>
 
-        <div class="flex shrink-0 items-center gap-1 sm:gap-1.5">
-          <NavMenu version={version} />
-          <VersionPicker version={version} />
-          <ThemeToggle />
+          <div class="order-2 ml-auto flex shrink-0 items-center gap-0.5 sm:order-3 sm:ml-0">
+            <VersionPicker version={version} />
+            <ThemeToggle />
+            <NavMenu version={version} />
+          </div>
         </div>
       </div>
     </header>

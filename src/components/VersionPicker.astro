@@ -25,25 +25,20 @@ function plainName(description: string) {
   x-data={`versionPicker(${JSON.stringify(version)})`}
   @keydown.escape.window="open = false"
 >
-  <!-- Compact trigger: language + version -->
   <button
     type="button"
     id="bible-version"
-    class="inline-flex h-9 items-center gap-2 rounded-lg border border-[var(--color-line)] bg-[var(--color-surface-elevated)] py-1 pr-2 pl-1.5 text-[var(--color-ink)] shadow-sm outline-none transition hover:border-[var(--color-primary)]/40 focus-visible:ring-2 focus-visible:ring-[var(--color-primary)]"
+    class="inline-flex h-10 max-w-[7.5rem] items-center gap-1 rounded-lg py-1 pr-1.5 pl-1 text-[var(--color-ink)] outline-none transition hover:bg-[var(--color-line)]/60 focus-visible:ring-2 focus-visible:ring-[var(--color-primary)] sm:h-9 sm:max-w-[9.5rem] sm:gap-1.5"
     @click="open = !open"
     :aria-expanded="open.toString()"
     aria-haspopup="listbox"
     aria-controls="bible-version-list"
-    title={`${current.languageName} · ${current.shortLabel}`}
+    :aria-label="label"
+    :title="label"
   >
-    <span
-      class="inline-flex h-6 min-w-[1.75rem] items-center justify-center rounded-md bg-[var(--color-primary)] px-1.5 text-[0.7rem] font-bold tracking-wide text-white dark:text-[#0b1220]"
-      aria-hidden="true"
-    >
-      {badge}
-    </span>
-    <span class="text-sm font-semibold">{current.shortLabel}</span>
-    <svg class="h-3.5 w-3.5 text-[var(--color-ink-subtle)]" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+    <span class="lang-badge" aria-hidden="true" x-text="badge">{badge}</span>
+    <span class="min-w-0 truncate text-sm font-semibold" x-text="shortLabel">{current.shortLabel}</span>
+    <svg class="hidden h-3.5 w-3.5 shrink-0 text-[var(--color-ink-subtle)] sm:block" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
       <path
         fill-rule="evenodd"
         d="M5.23 7.21a.75.75 0 011.06.02L10 11.17l3.71-3.94a.75.75 0 111.08 1.04l-4.25 4.5a.75.75 0 01-1.08 0l-4.25-4.5a.75.75 0 01.02-1.06z"
@@ -52,9 +47,10 @@ function plainName(description: string) {
     </svg>
   </button>
 
+  <!-- fixed on mobile so the panel never overflows the viewport -->
   <div
     id="bible-version-list"
-    class="absolute right-0 z-50 mt-2 max-h-[min(24rem,70vh)] w-[min(17.5rem,calc(100vw-1.5rem))] overflow-auto rounded-xl border border-[var(--color-line)] bg-[var(--color-surface-elevated)] shadow-lg"
+    class="fixed inset-x-3 top-[4.5rem] z-50 max-h-[min(24rem,70vh)] overflow-auto rounded-xl border border-[var(--color-line)] bg-[var(--color-surface-elevated)] shadow-lg sm:absolute sm:inset-x-auto sm:right-0 sm:top-auto sm:mt-2 sm:w-72 sm:max-w-none"
     x-show="open"
     x-cloak
     @click.outside="open = false"
@@ -69,14 +65,8 @@ function plainName(description: string) {
       const langCode = languageBadge(group.versions[0]?.language ?? "");
       return (
         <div class="border-b border-[var(--color-line)] last:border-b-0">
-          {/* One language logo per group — not repeated on every row */}
           <div class="flex items-center gap-2 px-3.5 pt-3 pb-1.5">
-            <span
-              class="inline-flex h-6 min-w-[1.75rem] items-center justify-center rounded-md bg-[var(--color-primary)] px-1.5 text-[0.7rem] font-bold tracking-wide text-white dark:text-[#0b1220]"
-              aria-hidden="true"
-            >
-              {langCode}
-            </span>
+            <span class="lang-badge" aria-hidden="true">{langCode}</span>
             <span class="text-xs font-semibold uppercase tracking-[0.1em] text-[var(--color-ink-muted)]">
               {group.languageName}
             </span>
@@ -87,13 +77,11 @@ function plainName(description: string) {
               <button
                 type="button"
                 class:list={[
-                  "flex w-full items-center gap-3 rounded-lg px-2.5 py-2 text-left transition",
-                  opt.id === version
-                    ? "bg-[color-mix(in_srgb,var(--color-primary)_12%,transparent)]"
-                    : "hover:bg-[color-mix(in_srgb,var(--color-line)_55%,transparent)]",
+                  "flex w-full items-center gap-3 rounded-lg px-2.5 py-2.5 text-left transition sm:py-2",
                 ]}
+                :class={`current === '${opt.id}' ? 'bg-[color-mix(in_srgb,var(--color-primary)_12%,transparent)]' : 'hover:bg-[color-mix(in_srgb,var(--color-line)_55%,transparent)]'`}
                 role="option"
-                aria-selected={opt.id === version ? "true" : "false"}
+                :aria-selected={`(current === '${opt.id}').toString()`}
                 @click={`switchTo(${JSON.stringify(opt.id)})`}
               >
                 <span class="min-w-0 flex-1">
@@ -104,11 +92,13 @@ function plainName(description: string) {
                     {plainName(opt.description)}
                   </span>
                 </span>
-                {opt.id === version ? (
-                  <span class="shrink-0 text-xs font-semibold text-[var(--color-primary)]">
-                    Current
-                  </span>
-                ) : null}
+                <span
+                  class="shrink-0 text-xs font-semibold text-[var(--color-primary)]"
+                  x-show={`current === '${opt.id}'`}
+                  x-cloak
+                >
+                  Current
+                </span>
               </button>
             ))}
           </div>

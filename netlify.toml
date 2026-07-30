@@ -4,3 +4,13 @@
 
 [build.environment]
   NODE_VERSION = "22"
+
+[[redirects]]
+  from = "/book/:book"
+  to = "/web/book/:book"
+  status = 302
+
+[[redirects]]
+  from = "/chapter/:book/:chapter"
+  to = "/web/chapter/:book/:chapter"
+  status = 302

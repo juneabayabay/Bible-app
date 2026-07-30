@@ -3,37 +3,33 @@
 
 <button
   type="button"
-  class="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-[var(--color-line)] bg-[var(--color-surface-elevated)] text-[var(--color-ink)] shadow-sm transition hover:border-[var(--color-primary)]/35 hover:bg-[color-mix(in_srgb,var(--color-primary)_6%,var(--color-surface-elevated))] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-primary)]"
+  class="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-lg text-[var(--color-ink)] transition hover:bg-[var(--color-line)]/60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-primary)] sm:h-9 sm:w-9"
   x-data
   @click="$store.theme.toggle()"
   :aria-label="$store.theme.dark ? 'Switch to light mode' : 'Switch to dark mode'"
   :title="$store.theme.dark ? 'Light mode' : 'Dark mode'"
 >
-  <!-- Sun (shown in dark mode) -->
+  <!-- Moon — light mode (visible when html is not .dark) -->
   <svg
-    class="h-4 w-4"
+    class="h-4 w-4 dark:hidden"
     viewBox="0 0 24 24"
     fill="none"
     stroke="currentColor"
     stroke-width="1.75"
-    x-show="$store.theme.dark"
-    x-cloak
+    aria-hidden="true"
+  >
+    <path d="M21 14.5A8.5 8.5 0 1 1 9.5 3a7 7 0 0 0 11.5 11.5z"></path>
+  </svg>
+  <!-- Sun — dark mode -->
+  <svg
+    class="hidden h-4 w-4 dark:block"
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    stroke-width="1.75"
     aria-hidden="true"
   >
     <circle cx="12" cy="12" r="4"></circle>
     <path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41"></path>
-  </svg>
-  <!-- Moon (shown in light mode) -->
-  <svg
-    class="h-4 w-4"
-    viewBox="0 0 24 24"
-    fill="none"
-    stroke="currentColor"
-    stroke-width="1.75"
-    x-show="!$store.theme.dark"
-    x-cloak
-    aria-hidden="true"
-  >
-    <path d="M21 14.5A8.5 8.5 0 1 1 9.5 3a7 7 0 0 0 11.5 11.5z"></path>
   </svg>
 </button>

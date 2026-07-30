@@ -6,35 +6,32 @@
   --font-sans: "Source Sans 3", ui-sans-serif, system-ui, sans-serif;
   --font-serif: "Source Serif 4", "Iowan Old Style", "Palatino Linotype", Palatino, serif;
 
-  /* Faith palette — trust, glory, peace */
-  --color-primary: #1a3478;
-  --color-primary-soft: #2a4a9a;
-  --color-gold: #b8922a;
-  --color-gold-soft: #c9a227;
-  --color-sage: #6f8f72;
-  --color-sage-soft: #8aa88a;
+  /* Light — professional blue-stone */
+  --color-primary: #1e3a5f;
+  --color-primary-soft: #2c4a73;
+  --color-on-primary: #ffffff;
+  --color-gold: #8f7024;
+  --color-gold-soft: #a8842a;
+  --color-on-gold: #152033;
+  --color-sage: #4f6b54;
+  --color-sage-soft: #6a8670;
 
-  /*
-    Light mode: cool slate page + ivory panels.
-    Intentionally tinted — not near-white.
-  */
-  --color-surface: #b7c5d8;
-  --color-surface-elevated: #eef1f6;
-  --color-ink: #101a2c;
-  --color-ink-muted: #2f3d52;
-  --color-ink-subtle: #45566d;
-  --color-line: #93a4bb;
-  --color-accent: #b8922a;
-  --color-highlight: #e4d6a8;
-  --color-success: #2a7d56;
-  --color-warning: #b8832e;
+  --color-surface: #d8e0eb;
+  --color-surface-elevated: #f7f9fc;
+  --color-ink: #132033;
+  --color-ink-muted: #334155;
+  --color-ink-subtle: #4a5b70;
+  --color-line: #b9c5d6;
+  --color-accent: #8f7024;
+  --color-highlight: #ebe3c8;
+  --color-success: #1f6b4c;
+  --color-warning: #9a6f24;
 
-  --color-page-glow: #9db4d2;
-  --color-page-base: #a8bbd4;
-  --color-page-mid: #b9c7d9;
-  --color-page-wash: #c5c8b8;
+  --color-page-glow: #c2d0e4;
+  --color-page-base: #ced8e6;
+  --color-page-mid: #d8e0eb;
+  --color-page-wash: #e4eaf2;
 
-  /* Highlight swatches */
   --hl-gold: #f5e6a8;
   --hl-sage: #cfe3cf;
   --hl-sky: #cfe0f5;
@@ -43,28 +40,31 @@
 }
 
 .dark {
-  --color-primary: #93b4ff;
-  --color-primary-soft: #6b8fd4;
+  /* Dark — deep navy, clear type */
+  --color-primary: #9db8ff;
+  --color-primary-soft: #7a9ae0;
+  --color-on-primary: #0b1220;
   --color-gold: #e8c96a;
-  --color-gold-soft: #d4af37;
+  --color-gold-soft: #f0d68a;
+  --color-on-gold: #152033;
   --color-sage: #9fbf9f;
-  --color-sage-soft: #7a9a7a;
+  --color-sage-soft: #b5d0b5;
 
-  --color-surface: #0b1220;
-  --color-surface-elevated: #151d2e;
-  --color-ink: #f4f6fb;
-  --color-ink-muted: #a8b0c0;
-  --color-ink-subtle: #7d8698;
-  --color-line: #2a3448;
+  --color-surface: #0a101c;
+  --color-surface-elevated: #141c2c;
+  --color-ink: #f3f5fa;
+  --color-ink-muted: #b8c0d0;
+  --color-ink-subtle: #929caf;
+  --color-line: #2c364a;
   --color-accent: #e8c96a;
   --color-highlight: #3a3218;
   --color-success: #5ecf96;
   --color-warning: #e2b45c;
 
-  --color-page-glow: #0f1a2e;
-  --color-page-base: #0b1220;
-  --color-page-mid: #0b1220;
-  --color-page-wash: #0b1220;
+  --color-page-glow: #121a2c;
+  --color-page-base: #0a101c;
+  --color-page-mid: #0a101c;
+  --color-page-wash: #0a101c;
 
   --hl-gold: #5a4a1a;
   --hl-sage: #2a4030;
@@ -84,37 +84,51 @@ html.dark {
 }
 
 body {
+  overflow-x: clip;
   background-color: var(--color-surface);
   background-image:
-    radial-gradient(ellipse 85% 55% at 8% -5%, #8fa9c8 0%, transparent 52%),
-    radial-gradient(ellipse 70% 50% at 100% 0%, #b7c4a8 0%, transparent 48%),
-    radial-gradient(ellipse 55% 40% at 70% 100%, #cbbd92 0%, transparent 55%),
-    linear-gradient(
-      155deg,
-      var(--color-page-base) 0%,
-      var(--color-page-mid) 48%,
-      var(--color-page-wash) 100%
-    );
-  background-attachment: fixed;
+    radial-gradient(ellipse 100% 55% at 50% -18%, var(--color-page-glow), transparent 62%),
+    linear-gradient(180deg, var(--color-page-base) 0%, var(--color-page-mid) 50%, var(--color-page-wash) 100%);
+  background-attachment: scroll;
   color: var(--color-ink);
   font-family: var(--font-sans);
   transition:
-    background-color 0.25s ease,
-    color 0.25s ease;
+    background-color 0.3s ease,
+    color 0.3s ease;
+}
+
+@media (hover: hover) and (pointer: fine) {
+  body {
+    background-attachment: fixed;
+  }
 }
 
 html.dark body {
-  background-image: none;
+  background-image:
+    radial-gradient(ellipse 90% 45% at 50% -12%, #152238, transparent 58%);
 }
 
-/* Smooth theme swaps for common surfaces */
+/* Full-bleed breakout inside padded shells (avoids 100vw scrollbar overflow) */
+.full-bleed {
+  position: relative;
+  left: 50%;
+  right: 50%;
+  width: 100vw;
+  max-width: 100vw;
+  margin-left: -50vw;
+  margin-right: -50vw;
+}
+
+/* Theme-aware transitions */
 header,
 .ui-card,
 .btn-primary,
 .btn-secondary,
+.lang-badge,
 input,
 select,
-textarea {
+textarea,
+footer {
   transition:
     background-color 0.25s ease,
     border-color 0.25s ease,
@@ -127,35 +141,46 @@ textarea {
   font-optical-sizing: auto;
 }
 
-/* Interactive surfaces */
+.lang-badge {
+  display: inline-flex;
+  height: 1.5rem;
+  min-width: 1.75rem;
+  align-items: center;
+  justify-content: center;
+  border-radius: 0.375rem;
+  background: var(--color-primary);
+  padding-inline: 0.375rem;
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  color: var(--color-on-primary);
+}
+
 .ui-card {
-  border-radius: 1rem;
-  border: 1px solid color-mix(in srgb, var(--color-line) 80%, white);
-  background: linear-gradient(
-    165deg,
-    color-mix(in srgb, var(--color-surface-elevated) 88%, white) 0%,
-    var(--color-surface-elevated) 100%
-  );
+  border-radius: 0.875rem;
+  border: 1px solid var(--color-line);
+  background: var(--color-surface-elevated);
   box-shadow:
-    0 1px 2px rgb(16 26 44 / 0.06),
-    0 12px 32px rgb(26 52 120 / 0.1);
-  transition:
-    transform 0.2s ease,
-    box-shadow 0.2s ease,
-    border-color 0.2s ease;
+    0 1px 1px rgb(19 32 51 / 0.04),
+    0 6px 18px rgb(19 32 51 / 0.06);
 }
 
 .dark .ui-card {
-  background: var(--color-surface-elevated);
-  border-color: var(--color-line);
-  box-shadow: 0 1px 2px rgb(0 0 0 / 0.25), 0 8px 24px rgb(0 0 0 / 0.2);
+  box-shadow: 0 1px 2px rgb(0 0 0 / 0.3), 0 8px 22px rgb(0 0 0 / 0.22);
 }
 
 a.ui-card:hover,
 button.ui-card:hover {
-  border-color: color-mix(in srgb, var(--color-primary) 28%, var(--color-line));
-  box-shadow: 0 2px 4px rgb(30 58 138 / 0.06), 0 12px 28px rgb(30 58 138 / 0.08);
+  border-color: color-mix(in srgb, var(--color-primary) 34%, var(--color-line));
+  box-shadow:
+    0 2px 4px rgb(19 32 51 / 0.05),
+    0 10px 24px rgb(30 58 95 / 0.08);
   transform: translateY(-1px);
+}
+
+.dark a.ui-card:hover,
+.dark button.ui-card:hover {
+  box-shadow: 0 2px 4px rgb(0 0 0 / 0.35), 0 12px 28px rgb(0 0 0 / 0.28);
 }
 
 .btn-primary {
@@ -163,21 +188,17 @@ button.ui-card:hover {
   min-height: 2.75rem;
   align-items: center;
   justify-content: center;
-  border-radius: 0.875rem;
+  border-radius: 0.75rem;
   background: var(--color-primary);
   padding: 0.625rem 1.25rem;
   font-size: 0.875rem;
   font-weight: 600;
-  color: #ffffff;
-  transition: opacity 0.15s ease, transform 0.15s ease;
-}
-
-.dark .btn-primary {
-  color: #0b1220;
+  color: var(--color-on-primary);
+  letter-spacing: 0.01em;
 }
 
 .btn-primary:hover {
-  opacity: 0.92;
+  filter: brightness(1.05);
 }
 
 .btn-primary:active {
@@ -189,19 +210,18 @@ button.ui-card:hover {
   min-height: 2.75rem;
   align-items: center;
   justify-content: center;
-  border-radius: 0.875rem;
+  border-radius: 0.75rem;
   border: 1px solid var(--color-line);
   background: var(--color-surface-elevated);
   padding: 0.625rem 1.25rem;
   font-size: 0.875rem;
-  font-weight: 500;
+  font-weight: 600;
   color: var(--color-ink);
-  transition: background-color 0.15s ease, border-color 0.15s ease;
 }
 
 .btn-secondary:hover {
-  border-color: color-mix(in srgb, var(--color-gold) 40%, var(--color-line));
-  background: color-mix(in srgb, var(--color-gold) 8%, var(--color-surface-elevated));
+  border-color: color-mix(in srgb, var(--color-primary) 40%, var(--color-line));
+  background: color-mix(in srgb, var(--color-primary) 6%, var(--color-surface-elevated));
 }
 
 .btn-ghost {
@@ -213,7 +233,6 @@ button.ui-card:hover {
   font-size: 0.875rem;
   font-weight: 500;
   color: var(--color-ink-muted);
-  transition: color 0.15s ease;
 }
 
 .btn-ghost:hover {
@@ -223,9 +242,9 @@ button.ui-card:hover {
 }
 
 .eyebrow {
-  font-size: 0.75rem;
-  font-weight: 650;
-  letter-spacing: 0.12em;
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 0.14em;
   text-transform: uppercase;
   color: var(--color-gold);
 }
@@ -243,7 +262,6 @@ button.ui-card:hover {
   animation: verse-flash 2.2s ease-out;
 }
 
-/* Verse highlight colors */
 [data-hl="gold"] {
   background-color: var(--hl-gold);
 }
@@ -268,7 +286,7 @@ button.ui-card:hover {
   align-items: center;
   justify-content: center;
   border-radius: 9999px;
-  border: 2px solid color-mix(in srgb, var(--color-ink) 12%, transparent);
+  border: 2px solid color-mix(in srgb, var(--color-ink) 14%, transparent);
   box-shadow: inset 0 0 0 1px rgb(255 255 255 / 0.2);
   transition:
     transform 0.15s ease,
@@ -337,28 +355,26 @@ button.ui-card:hover {
 }
 
 /*
-  Cinematic photo heroes (Option A):
-  Always dark overlay + light text in both light and dark mode.
-  Page chrome below still follows theme tokens.
+  Cinematic heroes — same dark treatment in light & dark mode.
+  Text stays bright; only the bottom edge blends into the themed page.
 */
 .hero-scrim {
   position: absolute;
   inset: 0;
-  background: rgb(7 18 37 / 0.72);
+  background: rgb(7 18 37 / 0.78);
 }
 
 .hero-scrim-soft {
   position: absolute;
   inset: 0;
-  background:
-    linear-gradient(135deg, rgb(11 26 58 / 0.55), transparent 55%, rgb(26 47 85 / 0.35));
+  background: linear-gradient(135deg, rgb(11 26 58 / 0.5), transparent 55%, rgb(26 47 85 / 0.28));
 }
 
 .hero-fade {
   position: absolute;
   inset-inline: 0;
   bottom: 0;
-  height: 6.5rem;
+  height: 4.5rem;
   background: linear-gradient(to bottom, transparent, var(--color-surface));
   pointer-events: none;
 }
@@ -366,13 +382,12 @@ button.ui-card:hover {
 .hero-banner-scrim {
   position: absolute;
   inset: 0;
-  background:
-    linear-gradient(
-      to top,
-      rgb(7 18 37 / 0.88) 0%,
-      rgb(7 18 37 / 0.45) 45%,
-      rgb(7 18 37 / 0.2) 100%
-    );
+  background: linear-gradient(
+    to top,
+    rgb(7 18 37 / 0.9) 0%,
+    rgb(7 18 37 / 0.5) 42%,
+    rgb(7 18 37 / 0.22) 100%
+  );
   pointer-events: none;
 }
 
@@ -381,22 +396,39 @@ button.ui-card:hover {
 }
 
 .hero-ink-muted {
-  color: rgb(255 255 255 / 0.88);
+  color: rgb(255 255 255 / 0.92);
 }
 
 .hero-ink-subtle {
-  color: rgb(255 255 255 / 0.72);
+  color: rgb(255 255 255 / 0.82);
 }
 
 .hero-gold {
-  color: #e8c96a;
+  color: #f0d68a;
 }
 
 .hero-card {
-  border: 1px solid rgb(255 255 255 / 0.25);
-  background: rgb(7 18 37 / 0.55);
-  box-shadow: 0 12px 40px rgb(0 0 0 / 0.28);
+  border: 1px solid rgb(255 255 255 / 0.28);
+  background: rgb(7 18 37 / 0.62);
+  box-shadow: 0 12px 40px rgb(0 0 0 / 0.3);
   backdrop-filter: blur(12px);
+}
+
+.hero-btn-primary {
+  display: inline-flex;
+  min-height: 2.75rem;
+  align-items: center;
+  justify-content: center;
+  border-radius: 0.75rem;
+  background: #e8c96a;
+  padding: 0.625rem 1.25rem;
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: #152033;
+}
+
+.hero-btn-primary:hover {
+  filter: brightness(1.04);
 }
 
 .hero-btn-secondary {
@@ -404,17 +436,16 @@ button.ui-card:hover {
   min-height: 2.75rem;
   align-items: center;
   justify-content: center;
-  border-radius: 0.875rem;
-  border: 1px solid rgb(255 255 255 / 0.55);
+  border-radius: 0.75rem;
+  border: 1px solid rgb(255 255 255 / 0.65);
   background: #ffffff;
   padding: 0.625rem 1.25rem;
   font-size: 0.875rem;
   font-weight: 600;
-  color: #152238;
-  box-shadow: 0 1px 2px rgb(0 0 0 / 0.08);
-  transition: background-color 0.15s ease, opacity 0.15s ease;
+  color: #152033;
+  box-shadow: 0 1px 2px rgb(0 0 0 / 0.1);
 }
 
 .hero-btn-secondary:hover {
-  background: rgb(255 255 255 / 0.92);
+  background: rgb(255 255 255 / 0.94);
 }

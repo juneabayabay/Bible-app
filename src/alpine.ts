@@ -11,7 +11,7 @@ import {
   type AnnotationMap,
   type HighlightColorId,
 } from "./lib/annotations";
-import { DEFAULT_VERSION, VERSIONS, type VersionId } from "./lib/versions";
+import { DEFAULT_VERSION, VERSIONS, languageBadge, type VersionId } from "./lib/versions";
 import { loadLastRead, loadStreak, saveLastRead } from "./lib/reading";
 import { parseReference } from "./lib/parseReference";
 import {
@@ -103,13 +103,38 @@ export default (Alpine: Alpine) => {
     current: initial,
     open: false,
 
+    get shortLabel() {
+      return VERSIONS[this.current]?.shortLabel ?? this.current;
+    },
+
+    get badge() {
+      return languageBadge(VERSIONS[this.current]?.language ?? "en");
+    },
+
+    get label() {
+      const meta = VERSIONS[this.current];
+      return meta ? `${meta.languageName} · ${meta.shortLabel}` : this.current;
+    },
+
+    init() {
+      const path = window.location.pathname.replace(/\/+$/, "") || "/";
+      if (path === "/saved") {
+        try {
+          const saved = localStorage.getItem(VERSION_KEY);
+          if (saved && saved in VERSIONS) this.current = saved;
+        } catch {
+          /* ignore */
+        }
+      }
+    },
+
     switchTo(next: string) {
       this.open = false;
       localStorage.setItem(VERSION_KEY, next);
       const path = window.location.pathname.replace(/\/+$/, "") || "/";
       const parts = path.split("/").filter(Boolean);
 
-      if (parts.length === 0) {
+      if (parts.length === 0 || parts[0] === "saved") {
         window.location.href = `/${next}/`;
         return;
       }
@@ -761,6 +786,19 @@ export default (Alpine: Alpine) => {
     docsById: {} as Record<string, SearchDoc>,
     loadPromise: null as Promise<void> | null,
 
+    init() {
+      // /saved is version-agnostic — use the reader's preferred edition
+      const path = window.location.pathname.replace(/\/+$/, "") || "/";
+      if (path === "/saved") {
+        try {
+          const saved = localStorage.getItem(VERSION_KEY);
+          if (saved && saved in VERSIONS) this.version = saved;
+        } catch {
+          /* ignore */
+        }
+      }
+    },
+
     ensureLoaded() {
       if (this.ready || this.loadPromise) return this.loadPromise;
       this.loading = true;
@@ -791,6 +829,12 @@ export default (Alpine: Alpine) => {
     async onFocus() {
       await this.ensureLoaded();
       if (this.q.trim().length >= 2) this.search();
+    },
+
+    async goFirst() {
+      await this.search();
+      const first = this.results[0];
+      if (first?.url) window.location.href = first.url;
     },
 
     async search() {

@@ -69,7 +69,11 @@ const navBtn = "btn-secondary !min-h-11 flex-1 sm:flex-none";
 const quiz = getQuiz(bookSlug, chapterNumber);
 ---
 
-<Layout title={`${bookName} ${chapterNumber}`} version={version}>
+<Layout
+  title={`${bookName} ${chapterNumber}`}
+  version={version}
+  width={compareVerses ? "wide" : "reading"}
+>
   <SearchBar slot="header" version={version} />
 
   <div x-data={`chapterReader(${readerConfig})`}>
@@ -216,7 +220,7 @@ const quiz = getQuiz(bookSlug, chapterNumber);
                     {compareMeta?.shortLabel}
                   </p>
                   <p
-                    class="font-scripture text-[1.05rem] leading-[1.75] text-[var(--color-ink-muted)] sm:text-[1.1rem]"
+                    class="font-scripture text-[1.05rem] leading-[1.75] text-[var(--color-ink)] sm:text-[1.1rem]"
                     x-text={`compareText(${verse.number})`}
                   ></p>
                 </div>

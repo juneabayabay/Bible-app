@@ -1,7 +1,7 @@
 ---
 import Layout from "../layouts/Layout.astro";
 import SearchBar from "../components/SearchBar.astro";
-import { DEFAULT_VERSION } from "../lib/versions";
+import { DEFAULT_VERSION, VERSION_IDS } from "../lib/versions";
 ---
 
 <Layout title="Saved" version={DEFAULT_VERSION}>
@@ -59,3 +59,23 @@ import { DEFAULT_VERSION } from "../lib/versions";
     </ul>
   </div>
 </Layout>
+
+<script is:inline define:vars={{ DEFAULT_VERSION, VERSION_IDS }}>
+  (() => {
+    let version = DEFAULT_VERSION;
+    try {
+      const saved = localStorage.getItem("bible-version");
+      if (saved && VERSION_IDS.includes(saved)) version = saved;
+    } catch {
+      /* ignore */
+    }
+    const home = "/" + version + "/";
+    document.querySelectorAll("[data-home-link]").forEach((el) => {
+      el.setAttribute("href", home);
+    });
+    document.querySelectorAll("[data-nav-version]").forEach((el) => {
+      const path = el.getAttribute("data-nav-version");
+      if (path != null) el.setAttribute("href", "/" + version + path);
+    });
+  })();
+</script>
