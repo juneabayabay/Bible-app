@@ -70,26 +70,42 @@ const themes = getDevotionThemes();
       </div>
     </section>
 
-    <div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+    <div class="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
       {themes.map((theme) => (
         <a
-          class="ui-card group flex flex-col p-6 transition hover:border-[var(--color-gold)]"
+          class="ui-card group flex flex-col overflow-hidden p-0 transition hover:border-[var(--color-gold)]"
           href={`/${version}/devotionals/${theme.slug}`}
           data-astro-prefetch
         >
-          <h2 class="font-scripture text-2xl font-semibold text-[var(--color-ink)] group-hover:text-[var(--color-primary)]">
-            {theme.title}
-          </h2>
-          <p class="mt-2 flex-1 text-sm leading-relaxed text-[var(--color-ink-muted)]">
-            {theme.summary}
-          </p>
-          <p class="mt-4 text-xs font-medium uppercase tracking-wide text-[var(--color-ink-subtle)]">
-            {theme.focus}
-          </p>
-          <p class="mt-3 text-sm text-[var(--color-gold)]">
-            {theme.relatedVerses.length} verses · {theme.entries.length}{" "}
-            {theme.entries.length === 1 ? "reading" : "readings"} →
-          </p>
+          <div class="relative aspect-[16/10] overflow-hidden bg-[var(--color-surface-elevated)]">
+            <img
+              src={theme.image}
+              alt={theme.imageAlt}
+              width="640"
+              height="400"
+              loading="lazy"
+              class="h-full w-full object-cover transition duration-500 group-hover:scale-[1.03]"
+            />
+            <div
+              class="absolute inset-0 bg-gradient-to-t from-[var(--color-surface)]/80 via-transparent to-transparent"
+              aria-hidden="true"
+            ></div>
+          </div>
+          <div class="flex flex-1 flex-col p-5 sm:p-6">
+            <h2 class="font-scripture text-2xl font-semibold text-[var(--color-ink)] group-hover:text-[var(--color-primary)]">
+              {theme.title}
+            </h2>
+            <p class="mt-2 flex-1 text-sm leading-relaxed text-[var(--color-ink-muted)]">
+              {theme.summary}
+            </p>
+            <p class="mt-4 text-xs font-medium uppercase tracking-wide text-[var(--color-ink-subtle)]">
+              {theme.focus}
+            </p>
+            <p class="mt-3 text-sm text-[var(--color-gold)]">
+              {theme.relatedVerses.length} verses · {theme.entries.length}{" "}
+              {theme.entries.length === 1 ? "reading" : "readings"} →
+            </p>
+          </div>
         </a>
       ))}
     </div>

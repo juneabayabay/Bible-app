@@ -33,7 +33,7 @@ const verseCount = theme.relatedVerses.length;
     class="space-y-12"
     x-data={`devotionTheme('${theme.slug}', ${JSON.stringify(theme.entries.map((e) => e.id))})`}
   >
-    <header>
+    <header class="space-y-6">
       <p class="text-sm text-[var(--color-ink-muted)]">
         <a
           href={`/${version}/devotionals`}
@@ -43,14 +43,34 @@ const verseCount = theme.relatedVerses.length;
           ← All devotionals
         </a>
       </p>
-      <p class="eyebrow mt-6">Theme</p>
-      <h1 class="font-scripture mt-2 text-3xl font-semibold tracking-tight sm:text-4xl">
-        {theme.title}
-      </h1>
-      <p class="mt-3 max-w-2xl text-base leading-relaxed text-[var(--color-ink-muted)]">
-        {theme.summary}
-      </p>
-      <p class="mt-2 text-sm text-[var(--color-ink-subtle)]">{theme.focus}</p>
+
+      <div class="relative overflow-hidden rounded-2xl border border-[var(--color-line)]">
+        <img
+          src={theme.image}
+          alt={theme.imageAlt}
+          width="1200"
+          height="675"
+          class="aspect-[21/9] w-full object-cover sm:aspect-[2.4/1]"
+          fetchpriority="high"
+        />
+        <div
+          class="absolute inset-0 bg-gradient-to-t from-[var(--color-surface)] via-[var(--color-surface)]/40 to-transparent"
+          aria-hidden="true"
+        ></div>
+        <div class="absolute inset-x-0 bottom-0 p-5 sm:p-8">
+          <p class="eyebrow text-[var(--color-gold-soft)]">Theme</p>
+          <h1 class="font-scripture mt-2 text-3xl font-semibold tracking-tight text-[var(--color-ink)] sm:text-4xl">
+            {theme.title}
+          </h1>
+        </div>
+      </div>
+
+      <div>
+        <p class="max-w-2xl text-base leading-relaxed text-[var(--color-ink-muted)]">
+          {theme.summary}
+        </p>
+        <p class="mt-2 text-sm text-[var(--color-ink-subtle)]">{theme.focus}</p>
+      </div>
     </header>
 
     <!-- Choose a verse -->

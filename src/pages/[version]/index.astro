@@ -3,12 +3,8 @@ import Layout from "../../layouts/Layout.astro";
 import SearchBar from "../../components/SearchBar.astro";
 import HomeHero from "../../components/HomeHero.astro";
 import QuickActions from "../../components/QuickActions.astro";
-import TodayChecklist from "../../components/TodayChecklist.astro";
-import JourneyPreview from "../../components/JourneyPreview.astro";
-import PlansPreview from "../../components/PlansPreview.astro";
-import DevotionalsPreview from "../../components/DevotionalsPreview.astro";
+import HomePaths from "../../components/HomePaths.astro";
 import BookIndex from "../../components/BookIndex.astro";
-import FaithEncouragement from "../../components/FaithEncouragement.astro";
 import { getBookCatalog, resolveVersionId } from "../../lib/bible";
 import { getVersion } from "../../lib/versions";
 import { isOldTestament } from "../../lib/books";
@@ -29,30 +25,27 @@ const ntCount = books.length - otCount;
 const showTabs = otCount > 0 && ntCount > 0;
 const defaultTab = otCount > 0 ? "ot" : "nt";
 
-const startHref = daily?.url ?? (books[0] ? `/${version}/book/${books[0].slug}` : "#books");
+const startHref =
+  daily?.url ?? (books[0] ? `/${version}/book/${books[0].slug}` : "#books");
 ---
 
 <Layout title={`Bible · ${meta.shortLabel}`} version={version} width="wide" flushHero>
   <SearchBar slot="header" version={version} />
 
   <!--
-    Home flow:
-    1) Hero
-    2) Quick continue
-    3) Today checklist + challenge
-    4) Journey preview
-    5) Plans
-    6) Devotionals
-    7) Books
-    8) Encouragement
+    Home (simple):
+    1) Today’s verse
+    2) Continue / Saved
+    3) Browse books
+    4) Optional deeper paths (links only)
   -->
   <div x-data={`homeDashboard('${version}')`}>
     <HomeHero
       headline="Open God’s Word today"
-      subcopy="One clear path: continue reading, finish Today’s steps, grow a little each day."
+      subcopy="One quiet invitation: read a little, listen, and draw near to God."
       ctaHref={startHref}
       ctaLabel={daily ? "Read today’s chapter" : "Start reading"}
-      booksHref="#today"
+      booksHref="#books"
       verseText={daily?.text}
       verseCite={daily ? `${daily.book} ${daily.chapter}:${daily.verse} · ${meta.shortLabel}` : undefined}
       verseUrl={daily?.url}
@@ -61,14 +54,6 @@ const startHref = daily?.url ?? (books[0] ? `/${version}/book/${books[0].slug}` 
     <div class="space-y-10 sm:space-y-12">
       <QuickActions />
 
-      <TodayChecklist version={version} />
-
-      <JourneyPreview version={version} />
-
-      <PlansPreview version={version} />
-
-      <DevotionalsPreview version={version} />
-
       <BookIndex
         version={version}
         books={books}
@@ -76,7 +61,7 @@ const startHref = daily?.url ?? (books[0] ? `/${version}/book/${books[0].slug}` 
         showTabs={showTabs}
       />
 
-      <FaithEncouragement booksHref="#books" />
+      <HomePaths version={version} />
     </div>
   </div>
 </Layout>

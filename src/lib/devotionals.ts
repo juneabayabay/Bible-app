@@ -19,6 +19,9 @@ export type DevotionTheme = {
   title: string;
   summary: string;
   focus: string;
+  /** Contextual illustration for the theme */
+  image: string;
+  imageAlt: string;
   /** Related Scriptures visitors can choose to read */
   relatedVerses: DevotionVerse[];
   entries: DevotionEntry[];
@@ -32,6 +35,8 @@ export const DEVOTION_THEMES: DevotionTheme[] = [
   {
     slug: "love",
     title: "Love",
+    image: "/images/themes/love.png",
+    imageAlt: "Warm golden light suggesting God's love",
     summary: "Learn the love that gives, stays, and never fails.",
     focus: "God’s love for us, and love for one another.",
     relatedVerses: [
@@ -96,6 +101,8 @@ export const DEVOTION_THEMES: DevotionTheme[] = [
   {
     slug: "kindness",
     title: "Kindness",
+    image: "/images/themes/kindness.png",
+    imageAlt: "Gentle open hands offering kindness",
     summary: "Practice gentle strength that softens hard places.",
     focus: "Everyday mercy in words and actions.",
     relatedVerses: [
@@ -144,6 +151,8 @@ export const DEVOTION_THEMES: DevotionTheme[] = [
   {
     slug: "humility",
     title: "Humility",
+    image: "/images/themes/humility.png",
+    imageAlt: "A quiet humble path under soft light",
     summary: "Walk low before God so others can stand tall.",
     focus: "Serving without needing the spotlight.",
     relatedVerses: [
@@ -192,6 +201,8 @@ export const DEVOTION_THEMES: DevotionTheme[] = [
   {
     slug: "grace",
     title: "Grace",
+    image: "/images/themes/grace.png",
+    imageAlt: "Soft light pouring down like grace",
     summary: "Receive what you cannot earn, then pass it on.",
     focus: "Undeserved favor that changes how we live.",
     relatedVerses: [
@@ -241,6 +252,8 @@ export const DEVOTION_THEMES: DevotionTheme[] = [
   {
     slug: "sacrifice",
     title: "Sacrifice",
+    image: "/images/themes/sacrifice.png",
+    imageAlt: "A cross silhouette suggesting sacrifice",
     summary: "Offer your life as worship—little yeses that matter.",
     focus: "Giving up lesser things for greater love.",
     relatedVerses: [
@@ -289,6 +302,8 @@ export const DEVOTION_THEMES: DevotionTheme[] = [
   {
     slug: "faith",
     title: "Faith",
+    image: "/images/themes/faith.png",
+    imageAlt: "A path of trust through mist and light",
     summary: "Trust God when sight is limited.",
     focus: "Believing His promises in real life.",
     relatedVerses: [
@@ -338,6 +353,8 @@ export const DEVOTION_THEMES: DevotionTheme[] = [
   {
     slug: "hope",
     title: "Hope",
+    image: "/images/themes/hope.png",
+    imageAlt: "Dawn light on the horizon of hope",
     summary: "Look forward with courage because God is faithful.",
     focus: "Living expectantly in Christ.",
     relatedVerses: [
@@ -386,6 +403,8 @@ export const DEVOTION_THEMES: DevotionTheme[] = [
   {
     slug: "peace",
     title: "Peace",
+    image: "/images/themes/peace.png",
+    imageAlt: "Still water reflecting calm peace",
     summary: "Receive the calm that Christ gives, not as the world gives.",
     focus: "Resting your mind in God.",
     relatedVerses: [
@@ -435,6 +454,8 @@ export const DEVOTION_THEMES: DevotionTheme[] = [
   {
     slug: "forgiveness",
     title: "Forgiveness",
+    image: "/images/themes/forgiveness.png",
+    imageAlt: "Light breaking through after forgiveness",
     summary: "Release burdens and receive freedom.",
     focus: "Being forgiven and forgiving others.",
     relatedVerses: [
@@ -483,6 +504,8 @@ export const DEVOTION_THEMES: DevotionTheme[] = [
   {
     slug: "gratitude",
     title: "Gratitude",
+    image: "/images/themes/gratitude.png",
+    imageAlt: "Open hands lifted in gratitude",
     summary: "Train your eyes to see God’s gifts.",
     focus: "Thankfulness that reshapes the day.",
     relatedVerses: [
