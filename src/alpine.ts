@@ -76,8 +76,8 @@ export default (Alpine: Alpine) => {
         return;
       }
 
-      // /web/... or /tl/...
-      if (parts[0] === "web" || parts[0] === "tl") {
+      // /{version}/book/... or /{version}/chapter/...
+      if (parts[0] && parts[0] in VERSIONS) {
         parts[0] = next;
         window.location.href = "/" + parts.join("/");
         return;
@@ -93,11 +93,28 @@ export default (Alpine: Alpine) => {
       version,
       bookSlug,
       chapter,
+      verses: [] as Array<{ number: number; text: string }>,
+      loading: true,
+      error: "",
       annotations: {} as AnnotationMap,
       openNote: null as number | null,
 
-      init() {
+      async init() {
         this.annotations = loadAnnotations();
+        try {
+          const res = await fetch(`/bibles/${this.version}/${this.bookSlug}.json`);
+          if (!res.ok) throw new Error("Could not load chapter");
+          const book = (await res.json()) as {
+            chapters: Array<{ number: number; verses: Array<{ number: number; text: string }> }>;
+          };
+          const found = book.chapters.find((c) => c.number === this.chapter);
+          this.verses = found?.verses ?? [];
+          if (!this.verses.length) this.error = "Chapter not found in this version.";
+        } catch (e) {
+          this.error = e instanceof Error ? e.message : "Failed to load chapter";
+        } finally {
+          this.loading = false;
+        }
       },
 
       key(verse: number) {

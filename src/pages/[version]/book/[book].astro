@@ -1,17 +1,22 @@
 ---
 import Layout from "../../../layouts/Layout.astro";
 import SearchBar from "../../../components/SearchBar.astro";
-import { getBooks, resolveVersionId } from "../../../lib/bible";
+import { getBooks, resolveVersionId, clearBibleCache } from "../../../lib/bible";
 import { VERSION_IDS, type VersionId } from "../../../lib/versions";
 import type { Book } from "../../../lib/bible";
 
 export function getStaticPaths() {
-  return VERSION_IDS.flatMap((version) =>
-    getBooks(version).map((book) => ({
-      params: { version, book: book.slug },
-      props: { book, version },
-    })),
-  );
+  const paths = [];
+  for (const version of VERSION_IDS) {
+    for (const book of getBooks(version)) {
+      paths.push({
+        params: { version, book: book.slug },
+        props: { book, version },
+      });
+    }
+    clearBibleCache(version);
+  }
+  return paths;
 }
 
 const { book, version: versionProp } = Astro.props as {

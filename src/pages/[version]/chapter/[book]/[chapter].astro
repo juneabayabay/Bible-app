@@ -1,27 +1,37 @@
 ---
 import Layout from "../../../../layouts/Layout.astro";
 import SearchBar from "../../../../components/SearchBar.astro";
-import { getBooks, getBook, getChapter, resolveVersionId } from "../../../../lib/bible";
+import {
+  getBooks,
+  getBook,
+  resolveVersionId,
+  clearBibleCache,
+} from "../../../../lib/bible";
 import { VERSION_IDS, type VersionId } from "../../../../lib/versions";
 
 export function getStaticPaths() {
-  return VERSION_IDS.flatMap((version) =>
-    getBooks(version).flatMap((book) =>
-      book.chapters.map((chapter) => ({
-        params: {
-          version,
-          book: book.slug,
-          chapter: String(chapter.number),
-        },
-        props: {
-          version,
-          bookName: book.name,
-          bookSlug: book.slug,
-          chapterNumber: chapter.number,
-        },
-      })),
-    ),
-  );
+  const paths = [];
+  for (const version of VERSION_IDS) {
+    for (const book of getBooks(version)) {
+      for (const chapter of book.chapters) {
+        paths.push({
+          params: {
+            version,
+            book: book.slug,
+            chapter: String(chapter.number),
+          },
+          props: {
+            version,
+            bookName: book.name,
+            bookSlug: book.slug,
+            chapterNumber: chapter.number,
+          },
+        });
+      }
+    }
+    clearBibleCache(version);
+  }
+  return paths;
 }
 
 const {
@@ -38,16 +48,19 @@ const {
 
 const version = resolveVersionId(versionProp);
 const book = getBook(version, bookSlug);
-const chapter = getChapter(version, bookSlug, chapterNumber);
 
-if (!chapter || !book) {
+if (!book) {
   return Astro.redirect(`/${version}/`);
 }
 
 const chapterIndex = book.chapters.findIndex((c) => c.number === chapterNumber);
+if (chapterIndex < 0) {
+  return Astro.redirect(`/${version}/book/${bookSlug}`);
+}
+
 const prevChapter = chapterIndex > 0 ? book.chapters[chapterIndex - 1] : null;
 const nextChapter =
-  chapterIndex >= 0 && chapterIndex < book.chapters.length - 1
+  chapterIndex < book.chapters.length - 1
     ? book.chapters[chapterIndex + 1]
     : null;
 ---
@@ -102,53 +115,56 @@ const nextChapter =
     class="mt-6 space-y-1 leading-relaxed sm:space-y-2"
     x-data={`chapterReader('${version}', '${bookSlug}', ${chapterNumber})`}
   >
-    {chapter.verses.map((verse) => (
+    <p class="text-sm text-[var(--color-ink-subtle)]" x-show="loading" x-cloak>Loading chapter…</p>
+    <p class="text-sm text-red-600 dark:text-red-400" x-show="error" x-text="error" x-cloak></p>
+
+    <template x-for="verse in verses" :key="verse.number">
       <div
         class="rounded-md px-2 py-2.5 transition sm:py-2"
-        :class={`isHighlighted(${verse.number}) ? 'bg-[var(--color-highlight)]' : ''`}
+        :class="isHighlighted(verse.number) ? 'bg-[var(--color-highlight)]' : ''"
       >
         <div class="flex gap-3">
           <button
             type="button"
             class="mt-0.5 inline-flex h-8 w-8 shrink-0 items-center justify-center rounded text-sm font-semibold text-[var(--color-ink-subtle)] transition hover:bg-[var(--color-line)] hover:text-[var(--color-accent)] sm:h-auto sm:w-auto sm:justify-start"
             title="Toggle highlight"
-            aria-label={`Highlight verse ${verse.number}`}
-            @click={`toggleHighlight(${verse.number})`}
-          >
-            {verse.number}
-          </button>
+            :aria-label="`Highlight verse ${verse.number}`"
+            @click="toggleHighlight(verse.number)"
+            x-text="verse.number"
+          ></button>
           <div class="min-w-0 flex-1">
-            <p class="text-[1.05rem] leading-[1.7] text-[var(--color-ink)] sm:text-base sm:leading-relaxed">
-              {verse.text}
-            </p>
+            <p
+              class="text-[1.05rem] leading-[1.7] text-[var(--color-ink)] sm:text-base sm:leading-relaxed"
+              x-text="verse.text"
+            ></p>
             <div class="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1">
               <button
                 type="button"
                 class="min-h-8 text-xs font-medium text-[var(--color-ink-subtle)] transition hover:text-[var(--color-ink)]"
-                @click={`toggleNote(${verse.number})`}
+                @click="toggleNote(verse.number)"
               >
                 Note
               </button>
               <span
                 class="text-xs text-[var(--color-accent)]"
-                x-show={`noteText(${verse.number}).trim()`}
+                x-show="noteText(verse.number).trim()"
               >
                 Has note
               </span>
             </div>
-            <div class="mt-2" x-show={`openNote === ${verse.number}`} x-cloak>
+            <div class="mt-2" x-show="openNote === verse.number" x-cloak>
               <textarea
                 class="w-full rounded-md border border-[var(--color-line)] bg-[var(--color-surface-elevated)] p-3 text-sm text-[var(--color-ink)] outline-none ring-[var(--color-accent)] placeholder:text-[var(--color-ink-subtle)] focus:ring-2"
                 rows="3"
                 placeholder="Write a note for this verse…"
-                x-bind:value={`noteText(${verse.number})`}
-                @input={`setNote(${verse.number}, $event.target.value)`}
-              />
+                :value="noteText(verse.number)"
+                @input="setNote(verse.number, $event.target.value)"
+              ></textarea>
             </div>
           </div>
         </div>
       </div>
-    ))}
+    </template>
   </div>
 
   <nav

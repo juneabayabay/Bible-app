@@ -1,5 +1,5 @@
 ---
-import { DEFAULT_VERSION } from "../lib/versions";
+import { DEFAULT_VERSION, VERSION_IDS } from "../lib/versions";
 ---
 
 <!doctype html>
@@ -8,12 +8,12 @@ import { DEFAULT_VERSION } from "../lib/versions";
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>Bible</title>
-    <script is:inline define:vars={{ DEFAULT_VERSION }}>
+    <script is:inline define:vars={{ DEFAULT_VERSION, VERSION_IDS }}>
       (() => {
         let version = DEFAULT_VERSION;
         try {
           const saved = localStorage.getItem("bible-version");
-          if (saved === "web" || saved === "tl") version = saved;
+          if (saved && VERSION_IDS.includes(saved)) version = saved;
         } catch {
           /* ignore */
         }

@@ -1,5 +1,7 @@
 # build output
 dist/
+public/bibles/
+public/search/
 # generated types
 .astro/
 
