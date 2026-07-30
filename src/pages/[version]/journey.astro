@@ -19,14 +19,14 @@ const devotionTotal = totalDevotionEntries();
 <Layout title={`Journey · ${meta.shortLabel}`} version={version} width="wide">
   <SearchBar slot="header" version={version} />
 
-  <div class="space-y-12 sm:space-y-14" x-data="journeyPanel" x-init="refresh()">
-    <header class="max-w-2xl">
+  <div class="page-stack" x-data="journeyPanel" x-init="refresh()">
+    <header class="page-header">
       <p class="text-sm text-[var(--color-ink-muted)]">
         <a href={`/${version}/`} class="hover:text-[var(--color-ink)] hover:underline" data-astro-prefetch>
           ← Home
         </a>
       </p>
-      <p class="eyebrow mt-6">Journey</p>
+      <p class="eyebrow mt-5">Journey</p>
       <h1 class="font-scripture mt-2 text-3xl font-semibold tracking-tight sm:text-4xl">
         Walk with God daily
       </h1>
@@ -70,24 +70,24 @@ const devotionTotal = totalDevotionEntries();
       <p class="mt-1 text-sm text-[var(--color-ink-muted)]">
         Last 7 days on this device — simple progress, not a scoreboard.
       </p>
-      <div class="mt-5 grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
-        <article class="rounded-xl border border-[var(--color-line)] bg-[var(--color-surface-elevated)] p-4">
+      <div class="mt-5 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+        <article class="ui-card p-4">
           <p class="text-xs uppercase tracking-wide text-[var(--color-ink-subtle)]">Opened</p>
           <p class="mt-1 font-scripture text-2xl font-semibold"><span x-text="weekOpened"></span>/7</p>
         </article>
-        <article class="rounded-xl border border-[var(--color-line)] bg-[var(--color-surface-elevated)] p-4">
+        <article class="ui-card p-4">
           <p class="text-xs uppercase tracking-wide text-[var(--color-ink-subtle)]">Read</p>
           <p class="mt-1 font-scripture text-2xl font-semibold"><span x-text="weekRead"></span>/7</p>
         </article>
-        <article class="rounded-xl border border-[var(--color-line)] bg-[var(--color-surface-elevated)] p-4">
+        <article class="ui-card p-4">
           <p class="text-xs uppercase tracking-wide text-[var(--color-ink-subtle)]">Grew</p>
           <p class="mt-1 font-scripture text-2xl font-semibold"><span x-text="weekGrow"></span>/7</p>
         </article>
-        <article class="rounded-xl border border-[var(--color-line)] bg-[var(--color-surface-elevated)] p-4">
+        <article class="ui-card p-4">
           <p class="text-xs uppercase tracking-wide text-[var(--color-ink-subtle)]">Challenges</p>
           <p class="mt-1 font-scripture text-2xl font-semibold"><span x-text="weekChallenges"></span>/7</p>
         </article>
-        <article class="rounded-xl border border-[var(--color-line)] bg-[var(--color-surface-elevated)] p-4">
+        <article class="ui-card p-4">
           <p class="text-xs uppercase tracking-wide text-[var(--color-ink-subtle)]">Full days</p>
           <p class="mt-1 font-scripture text-2xl font-semibold"><span x-text="weekComplete"></span>/7</p>
         </article>
@@ -166,9 +166,9 @@ const devotionTotal = totalDevotionEntries();
       </ul>
     </section>
 
-    <p class="text-center flex flex-wrap justify-center gap-3">
-      <a class="btn-primary" href={`/${version}/#today`} data-astro-prefetch>
-        Today’s path
+    <p class="flex flex-wrap justify-center gap-3 text-center">
+      <a class="btn-primary" href={`/${version}/#books`} data-astro-prefetch>
+        Browse books
       </a>
       <a class="btn-secondary" href={`/${version}/plans`} data-astro-prefetch>
         Reading plans

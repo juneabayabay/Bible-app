@@ -18,7 +18,7 @@ const themes = getDevotionThemes();
 <Layout title={`Devotionals · ${meta.shortLabel}`} version={version} width="wide" flushHero>
   <SearchBar slot="header" version={version} />
 
-  <div class="space-y-10" x-data="journeyPanel" x-init="refresh()">
+  <div class="page-stack" x-data="journeyPanel" x-init="refresh()">
     <section
       class="full-bleed overflow-hidden"
       aria-labelledby="devotionals-heading"

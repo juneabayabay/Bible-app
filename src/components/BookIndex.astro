@@ -32,11 +32,12 @@ if (ntOther.length) nt.push({ id: "other-nt", label: "Other", books: ntOther });
 
 <section id="books" class="scroll-mt-28" x-data={`{ tab: '${defaultTab}' }`}>
   <div class="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
-    <div>
-      <h2 class="text-xl font-semibold tracking-tight text-[var(--color-ink)] sm:text-2xl">
+    <div class="max-w-xl">
+      <p class="eyebrow">Scripture</p>
+      <h2 class="font-scripture mt-2 text-2xl font-semibold tracking-tight text-[var(--color-ink)] sm:text-3xl">
         Books
       </h2>
-      <p class="mt-1 text-sm text-[var(--color-ink-muted)]">
+      <p class="mt-2 text-sm leading-relaxed text-[var(--color-ink-muted)] sm:text-base">
         Choose a book and begin reading.
       </p>
     </div>
@@ -91,11 +92,11 @@ if (ntOther.length) nt.push({ id: "other-nt", label: "Other", books: ntOther });
             <h3 class="text-xs font-semibold uppercase tracking-[0.1em] text-[var(--color-ink-muted)]">
               {section.label}
             </h3>
-            <ul class="mt-3 columns-2 gap-x-5 sm:columns-3 sm:gap-x-8 lg:columns-4 lg:gap-x-10">
+            <ul class="mt-3 columns-2 gap-x-6 sm:columns-3 sm:gap-x-8 lg:columns-4 lg:gap-x-10">
               {section.books.map((book) => (
-                <li class="mb-1.5 break-inside-avoid">
+                <li class="mb-2 break-inside-avoid">
                   <a
-                    class="inline-block py-1 text-[0.95rem] leading-snug text-[var(--color-ink)] underline-offset-2 transition hover:underline sm:text-base"
+                    class="inline-block py-1.5 text-[0.95rem] leading-snug text-[var(--color-ink)] underline-offset-2 transition hover:underline sm:text-base"
                     href={`/${version}/book/${book.slug}`}
                     data-astro-prefetch
                   >
@@ -120,11 +121,11 @@ if (ntOther.length) nt.push({ id: "other-nt", label: "Other", books: ntOther });
             <h3 class="text-xs font-semibold uppercase tracking-[0.1em] text-[var(--color-ink-muted)]">
               {section.label}
             </h3>
-            <ul class="mt-3 columns-2 gap-x-5 sm:columns-3 sm:gap-x-8 lg:columns-4 lg:gap-x-10">
+            <ul class="mt-3 columns-2 gap-x-6 sm:columns-3 sm:gap-x-8 lg:columns-4 lg:gap-x-10">
               {section.books.map((book) => (
-                <li class="mb-1.5 break-inside-avoid">
+                <li class="mb-2 break-inside-avoid">
                   <a
-                    class="inline-block py-1 text-[0.95rem] leading-snug text-[var(--color-ink)] underline-offset-2 transition hover:underline sm:text-base"
+                    class="inline-block py-1.5 text-[0.95rem] leading-snug text-[var(--color-ink)] underline-offset-2 transition hover:underline sm:text-base"
                     href={`/${version}/book/${book.slug}`}
                     data-astro-prefetch
                   >

@@ -7,56 +7,61 @@ import { DEFAULT_VERSION, VERSION_IDS } from "../lib/versions";
 <Layout title="Saved" version={DEFAULT_VERSION}>
   <SearchBar slot="header" version={DEFAULT_VERSION} />
 
-  <h1 class="font-scripture text-2xl font-semibold tracking-tight sm:text-3xl">
-    Saved
-  </h1>
-  <p class="mt-2 max-w-md text-sm text-[var(--color-ink-muted)] sm:text-base">
-    Highlights and notes stored in this browser.
-  </p>
+  <div class="page-stack">
+    <header class="page-header border-b border-[var(--color-line)] pb-5">
+      <p class="eyebrow">Library</p>
+      <h1 class="font-scripture mt-1.5 text-2xl font-semibold tracking-tight sm:text-3xl">
+        Saved
+      </h1>
+      <p class="mt-2 text-sm leading-relaxed text-[var(--color-ink-muted)] sm:text-base">
+        Highlights and notes stored in this browser.
+      </p>
+    </header>
 
-  <div class="mt-8" x-data="savedList">
-    <p class="text-sm text-[var(--color-ink-subtle)]" x-show="items.length === 0" x-cloak>
-      Nothing saved yet. Open a chapter and highlight a verse or add a note.
-    </p>
+    <div x-data="savedList">
+      <p class="text-sm text-[var(--color-ink-subtle)]" x-show="items.length === 0" x-cloak>
+        Nothing saved yet. Open a chapter, press and hold a verse, then highlight or add a note.
+      </p>
 
-    <ul class="divide-y divide-[var(--color-line)] border-t border-[var(--color-line)]" x-cloak>
-      <template x-for="item in items" :key="item.key">
-        <li class="py-4 sm:py-5">
-          <div class="flex flex-wrap items-start justify-between gap-3">
-            <div class="min-w-0 flex-1">
-              <a
-                class="font-medium text-[var(--color-ink)] hover:underline"
-                :href="item.url"
-                x-text="item.label"
-              ></a>
-              <p
-                class="mt-1.5 flex items-center gap-2 text-xs font-medium uppercase tracking-wide text-[var(--color-ink-muted)]"
-                x-show="item.highlighted"
+      <ul class="space-y-3" x-cloak>
+        <template x-for="item in items" :key="item.key">
+          <li class="ui-card p-4 sm:p-5">
+            <div class="flex flex-wrap items-start justify-between gap-3">
+              <div class="min-w-0 flex-1">
+                <a
+                  class="font-medium text-[var(--color-ink)] hover:underline"
+                  :href="item.url"
+                  x-text="item.label"
+                ></a>
+                <p
+                  class="mt-1.5 flex items-center gap-2 text-xs font-medium uppercase tracking-wide text-[var(--color-ink-muted)]"
+                  x-show="item.highlighted"
+                >
+                  <span
+                    class="hl-swatch !h-3 !w-3 !border"
+                    :data-hl="item.highlightColor"
+                    aria-hidden="true"
+                  ></span>
+                  <span x-text="item.highlightColor ? `${item.highlightColor} highlight` : 'Highlighted'"></span>
+                </p>
+                <p
+                  class="mt-2 whitespace-pre-wrap text-sm leading-relaxed text-[var(--color-ink-muted)]"
+                  x-show="item.note"
+                  x-text="item.note"
+                ></p>
+              </div>
+              <button
+                type="button"
+                class="min-h-10 shrink-0 rounded-lg px-2 text-xs text-[var(--color-ink-subtle)] transition hover:bg-[var(--color-line)]/50 hover:text-red-600 dark:hover:text-red-400"
+                @click="remove(item.key)"
               >
-                <span
-                  class="hl-swatch !h-3 !w-3 !border"
-                  :data-hl="item.highlightColor"
-                  aria-hidden="true"
-                ></span>
-                <span x-text="item.highlightColor ? `${item.highlightColor} highlight` : 'Highlighted'"></span>
-              </p>
-              <p
-                class="mt-2 whitespace-pre-wrap text-sm leading-relaxed text-[var(--color-ink-muted)]"
-                x-show="item.note"
-                x-text="item.note"
-              ></p>
+                Remove
+              </button>
             </div>
-            <button
-              type="button"
-              class="min-h-9 shrink-0 text-xs text-[var(--color-ink-subtle)] transition hover:text-red-600 dark:hover:text-red-400"
-              @click="remove(item.key)"
-            >
-              Remove
-            </button>
-          </div>
-        </li>
-      </template>
-    </ul>
+          </li>
+        </template>
+      </ul>
+    </div>
   </div>
 </Layout>
 

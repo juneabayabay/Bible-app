@@ -4,13 +4,13 @@
  */
 ---
 
-<section class="mt-8 sm:mt-10" aria-label="Your next step">
-  <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-    <p class="text-sm text-[var(--color-ink-muted)]" x-text="welcome"></p>
+<section aria-label="Your next step">
+  <div class="flex flex-col gap-3 rounded-2xl border border-[var(--color-line)] bg-[var(--color-surface-elevated)]/80 p-4 sm:flex-row sm:items-center sm:justify-between sm:gap-4 sm:p-5">
+    <p class="text-sm leading-relaxed text-[var(--color-ink-muted)]" x-text="welcome"></p>
 
-    <div class="flex flex-wrap gap-2">
+    <div class="flex w-full flex-col gap-2 sm:w-auto sm:flex-row sm:flex-wrap">
       <a
-        class="btn-primary !min-h-10 !px-4 text-sm"
+        class="btn-primary !min-h-11 w-full !px-4 text-sm sm:w-auto"
         :href="continueUrl || '#books'"
         data-astro-prefetch
       >
@@ -20,7 +20,7 @@
         <span x-show="!continueUrl">Browse books</span>
       </a>
 
-      <a class="btn-secondary !min-h-10 !px-4 text-sm" href="/saved">
+      <a class="btn-secondary !min-h-11 w-full !px-4 text-sm sm:w-auto" href="/saved">
         <span x-text="savedCount > 0 ? `Saved (${savedCount})` : 'Saved'"></span>
       </a>
     </div>

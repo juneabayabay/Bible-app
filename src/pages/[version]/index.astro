@@ -32,13 +32,6 @@ const startHref =
 <Layout title={`Bible · ${meta.shortLabel}`} version={version} width="wide" flushHero>
   <SearchBar slot="header" version={version} />
 
-  <!--
-    Home (simple):
-    1) Today’s verse
-    2) Continue / Saved
-    3) Browse books
-    4) Optional deeper paths (links only)
-  -->
   <div x-data={`homeDashboard('${version}')`}>
     <HomeHero
       headline="Open God’s Word today"
@@ -51,16 +44,14 @@ const startHref =
       verseUrl={daily?.url}
     />
 
-    <div class="space-y-10 sm:space-y-12">
+    <div class="page-stack mt-8 sm:mt-10">
       <QuickActions />
-
       <BookIndex
         version={version}
         books={books}
         defaultTab={defaultTab}
         showTabs={showTabs}
       />
-
       <HomePaths version={version} />
     </div>
   </div>
