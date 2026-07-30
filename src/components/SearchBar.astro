@@ -2,7 +2,7 @@
 ---
 
 <div
-  class="relative w-full max-w-md"
+  class="relative w-full"
   x-data="bibleSearch"
   x-cloak
 >
@@ -11,35 +11,31 @@
     id="bible-search"
     type="search"
     placeholder="Search verses…"
-    class="w-full rounded-md border border-stone-300 bg-white px-3 py-2 text-sm outline-none ring-stone-400 focus:ring-2"
+    autocomplete="off"
+    enterkeyhint="search"
+    class="w-full rounded-md border border-[var(--color-line)] bg-[var(--color-surface)] px-3 py-2.5 text-base text-[var(--color-ink)] outline-none ring-[var(--color-accent)] placeholder:text-[var(--color-ink-subtle)] focus:ring-2 sm:py-2 sm:text-sm"
     x-model="q"
     @input.debounce.300ms="search"
   />
 
-  <p class="mt-1 text-xs text-stone-500" x-show="loading">Loading search…</p>
-  <p class="mt-1 text-xs text-red-600" x-show="error" x-text="error"></p>
+  <p class="mt-1 text-xs text-[var(--color-ink-subtle)]" x-show="loading">Loading search…</p>
+  <p class="mt-1 text-xs text-red-600 dark:text-red-400" x-show="error" x-text="error"></p>
 
   <ul
-    class="absolute z-10 mt-1 max-h-80 w-full overflow-auto rounded-md border border-stone-200 bg-white shadow-md"
+    class="absolute z-50 mt-1 max-h-[min(20rem,50vh)] w-full overflow-auto rounded-md border border-[var(--color-line)] bg-[var(--color-surface-elevated)] shadow-lg"
     x-show="results.length > 0"
     @click.outside="results = []"
   >
     <template x-for="result in results" :key="result.id">
-      <li class="border-b border-stone-100 last:border-0">
+      <li class="border-b border-[var(--color-line)] last:border-0">
         <a
-          class="block px-3 py-2 hover:bg-stone-50"
+          class="block px-3 py-3 transition hover:bg-[var(--color-line)] sm:py-2"
           :href="result.url"
         >
-          <span class="block text-sm font-medium" x-text="result.label"></span>
-          <span class="block text-xs text-stone-600" x-text="result.snippet"></span>
+          <span class="block text-sm font-medium text-[var(--color-ink)]" x-text="result.label"></span>
+          <span class="mt-0.5 block text-xs leading-snug text-[var(--color-ink-muted)]" x-text="result.snippet"></span>
         </a>
       </li>
     </template>
   </ul>
 </div>
-
-<style>
-  [x-cloak] {
-    display: none !important;
-  }
-</style>

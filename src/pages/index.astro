@@ -9,16 +9,19 @@ const books = getBooks();
 <Layout title="Bible App">
   <SearchBar slot="header" />
 
-  <h1 class="text-3xl font-semibold tracking-tight">Bible</h1>
-  <p class="mt-2 text-stone-600">
+  <h1 class="text-2xl font-semibold tracking-tight sm:text-3xl">Bible</h1>
+  <p class="mt-2 text-sm text-[var(--color-ink-muted)] sm:text-base">
     Read the World English Bible (public domain).
   </p>
 
-  <h2 class="mt-8 text-xl font-medium">Books</h2>
-  <ul class="mt-4 columns-2 gap-x-8 sm:columns-3">
+  <h2 class="mt-8 text-lg font-medium sm:text-xl">Books</h2>
+  <ul class="mt-4 columns-2 gap-x-6 sm:columns-3 sm:gap-x-8">
     {books.map((book) => (
-      <li class="mb-1 break-inside-avoid">
-        <a class="text-stone-800 underline-offset-2 hover:underline" href={`/book/${book.slug}`}>
+      <li class="mb-1.5 break-inside-avoid">
+        <a
+          class="inline-block py-0.5 text-sm text-[var(--color-ink)] underline-offset-2 transition hover:underline sm:text-base"
+          href={`/book/${book.slug}`}
+        >
           {book.name}
         </a>
       </li>

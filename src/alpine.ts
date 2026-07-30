@@ -28,7 +28,44 @@ function parseVerseKey(key: string) {
   };
 }
 
+const THEME_KEY = "bible-theme";
+
+function resolveDark(): boolean {
+  const saved = localStorage.getItem(THEME_KEY);
+  if (saved === "dark") return true;
+  if (saved === "light") return false;
+  return window.matchMedia("(prefers-color-scheme: dark)").matches;
+}
+
 export default (Alpine: Alpine) => {
+  Alpine.store("theme", {
+    dark: false,
+
+    init() {
+      this.dark = document.documentElement.classList.contains("dark");
+    },
+
+    toggle() {
+      this.dark = !this.dark;
+      document.documentElement.classList.toggle("dark", this.dark);
+      localStorage.setItem(THEME_KEY, this.dark ? "dark" : "light");
+    },
+
+    set(mode: "light" | "dark") {
+      this.dark = mode === "dark";
+      document.documentElement.classList.toggle("dark", this.dark);
+      localStorage.setItem(THEME_KEY, mode);
+    },
+  });
+
+  // Keep store in sync if another tab changes preference
+  window.addEventListener("storage", (e) => {
+    if (e.key !== THEME_KEY) return;
+    const dark = resolveDark();
+    document.documentElement.classList.toggle("dark", dark);
+    (Alpine.store("theme") as { dark: boolean }).dark = dark;
+  });
+
   Alpine.data("chapterReader", (bookSlug: string, chapter: number) => ({
     bookSlug,
     chapter,
