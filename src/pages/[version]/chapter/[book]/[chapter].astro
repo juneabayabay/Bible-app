@@ -64,7 +64,11 @@ const readerConfig = JSON.stringify({
   compareVerses,
 });
 
-const navBtn = "btn-secondary !min-h-11 flex-1 sm:flex-none";
+const toolbarBtn =
+  "inline-flex min-h-10 items-center justify-center rounded-lg border border-[var(--color-line)] bg-[var(--color-surface)] px-3 text-sm font-semibold text-[var(--color-ink)] transition hover:border-[color-mix(in_srgb,var(--color-primary)_40%,var(--color-line))] hover:bg-[color-mix(in_srgb,var(--color-primary)_6%,var(--color-surface-elevated))]";
+const chapterNavBtn =
+  "inline-flex min-h-11 flex-1 items-center justify-center gap-2 rounded-xl border border-[var(--color-line)] bg-[var(--color-surface)] px-3.5 text-sm font-semibold text-[var(--color-ink)] transition hover:border-[color-mix(in_srgb,var(--color-primary)_40%,var(--color-line))] hover:bg-[color-mix(in_srgb,var(--color-primary)_6%,var(--color-surface-elevated))] sm:min-w-[10rem] sm:flex-none";
+const footerNavBtn = "btn-secondary !min-h-11 flex-1 sm:flex-none";
 
 const quiz = getQuiz(bookSlug, chapterNumber);
 ---
@@ -78,7 +82,8 @@ const quiz = getQuiz(bookSlug, chapterNumber);
 
   <div x-data={`chapterReader(${readerConfig})`}>
     <div
-      class="fixed inset-x-0 top-0 z-50 h-0.5 bg-[var(--color-line)]"
+      class="fixed inset-x-0 z-50 h-0.5 bg-[var(--color-line)]"
+      style="top: env(safe-area-inset-top, 0px)"
       aria-hidden="true"
     >
       <div
@@ -97,14 +102,15 @@ const quiz = getQuiz(bookSlug, chapterNumber);
       </a>
     </nav>
 
-    <div class="flex flex-col gap-5 lg:flex-row lg:items-end lg:justify-between">
+    <header class="space-y-5">
       <div class="min-w-0">
-        <h1 class="font-scripture text-2xl font-semibold tracking-tight sm:text-3xl">
+        <p class="eyebrow">Chapter</p>
+        <h1 class="font-scripture mt-1.5 text-2xl font-semibold tracking-tight sm:text-3xl">
           {bookName}
           <span class="text-[var(--color-ink-muted)]">{chapterNumber}</span>
         </h1>
         <p class="mt-2 text-sm text-[var(--color-ink-muted)]">
-          ~{minutes} min · {chapterIndex + 1}/{book.chapters.length} · {meta.shortLabel}
+          About {minutes} min · Chapter {chapterIndex + 1} of {book.chapters.length} · {meta.shortLabel}
         </p>
         <p class="mt-2 text-sm text-[var(--color-ink-subtle)]" x-show="showTip" x-cloak>
           Tip: press and hold a verse for Highlight, Notes, Copy, and Copy link. Right‑click works on desktop.
@@ -115,63 +121,139 @@ const quiz = getQuiz(bookSlug, chapterNumber);
         <p class="mt-2 text-sm text-[var(--color-gold)]" x-show="actionStatus" x-text="actionStatus" x-cloak></p>
       </div>
 
-      <div class="flex w-full flex-col gap-2 sm:w-auto">
-        <div class="flex flex-wrap items-center gap-2">
-          <div class="flex items-center gap-2" aria-label="Text size">
-            <button type="button" class="btn-secondary !min-h-10 !px-3" @click="bump(-0.08)" aria-label="Smaller text">A−</button>
-            <button type="button" class="btn-secondary !min-h-10 !px-3" @click="bump(0.08)" aria-label="Larger text">A+</button>
+      <div
+        class="rounded-2xl border border-[var(--color-line)] bg-[var(--color-surface-elevated)]/90 p-3 sm:p-3.5"
+        role="toolbar"
+        aria-label="Reading controls"
+      >
+        <div class="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between lg:gap-4">
+          <div class="flex flex-wrap items-center gap-2.5 sm:gap-3">
+            <div class="flex items-center gap-2" role="group" aria-label="Text size">
+              <span class="text-[0.65rem] font-semibold uppercase tracking-[0.1em] text-[var(--color-ink-subtle)]">
+                Text
+              </span>
+              <div class="inline-flex overflow-hidden rounded-lg border border-[var(--color-line)]">
+                <button
+                  type="button"
+                  class="inline-flex min-h-10 min-w-11 items-center justify-center border-r border-[var(--color-line)] bg-[var(--color-surface)] px-3 text-sm font-semibold text-[var(--color-ink)] transition hover:bg-[color-mix(in_srgb,var(--color-primary)_8%,var(--color-surface))]"
+                  @click="bump(-0.08)"
+                  aria-label="Decrease text size"
+                  title="Smaller text"
+                >
+                  A−
+                </button>
+                <button
+                  type="button"
+                  class="inline-flex min-h-10 min-w-11 items-center justify-center bg-[var(--color-surface)] px-3 text-sm font-semibold text-[var(--color-ink)] transition hover:bg-[color-mix(in_srgb,var(--color-primary)_8%,var(--color-surface))]"
+                  @click="bump(0.08)"
+                  aria-label="Increase text size"
+                  title="Larger text"
+                >
+                  A+
+                </button>
+              </div>
+            </div>
+
+            {compareVerses && (
+              <div class="flex items-center gap-2.5" role="group" aria-label="Side-by-side translation">
+                <span class="hidden h-5 w-px bg-[var(--color-line)] sm:block" aria-hidden="true"></span>
+                <button
+                  type="button"
+                  class={toolbarBtn}
+                  @click="toggleCompare()"
+                  :aria-pressed="showCompare.toString()"
+                  :class="showCompare ? '!border-[var(--color-gold)] !bg-[color-mix(in_srgb,var(--color-gold)_14%,var(--color-surface))]' : ''"
+                >
+                  <span x-show="!showCompare">
+                    Side by side · {compareMeta?.shortLabel}
+                  </span>
+                  <span x-show="showCompare" x-cloak>
+                    Hide {compareMeta?.shortLabel}
+                  </span>
+                </button>
+              </div>
+            )}
           </div>
-          {compareVerses && (
-            <button
-              type="button"
-              class="btn-secondary !min-h-10 !px-3"
-              @click="toggleCompare()"
-              :aria-pressed="showCompare.toString()"
-            >
-              <span x-text={`showCompare ? 'Hide ${compareMeta?.shortLabel}' : 'Compare ${compareMeta?.shortLabel}'`}></span>
-            </button>
-          )}
-        </div>
-        <div class="flex gap-2" aria-label="Chapter">
-          {prevChapter ? (
-            <a class={navBtn} href={`/${version}/chapter/${bookSlug}/${prevChapter.number}`} data-astro-prefetch>
-              ← {prevChapter.number}
-            </a>
-          ) : null}
-          {nextChapter ? (
-            <a class={navBtn} href={`/${version}/chapter/${bookSlug}/${nextChapter.number}`} data-astro-prefetch>
-              {nextChapter.number} →
-            </a>
-          ) : null}
+
+          <nav class="flex w-full gap-2 lg:w-auto" aria-label="Nearby chapters">
+            {prevChapter ? (
+              <a
+                class={chapterNavBtn}
+                href={`/${version}/chapter/${bookSlug}/${prevChapter.number}`}
+                data-astro-prefetch
+                title={`Go to ${bookName} ${prevChapter.number}`}
+              >
+                <span aria-hidden="true">←</span>
+                <span class="min-w-0 text-left leading-tight">
+                  <span class="block text-[0.65rem] font-semibold uppercase tracking-[0.08em] text-[var(--color-ink-subtle)]">
+                    Previous
+                  </span>
+                  <span>Chapter {prevChapter.number}</span>
+                </span>
+              </a>
+            ) : (
+              <span class={`${chapterNavBtn} pointer-events-none opacity-35`} aria-hidden="true">
+                <span>←</span>
+                <span class="text-left leading-tight">
+                  <span class="block text-[0.65rem] font-semibold uppercase tracking-[0.08em] text-[var(--color-ink-subtle)]">
+                    Previous
+                  </span>
+                  <span>—</span>
+                </span>
+              </span>
+            )}
+            {nextChapter ? (
+              <a
+                class={chapterNavBtn}
+                href={`/${version}/chapter/${bookSlug}/${nextChapter.number}`}
+                data-astro-prefetch
+                title={`Go to ${bookName} ${nextChapter.number}`}
+              >
+                <span class="min-w-0 text-right leading-tight">
+                  <span class="block text-[0.65rem] font-semibold uppercase tracking-[0.08em] text-[var(--color-ink-subtle)]">
+                    Next
+                  </span>
+                  <span>Chapter {nextChapter.number}</span>
+                </span>
+                <span aria-hidden="true">→</span>
+              </a>
+            ) : (
+              <span class={`${chapterNavBtn} pointer-events-none opacity-35`} aria-hidden="true">
+                <span class="text-right leading-tight">
+                  <span class="block text-[0.65rem] font-semibold uppercase tracking-[0.08em] text-[var(--color-ink-subtle)]">
+                    Next
+                  </span>
+                  <span>—</span>
+                </span>
+                <span>→</span>
+              </span>
+            )}
+          </nav>
         </div>
       </div>
-    </div>
+    </header>
 
     <div
       class="mt-8 space-y-1 sm:mt-10"
       :class="showCompare && hasCompare() ? 'max-w-4xl' : 'max-w-prose'"
-      :style="`font-size: ${fontScale}rem`"
+      :style="`--reader-scale: ${fontScale}`"
     >
       {verses.map((verse) => (
         <div
           id={`v${verse.number}`}
-          class="group scroll-mt-28 rounded-xl px-1.5 py-2.5 transition select-none sm:px-2 sm:py-2 [-webkit-touch-callout:none]"
+          class="group scroll-mt-28 rounded-xl px-1.5 py-2.5 transition select-none touch-manipulation sm:px-2 sm:py-2 [-webkit-touch-callout:none]"
           :class={`(flashVerse === ${verse.number} ? 'verse-flash ' : '') + (activeMenu === ${verse.number} ? 'ring-1 ring-[var(--color-line)] ' : '')`}
           :data-hl={`highlightColor(${verse.number}) || ''`}
-          @touchstart.passive={`onPressStart(${verse.number}, $event)`}
-          @touchmove.passive="onPressMove($event)"
-          @touchend.passive="onPressEnd()"
-          @touchcancel.passive="onPressEnd()"
-          @mousedown={`if ($event.button === 0) onPressStart(${verse.number}, $event)`}
-          @mousemove="onPressMove($event)"
-          @mouseup="onPressEnd()"
-          @mouseleave="onPressEnd()"
+          @pointerdown={`onPressStart(${verse.number}, $event)`}
+          @pointermove="onPressMove($event)"
+          @pointerup="onPressEnd($event)"
+          @pointercancel="onPressEnd($event)"
           @contextmenu={`onContextMenu(${verse.number}, $event)`}
         >
           <div class="flex gap-2.5 sm:gap-3">
             <button
               type="button"
-              class="mt-0.5 inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-lg text-sm font-semibold tabular-nums transition sm:mt-1 sm:h-auto sm:w-8 sm:justify-start"
+              class="mt-0.5 inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-lg text-sm font-semibold tabular-nums transition sm:mt-1 sm:h-auto sm:w-8 sm:justify-start"
               :class={`isHighlighted(${verse.number}) ? 'text-[var(--color-ink)]' : 'text-[var(--color-ink-subtle)] hover:bg-[var(--color-line)] hover:text-[var(--color-primary)]'`}
               :data-hl={`highlightColor(${verse.number}) || ''`}
               title="Verse actions"
@@ -179,8 +261,7 @@ const quiz = getQuiz(bookSlug, chapterNumber);
               aria-haspopup="menu"
               :aria-expanded={`(activeMenu === ${verse.number}).toString()`}
               @click.stop={`openMenu(${verse.number})`}
-              @mousedown.stop
-              @touchstart.stop.passive
+              @pointerdown.stop
             >
               <span class="relative">
                 {verse.number}
@@ -205,7 +286,7 @@ const quiz = getQuiz(bookSlug, chapterNumber);
                     {meta.shortLabel}
                   </p>
                   <p
-                    class="font-scripture text-[1.125rem] leading-[1.8] text-[var(--color-ink)] sm:text-[1.2rem] sm:leading-[1.85]"
+                    class="font-scripture verse-text text-[var(--color-ink)]"
                     title="Press and hold for options"
                   >
                     {verse.text}
@@ -220,7 +301,7 @@ const quiz = getQuiz(bookSlug, chapterNumber);
                     {compareMeta?.shortLabel}
                   </p>
                   <p
-                    class="font-scripture text-[1.05rem] leading-[1.75] text-[var(--color-ink)] sm:text-[1.1rem]"
+                    class="font-scripture verse-text-compare text-[var(--color-ink)]"
                     x-text={`compareText(${verse.number})`}
                   ></p>
                 </div>
@@ -231,16 +312,15 @@ const quiz = getQuiz(bookSlug, chapterNumber);
                 x-show={`activeMenu === ${verse.number}`}
                 x-cloak
                 @click.stop
-                @mousedown.stop
-                @touchstart.stop.passive
-                @click.outside={`if (activeMenu === ${verse.number}) closeMenu()`}
+                @pointerdown.stop
+                @click.outside={`if (activeMenu === ${verse.number}) closeMenuOutside()`}
                 role="menu"
                 aria-label={`Verse ${verse.number} actions`}
               >
                 <div class="flex flex-wrap items-center gap-1.5" x-show="menuPanel === 'actions'">
                   <button
                     type="button"
-                    class="inline-flex min-h-9 items-center rounded-lg border border-[var(--color-line)] px-2.5 text-xs font-medium text-[var(--color-ink-muted)] transition hover:text-[var(--color-ink)] sm:min-h-8"
+                    class="inline-flex min-h-10 items-center rounded-lg border border-[var(--color-line)] px-2.5 text-xs font-medium text-[var(--color-ink-muted)] transition hover:text-[var(--color-ink)] sm:min-h-9"
                     role="menuitem"
                     @click={`copyVerseLink(${verse.number})`}
                   >
@@ -248,7 +328,7 @@ const quiz = getQuiz(bookSlug, chapterNumber);
                   </button>
                   <button
                     type="button"
-                    class="inline-flex min-h-9 items-center rounded-lg border border-[var(--color-line)] px-2.5 text-xs font-medium text-[var(--color-ink-muted)] transition hover:text-[var(--color-ink)] sm:min-h-8"
+                    class="inline-flex min-h-10 items-center rounded-lg border border-[var(--color-line)] px-2.5 text-xs font-medium text-[var(--color-ink-muted)] transition hover:text-[var(--color-ink)] sm:min-h-9"
                     role="menuitem"
                     @click={`copyVerse(${verse.number}, ${JSON.stringify(verse.text)})`}
                   >
@@ -256,7 +336,7 @@ const quiz = getQuiz(bookSlug, chapterNumber);
                   </button>
                   <button
                     type="button"
-                    class="inline-flex min-h-9 items-center rounded-lg border border-[var(--color-line)] px-2.5 text-xs font-medium text-[var(--color-ink-muted)] transition hover:text-[var(--color-ink)] sm:min-h-8"
+                    class="inline-flex min-h-10 items-center rounded-lg border border-[var(--color-line)] px-2.5 text-xs font-medium text-[var(--color-ink-muted)] transition hover:text-[var(--color-ink)] sm:min-h-9"
                     role="menuitem"
                     @click={`openNotePanel(${verse.number})`}
                   >
@@ -264,7 +344,7 @@ const quiz = getQuiz(bookSlug, chapterNumber);
                   </button>
                   <button
                     type="button"
-                    class="inline-flex min-h-9 items-center gap-1.5 rounded-lg border border-[var(--color-line)] px-2.5 text-xs font-medium transition sm:min-h-8"
+                    class="inline-flex min-h-10 items-center gap-1.5 rounded-lg border border-[var(--color-line)] px-2.5 text-xs font-medium transition sm:min-h-9"
                     :class={`isHighlighted(${verse.number}) ? 'border-[var(--color-gold)] text-[var(--color-ink)]' : 'text-[var(--color-ink-muted)] hover:text-[var(--color-ink)]'`}
                     role="menuitem"
                     @click={`showColors(${verse.number})`}
@@ -284,7 +364,7 @@ const quiz = getQuiz(bookSlug, chapterNumber);
                     <p class="text-xs font-medium text-[var(--color-ink)]">Choose a color</p>
                     <button
                       type="button"
-                      class="text-xs text-[var(--color-ink-subtle)] hover:text-[var(--color-ink)]"
+                      class="min-h-9 px-1 text-xs text-[var(--color-ink-subtle)] hover:text-[var(--color-ink)]"
                       @click="menuPanel = 'actions'"
                     >
                       Back
@@ -305,7 +385,7 @@ const quiz = getQuiz(bookSlug, chapterNumber);
                     </template>
                     <button
                       type="button"
-                      class="inline-flex min-h-9 items-center rounded-lg border border-[var(--color-line)] px-2.5 text-xs font-medium text-[var(--color-ink-muted)] transition hover:text-[var(--color-ink)] sm:min-h-8"
+                      class="inline-flex min-h-10 items-center rounded-lg border border-[var(--color-line)] px-2.5 text-xs font-medium text-[var(--color-ink-muted)] transition hover:text-[var(--color-ink)] sm:min-h-9"
                       @click.stop={`setHighlight(${verse.number}, null)`}
                       x-show={`isHighlighted(${verse.number})`}
                     >
@@ -318,9 +398,24 @@ const quiz = getQuiz(bookSlug, chapterNumber);
                 </div>
               </div>
 
-              <div class="mt-2" x-show={`openNote === ${verse.number}`} x-cloak @mousedown.stop @touchstart.stop.passive>
+              <div
+                class="mt-2"
+                x-show={`openNote === ${verse.number}`}
+                x-cloak
+                @pointerdown.stop
+              >
+                <div class="mb-1.5 flex items-center justify-between gap-2">
+                  <p class="text-xs font-medium text-[var(--color-ink-muted)]">Note</p>
+                  <button
+                    type="button"
+                    class="min-h-9 rounded-lg px-2 text-xs font-medium text-[var(--color-primary)] hover:underline"
+                    @click="closeNote()"
+                  >
+                    Done
+                  </button>
+                </div>
                 <textarea
-                  class="w-full rounded-2xl border border-[var(--color-line)] bg-[var(--color-surface-elevated)] p-3 text-sm text-[var(--color-ink)] outline-none ring-[var(--color-primary)] placeholder:text-[var(--color-ink-subtle)] focus:ring-2"
+                  class="w-full rounded-2xl border border-[var(--color-line)] bg-[var(--color-surface-elevated)] p-3 text-base text-[var(--color-ink)] outline-none ring-[var(--color-primary)] placeholder:text-[var(--color-ink-subtle)] focus:ring-2 sm:text-sm"
                   rows="3"
                   placeholder="Write what God is speaking to you…"
                   x-bind:value={`noteText(${verse.number})`}
@@ -397,8 +492,12 @@ const quiz = getQuiz(bookSlug, chapterNumber);
       aria-label="Chapter footer"
     >
       {prevChapter ? (
-        <a class={navBtn} href={`/${version}/chapter/${bookSlug}/${prevChapter.number}`} data-astro-prefetch>
-          ← Previous
+        <a
+          class={footerNavBtn}
+          href={`/${version}/chapter/${bookSlug}/${prevChapter.number}`}
+          data-astro-prefetch
+        >
+          ← Chapter {prevChapter.number}
         </a>
       ) : (
         <span></span>
@@ -411,8 +510,12 @@ const quiz = getQuiz(bookSlug, chapterNumber);
         All chapters
       </a>
       {nextChapter ? (
-        <a class={navBtn} href={`/${version}/chapter/${bookSlug}/${nextChapter.number}`} data-astro-prefetch>
-          Next →
+        <a
+          class={footerNavBtn}
+          href={`/${version}/chapter/${bookSlug}/${nextChapter.number}`}
+          data-astro-prefetch
+        >
+          Chapter {nextChapter.number} →
         </a>
       ) : (
         <span></span>

@@ -161,7 +161,7 @@ export default (Alpine: Alpine) => {
           this.copied = false;
         }, 1600);
       } catch {
-        /* ignore */
+        this.copied = false;
       }
     },
   }));
