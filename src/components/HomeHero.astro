@@ -24,7 +24,7 @@ const {
 ---
 
 <section
-  class="home-hero relative left-1/2 w-screen max-w-[100vw] -translate-x-1/2 overflow-hidden"
+  class="relative left-1/2 w-screen max-w-[100vw] -translate-x-1/2 overflow-hidden"
   aria-labelledby="hero-heading"
 >
   <div class="absolute inset-0">
@@ -36,31 +36,21 @@ const {
       class="h-full min-h-[22rem] w-full object-cover object-center sm:min-h-[26rem] lg:min-h-[28rem]"
       fetchpriority="high"
     />
-    <!-- Fixed dark scrim so hero text stays readable in light and dark mode -->
-    <div
-      class="absolute inset-0 bg-[#071225]/72 sm:bg-[#071225]/68"
-      aria-hidden="true"
-    ></div>
-    <div
-      class="absolute inset-0 bg-gradient-to-br from-[#0b1a3a]/55 via-transparent to-[#1a2f55]/35"
-      aria-hidden="true"
-    ></div>
-    <!-- Theme-aware fade only at the bottom edge -->
-    <div
-      class="absolute inset-x-0 bottom-0 h-24 bg-gradient-to-b from-transparent to-[var(--color-surface)] sm:h-28"
-      aria-hidden="true"
-    ></div>
+    <!-- Always cinematic (same in light & dark); page below follows theme -->
+    <div class="hero-scrim" aria-hidden="true"></div>
+    <div class="hero-scrim-soft" aria-hidden="true"></div>
+    <div class="hero-fade" aria-hidden="true"></div>
   </div>
 
   <div class="relative mx-auto grid w-full max-w-6xl gap-8 px-4 pb-10 pt-14 sm:gap-10 sm:px-6 sm:pb-12 sm:pt-16 lg:max-w-7xl lg:grid-cols-12 lg:items-end lg:gap-12 lg:px-8 lg:pb-14 lg:pt-20">
     <div class="animate-soft-rise lg:col-span-5">
       <h1
         id="hero-heading"
-        class="font-scripture text-3xl font-semibold tracking-tight text-white [text-shadow:0_1px_18px_rgb(0_0_0_/_0.35)] sm:text-4xl lg:text-[2.75rem] lg:leading-tight"
+        class="font-scripture hero-ink text-3xl font-semibold tracking-tight [text-shadow:0_1px_18px_rgb(0_0_0_/_0.35)] sm:text-4xl lg:text-[2.75rem] lg:leading-tight"
       >
         {headline}
       </h1>
-      <p class="mt-3 max-w-md text-base leading-relaxed text-white/92 sm:text-lg">
+      <p class="hero-ink-muted mt-3 max-w-md text-base leading-relaxed sm:text-lg">
         {subcopy}
       </p>
       <div class="mt-7 flex flex-wrap gap-3">
@@ -71,10 +61,7 @@ const {
         >
           {ctaLabel}
         </a>
-        <a
-          class="inline-flex min-h-11 items-center justify-center rounded-[0.875rem] border border-white/55 bg-white px-5 text-sm font-semibold text-[#152238] shadow-sm transition hover:bg-white/92"
-          href={booksHref}
-        >
+        <a class="hero-btn-secondary" href={booksHref}>
           Browse books
         </a>
       </div>
@@ -82,17 +69,17 @@ const {
 
     {verseText && (
       <div class="animate-soft-rise lg:col-span-7" style="animation-delay: 80ms">
-        <div class="rounded-2xl border border-white/25 bg-[#071225]/55 p-5 shadow-[0_12px_40px_rgb(0_0_0_/_0.28)] backdrop-blur-md sm:p-6">
-          <p class="text-xs font-semibold uppercase tracking-[0.12em] text-[#e8c96a]">
+        <div class="hero-card rounded-2xl p-5 sm:p-6">
+          <p class="hero-gold text-xs font-semibold uppercase tracking-[0.12em]">
             Today’s verse
           </p>
-          <blockquote class="font-scripture mt-3 text-xl leading-snug text-white sm:text-2xl sm:leading-snug">
+          <blockquote class="font-scripture hero-ink mt-3 text-xl leading-snug sm:text-2xl sm:leading-snug">
             {verseText}
           </blockquote>
-          {verseCite && <p class="mt-3 text-sm text-white/80">{verseCite}</p>}
+          {verseCite && <p class="hero-ink-subtle mt-3 text-sm">{verseCite}</p>}
           {verseUrl && (
             <a
-              class="mt-5 inline-flex min-h-10 items-center text-sm font-medium text-[#e8c96a] underline-offset-2 hover:underline"
+              class="hero-gold mt-5 inline-flex min-h-10 items-center text-sm font-medium underline-offset-2 hover:underline"
               href={verseUrl}
               data-astro-prefetch
             >

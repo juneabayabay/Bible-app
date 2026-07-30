@@ -9,21 +9,26 @@
   /* Faith palette — trust, glory, peace */
   --color-primary: #1e3a8a;
   --color-primary-soft: #243f96;
-  --color-gold: #d4af37;
-  --color-gold-soft: #e8c96a;
-  --color-sage: #8faf8f;
-  --color-sage-soft: #a8c4a8;
+  --color-gold: #c9a227;
+  --color-gold-soft: #d4af37;
+  --color-sage: #7e9e7e;
+  --color-sage-soft: #8faf8f;
 
-  --color-surface: #faf9f6;
-  --color-surface-elevated: #ffffff;
-  --color-ink: #152238;
-  --color-ink-muted: #4a5568;
-  --color-ink-subtle: #718096;
-  --color-line: #e6e2d9;
-  --color-accent: #d4af37;
-  --color-highlight: #f5ecd0;
-  --color-success: #3d9b6e;
-  --color-warning: #e2b45c;
+  /* Soft cool parchment — not pure white */
+  --color-surface: #e9eef5;
+  --color-surface-elevated: #f5f7fb;
+  --color-ink: #142033;
+  --color-ink-muted: #3a4658;
+  --color-ink-subtle: #5a687a;
+  --color-line: #d2dae6;
+  --color-accent: #c9a227;
+  --color-highlight: #ebe4cf;
+  --color-success: #2f8a5f;
+  --color-warning: #c9923a;
+
+  --color-page-glow: #dce6f2;
+  --color-page-base: #e9eef5;
+  --color-page-wash: #f0eee8;
 
   /* Highlight swatches */
   --hl-gold: #f5e6a8;
@@ -52,6 +57,10 @@
   --color-success: #5ecf96;
   --color-warning: #e2b45c;
 
+  --color-page-glow: #0f1a2e;
+  --color-page-base: #0b1220;
+  --color-page-wash: #0b1220;
+
   --hl-gold: #5a4a1a;
   --hl-sage: #2a4030;
   --hl-sky: #1e3348;
@@ -71,11 +80,19 @@ html.dark {
 
 body {
   background-color: var(--color-surface);
+  background-image:
+    radial-gradient(ellipse 110% 70% at 50% -15%, var(--color-page-glow), transparent 58%),
+    linear-gradient(180deg, var(--color-page-base) 0%, var(--color-surface) 42%, var(--color-page-wash) 100%);
+  background-attachment: fixed;
   color: var(--color-ink);
   font-family: var(--font-sans);
   transition:
     background-color 0.25s ease,
     color 0.25s ease;
+}
+
+html.dark body {
+  background-image: none;
 }
 
 /* Smooth theme swaps for common surfaces */
@@ -102,8 +119,8 @@ textarea {
 .ui-card {
   border-radius: 1rem;
   border: 1px solid var(--color-line);
-  background: var(--color-surface-elevated);
-  box-shadow: 0 1px 2px rgb(30 58 138 / 0.04), 0 8px 24px rgb(30 58 138 / 0.05);
+  background: color-mix(in srgb, var(--color-surface-elevated) 92%, white);
+  box-shadow: 0 1px 2px rgb(20 32 51 / 0.04), 0 10px 28px rgb(30 58 138 / 0.06);
   transition:
     transform 0.2s ease,
     box-shadow 0.2s ease,
@@ -111,6 +128,7 @@ textarea {
 }
 
 .dark .ui-card {
+  background: var(--color-surface-elevated);
   box-shadow: 0 1px 2px rgb(0 0 0 / 0.25), 0 8px 24px rgb(0 0 0 / 0.2);
 }
 
@@ -297,4 +315,87 @@ button.ui-card:hover {
   .animate-soft-rise {
     animation: soft-rise 0.7s ease both;
   }
+}
+
+/*
+  Cinematic photo heroes (Option A):
+  Always dark overlay + light text in both light and dark mode.
+  Page chrome below still follows theme tokens.
+*/
+.hero-scrim {
+  position: absolute;
+  inset: 0;
+  background: rgb(7 18 37 / 0.72);
+}
+
+.hero-scrim-soft {
+  position: absolute;
+  inset: 0;
+  background:
+    linear-gradient(135deg, rgb(11 26 58 / 0.55), transparent 55%, rgb(26 47 85 / 0.35));
+}
+
+.hero-fade {
+  position: absolute;
+  inset-inline: 0;
+  bottom: 0;
+  height: 6.5rem;
+  background: linear-gradient(to bottom, transparent, var(--color-surface));
+  pointer-events: none;
+}
+
+.hero-banner-scrim {
+  position: absolute;
+  inset: 0;
+  background:
+    linear-gradient(
+      to top,
+      rgb(7 18 37 / 0.88) 0%,
+      rgb(7 18 37 / 0.45) 45%,
+      rgb(7 18 37 / 0.2) 100%
+    );
+  pointer-events: none;
+}
+
+.hero-ink {
+  color: #ffffff;
+}
+
+.hero-ink-muted {
+  color: rgb(255 255 255 / 0.88);
+}
+
+.hero-ink-subtle {
+  color: rgb(255 255 255 / 0.72);
+}
+
+.hero-gold {
+  color: #e8c96a;
+}
+
+.hero-card {
+  border: 1px solid rgb(255 255 255 / 0.25);
+  background: rgb(7 18 37 / 0.55);
+  box-shadow: 0 12px 40px rgb(0 0 0 / 0.28);
+  backdrop-filter: blur(12px);
+}
+
+.hero-btn-secondary {
+  display: inline-flex;
+  min-height: 2.75rem;
+  align-items: center;
+  justify-content: center;
+  border-radius: 0.875rem;
+  border: 1px solid rgb(255 255 255 / 0.55);
+  background: #ffffff;
+  padding: 0.625rem 1.25rem;
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: #152238;
+  box-shadow: 0 1px 2px rgb(0 0 0 / 0.08);
+  transition: background-color 0.15s ease, opacity 0.15s ease;
+}
+
+.hero-btn-secondary:hover {
+  background: rgb(255 255 255 / 0.92);
 }

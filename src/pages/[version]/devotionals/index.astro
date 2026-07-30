@@ -32,44 +32,38 @@ const themes = getDevotionThemes();
           class="h-full min-h-[18rem] w-full object-cover object-[center_40%] sm:min-h-[22rem] lg:min-h-[24rem]"
           fetchpriority="high"
         />
-        <div class="absolute inset-0 bg-[#071225]/72" aria-hidden="true"></div>
-        <div
-          class="absolute inset-0 bg-gradient-to-br from-[#0b1a3a]/50 via-transparent to-[#1a2f55]/30"
-          aria-hidden="true"
-        ></div>
-        <div
-          class="absolute inset-x-0 bottom-0 h-24 bg-gradient-to-b from-transparent to-[var(--color-surface)] sm:h-28"
-          aria-hidden="true"
-        ></div>
+        <div class="hero-scrim" aria-hidden="true"></div>
+        <div class="hero-scrim-soft" aria-hidden="true"></div>
+        <div class="hero-fade" aria-hidden="true"></div>
       </div>
 
       <div class="relative mx-auto w-full max-w-6xl px-4 pb-10 pt-10 sm:px-6 sm:pb-12 sm:pt-14 lg:max-w-7xl lg:px-8">
-        <p class="animate-soft-rise text-sm text-white/75">
-          <a href={`/${version}/`} class="hover:text-white hover:underline" data-astro-prefetch>
+        <p class="animate-soft-rise hero-ink-subtle text-sm">
+          <a href={`/${version}/`} class="hero-ink hover:underline" data-astro-prefetch>
             ← Home
           </a>
-          <span class="mx-2 text-white/35">·</span>
-          <a href={`/${version}/journey`} class="hover:text-white hover:underline" data-astro-prefetch>
+          <span class="mx-2 opacity-40">·</span>
+          <a href={`/${version}/journey`} class="hero-ink hover:underline" data-astro-prefetch>
             Journey
           </a>
         </p>
 
         <div class="animate-soft-rise mt-8 max-w-2xl" style="animation-delay: 60ms">
-          <p class="text-xs font-semibold uppercase tracking-[0.14em] text-[var(--color-gold-soft)]">
+          <p class="hero-gold text-xs font-semibold uppercase tracking-[0.14em]">
             Devotionals
           </p>
           <h1
             id="devotionals-heading"
-            class="font-scripture mt-3 text-3xl font-semibold tracking-tight text-white sm:text-4xl lg:text-[2.75rem] lg:leading-tight"
+            class="font-scripture hero-ink mt-3 text-3xl font-semibold tracking-tight sm:text-4xl lg:text-[2.75rem] lg:leading-tight"
           >
             Themes for the heart
           </h1>
-          <p class="mt-4 max-w-xl text-base leading-relaxed text-white/88 sm:text-lg">
+          <p class="hero-ink-muted mt-4 max-w-xl text-base leading-relaxed sm:text-lg">
             Choose a theme—love, kindness, humility, grace, sacrifice, and more.
             Each theme has related verses you can pick, plus short guided readings.
           </p>
-          <p class="mt-5 text-sm text-white/70">
-            Progress: <span class="text-[var(--color-gold-soft)]" x-text="devotionDone"></span> guided readings completed
+          <p class="hero-ink-subtle mt-5 text-sm">
+            Progress: <span class="hero-gold" x-text="devotionDone"></span> guided readings completed
           </p>
         </div>
       </div>
