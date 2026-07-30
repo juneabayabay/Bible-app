@@ -5,30 +5,51 @@
 @theme {
   --font-sans: "Source Sans 3", ui-sans-serif, system-ui, sans-serif;
   --font-serif: "Source Serif 4", "Iowan Old Style", "Palatino Linotype", Palatino, serif;
-  --color-surface: #f7f5f2;
+
+  /* Faith palette — trust, glory, peace */
+  --color-primary: #1e3a8a;
+  --color-primary-soft: #243f96;
+  --color-gold: #d4af37;
+  --color-gold-soft: #e8c96a;
+  --color-sage: #8faf8f;
+  --color-sage-soft: #a8c4a8;
+
+  --color-surface: #faf9f6;
   --color-surface-elevated: #ffffff;
-  --color-ink: #1c1917;
-  --color-ink-muted: #57534e;
-  --color-ink-subtle: #78716c;
-  --color-line: #e8e4df;
-  --color-accent: #9a3412;
-  --color-highlight: #fef3c7;
+  --color-ink: #152238;
+  --color-ink-muted: #4a5568;
+  --color-ink-subtle: #718096;
+  --color-line: #e6e2d9;
+  --color-accent: #d4af37;
+  --color-highlight: #f5ecd0;
+  --color-success: #3d9b6e;
+  --color-warning: #e2b45c;
 }
 
 .dark {
-  --color-surface: #0c0a09;
-  --color-surface-elevated: #1c1917;
-  --color-ink: #fafaf9;
-  --color-ink-muted: #a8a29e;
-  --color-ink-subtle: #78716c;
-  --color-line: #292524;
-  --color-accent: #fbbf24;
-  --color-highlight: #78350f66;
+  --color-primary: #93b4ff;
+  --color-primary-soft: #6b8fd4;
+  --color-gold: #e8c96a;
+  --color-gold-soft: #d4af37;
+  --color-sage: #9fbf9f;
+  --color-sage-soft: #7a9a7a;
+
+  --color-surface: #0b1220;
+  --color-surface-elevated: #151d2e;
+  --color-ink: #f4f6fb;
+  --color-ink-muted: #a8b0c0;
+  --color-ink-subtle: #7d8698;
+  --color-line: #2a3448;
+  --color-accent: #e8c96a;
+  --color-highlight: #3a3218;
+  --color-success: #5ecf96;
+  --color-warning: #e2b45c;
 }
 
 html {
   color-scheme: light;
   -webkit-text-size-adjust: 100%;
+  scroll-behavior: smooth;
 }
 
 html.dark {
@@ -46,9 +67,104 @@ body {
   font-optical-sizing: auto;
 }
 
+/* Interactive surfaces */
+.ui-card {
+  border-radius: 1rem;
+  border: 1px solid var(--color-line);
+  background: var(--color-surface-elevated);
+  box-shadow: 0 1px 2px rgb(30 58 138 / 0.04), 0 8px 24px rgb(30 58 138 / 0.05);
+  transition:
+    transform 0.2s ease,
+    box-shadow 0.2s ease,
+    border-color 0.2s ease;
+}
+
+.dark .ui-card {
+  box-shadow: 0 1px 2px rgb(0 0 0 / 0.25), 0 8px 24px rgb(0 0 0 / 0.2);
+}
+
+a.ui-card:hover,
+button.ui-card:hover {
+  border-color: color-mix(in srgb, var(--color-primary) 28%, var(--color-line));
+  box-shadow: 0 2px 4px rgb(30 58 138 / 0.06), 0 12px 28px rgb(30 58 138 / 0.08);
+  transform: translateY(-1px);
+}
+
+.btn-primary {
+  display: inline-flex;
+  min-height: 2.75rem;
+  align-items: center;
+  justify-content: center;
+  border-radius: 0.875rem;
+  background: var(--color-primary);
+  padding: 0.625rem 1.25rem;
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: #ffffff;
+  transition: opacity 0.15s ease, transform 0.15s ease;
+}
+
+.dark .btn-primary {
+  color: #0b1220;
+}
+
+.btn-primary:hover {
+  opacity: 0.92;
+}
+
+.btn-primary:active {
+  transform: scale(0.98);
+}
+
+.btn-secondary {
+  display: inline-flex;
+  min-height: 2.75rem;
+  align-items: center;
+  justify-content: center;
+  border-radius: 0.875rem;
+  border: 1px solid var(--color-line);
+  background: var(--color-surface-elevated);
+  padding: 0.625rem 1.25rem;
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: var(--color-ink);
+  transition: background-color 0.15s ease, border-color 0.15s ease;
+}
+
+.btn-secondary:hover {
+  border-color: color-mix(in srgb, var(--color-gold) 40%, var(--color-line));
+  background: color-mix(in srgb, var(--color-gold) 8%, var(--color-surface-elevated));
+}
+
+.btn-ghost {
+  display: inline-flex;
+  min-height: 2.75rem;
+  align-items: center;
+  justify-content: center;
+  padding: 0.5rem 0.75rem;
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: var(--color-ink-muted);
+  transition: color 0.15s ease;
+}
+
+.btn-ghost:hover {
+  color: var(--color-ink);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+.eyebrow {
+  font-size: 0.75rem;
+  font-weight: 650;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--color-gold);
+}
+
 @keyframes verse-flash {
   0% {
-    box-shadow: inset 0 0 0 2px color-mix(in srgb, var(--color-accent) 70%, transparent);
+    box-shadow: inset 0 0 0 2px color-mix(in srgb, var(--color-gold) 70%, transparent);
   }
   100% {
     box-shadow: inset 0 0 0 0 transparent;
@@ -57,4 +173,21 @@ body {
 
 .verse-flash {
   animation: verse-flash 2.2s ease-out;
+}
+
+@keyframes soft-rise {
+  from {
+    opacity: 0;
+    transform: translateY(0.75rem);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .animate-soft-rise {
+    animation: soft-rise 0.7s ease both;
+  }
 }

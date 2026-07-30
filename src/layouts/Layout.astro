@@ -9,11 +9,9 @@ interface Props {
   title?: string;
   version?: VersionId;
   showFooter?: boolean;
-  /**
-   * reading — comfortable line length for chapters (default)
-   * wide — dashboard / book lists that need more horizontal room
-   */
   width?: "reading" | "wide";
+  /** Allow full-bleed hero to reach the top edge under the header */
+  flushHero?: boolean;
 }
 
 const {
@@ -21,6 +19,7 @@ const {
   version = DEFAULT_VERSION,
   showFooter = true,
   width = "reading",
+  flushHero = false,
 } = Astro.props;
 
 const shell =
@@ -36,7 +35,10 @@ const shell =
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
     <meta name="color-scheme" content="light dark" />
     <meta name="astro-prefetch" content="hover" />
-    <meta name="description" content="Read Scripture. Highlight verses. Keep notes on this device." />
+    <meta
+      name="description"
+      content="Draw near to God every day. Read Scripture, highlight verses, and keep notes—peacefully, on this device."
+    />
     <title>{title}</title>
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
@@ -59,13 +61,13 @@ const shell =
     </script>
   </head>
   <body class="flex min-h-screen flex-col antialiased transition-colors duration-200">
-    <header class="sticky top-0 z-40 border-b border-[var(--color-line)] bg-[var(--color-surface-elevated)]/95 backdrop-blur-sm supports-[padding:max(0px)]:pt-[env(safe-area-inset-top)]">
+    <header class="sticky top-0 z-40 border-b border-[var(--color-line)]/80 bg-[var(--color-surface-elevated)]/80 backdrop-blur-md supports-[padding:max(0px)]:pt-[env(safe-area-inset-top)]">
       <div class:list={[shell, "flex flex-col gap-3 py-3 sm:gap-3.5 sm:py-4"]}>
         <div class="flex items-center justify-between gap-2">
           <nav class="flex min-w-0 items-center gap-3 sm:gap-5" aria-label="Main">
             <a
               href={`/${version}/`}
-              class="truncate text-lg font-semibold tracking-tight text-[var(--color-ink)] transition hover:opacity-70"
+              class="truncate text-lg font-semibold tracking-tight text-[var(--color-primary)] transition hover:opacity-80"
             >
               Bible
             </a>
@@ -88,7 +90,7 @@ const shell =
       </div>
     </header>
 
-    <main class:list={[shell, "flex-1 py-6 sm:py-8 lg:py-10"]}>
+    <main class:list={[shell, "flex-1", flushHero ? "pb-8 sm:pb-10 lg:pb-12" : "py-6 sm:py-8 lg:py-10"]}>
       <slot />
       {showFooter && <SiteFooter version={version} />}
     </main>

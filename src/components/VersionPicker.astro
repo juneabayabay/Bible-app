@@ -14,7 +14,7 @@ const current = getVersion(version);
   <label class="sr-only" for="bible-version">Bible version</label>
   <select
     id="bible-version"
-    class="max-w-[7.5rem] rounded-md border border-[var(--color-line)] bg-[var(--color-surface-elevated)] px-2 py-2 text-xs text-[var(--color-ink)] outline-none ring-[var(--color-accent)] focus:ring-2 sm:max-w-[12rem] sm:px-2.5 sm:text-sm"
+    class="max-w-[7.5rem] rounded-xl border border-[var(--color-line)] bg-[var(--color-surface-elevated)] px-2 py-2 text-xs text-[var(--color-ink)] outline-none ring-[var(--color-primary)] focus:ring-2 sm:max-w-[12rem] sm:px-2.5 sm:text-sm"
     x-model="current"
     @change="switchTo(current)"
     title={current.label}

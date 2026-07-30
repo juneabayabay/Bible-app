@@ -3,7 +3,7 @@
 
 <button
   type="button"
-  class="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-md border border-[var(--color-line)] bg-[var(--color-surface-elevated)] text-[var(--color-ink)] transition hover:bg-[var(--color-line)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-accent)]"
+  class="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-[var(--color-line)] bg-[var(--color-surface-elevated)] text-[var(--color-ink)] transition hover:bg-[var(--color-line)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-primary)]"
   x-data
   @click="$store.theme.toggle()"
   :aria-label="$store.theme.dark ? 'Switch to light mode' : 'Switch to dark mode'"

@@ -1,7 +1,8 @@
 ---
 import Layout from "../../layouts/Layout.astro";
 import SearchBar from "../../components/SearchBar.astro";
-import DailyVerse from "../../components/DailyVerse.astro";
+import HomeHero from "../../components/HomeHero.astro";
+import QuickActions from "../../components/QuickActions.astro";
 import BookIndex from "../../components/BookIndex.astro";
 import FaithEncouragement from "../../components/FaithEncouragement.astro";
 import { getBookCatalog, resolveVersionId } from "../../lib/bible";
@@ -23,137 +24,43 @@ const otCount = books.filter((b) => isOldTestament(b.slug)).length;
 const ntCount = books.length - otCount;
 const showTabs = otCount > 0 && ntCount > 0;
 const defaultTab = otCount > 0 ? "ot" : "nt";
+
+const startHref = daily?.url ?? (books[0] ? `/${version}/book/${books[0].slug}` : "#books");
 ---
 
-<Layout title={`Bible · ${meta.shortLabel}`} version={version} width="wide">
+<Layout title={`Bible · ${meta.shortLabel}`} version={version} width="wide" flushHero>
   <SearchBar slot="header" version={version} />
 
-  <div class="space-y-10 sm:space-y-12 lg:space-y-14" x-data={`homeDashboard('${version}')`}>
-    <!-- Top dashboard: reading + overview side-by-side on laptop -->
-    <div class="grid gap-8 lg:grid-cols-12 lg:gap-10 xl:gap-12">
-      <div class="min-w-0 lg:col-span-7 xl:col-span-8">
-        <!-- Returning readers -->
-        <section class="space-y-3" x-show="continueUrl" x-cloak aria-label="Continue reading">
-          <p class="text-xs font-semibold uppercase tracking-[0.12em] text-[var(--color-accent)]">
-            Continue reading
-          </p>
-          <h1 class="font-scripture text-3xl font-semibold tracking-tight text-[var(--color-ink)] sm:text-4xl lg:text-[2.75rem] lg:leading-tight">
-            <span class="capitalize" x-text="continueLabel"></span>
-          </h1>
-          <p class="max-w-xl text-sm text-[var(--color-ink-muted)] sm:text-base">
-            Pick up where you left off in {meta.shortLabel}.
-          </p>
-          <div class="flex flex-wrap items-center gap-3 pt-2">
-            <a
-              class="inline-flex min-h-11 items-center justify-center rounded-md bg-[var(--color-ink)] px-5 text-sm font-medium text-[var(--color-surface)] transition hover:opacity-90"
-              :href="continueUrl"
-              data-astro-prefetch
-            >
-              Continue
-            </a>
-            <a
-              class="inline-flex min-h-11 items-center justify-center px-2 text-sm text-[var(--color-ink-muted)] transition hover:text-[var(--color-ink)] hover:underline"
-              href="#books"
-            >
-              Browse books
-            </a>
-          </div>
-        </section>
-
-        <!-- First visit / no history -->
-        <div x-show="!continueUrl" aria-label="Start reading">
-          {daily ? (
-            <DailyVerse
-              text={daily.text}
-              book={daily.book}
-              chapter={daily.chapter}
-              verse={daily.verse}
-              versionLabel={meta.shortLabel}
-              url={daily.url}
-              featured
-            />
-          ) : (
-            <div>
-              <h1 class="font-scripture text-3xl font-semibold tracking-tight sm:text-4xl lg:text-[2.75rem] lg:leading-tight">
-                Bible
-              </h1>
-              <p class="mt-3 max-w-xl text-sm text-[var(--color-ink-muted)] sm:text-base">
-                Read Scripture in {meta.shortLabel}. Choose a book below to begin.
-              </p>
-              <a
-                class="mt-6 inline-flex min-h-11 items-center justify-center rounded-md bg-[var(--color-ink)] px-5 text-sm font-medium text-[var(--color-surface)] transition hover:opacity-90"
-                href="#books"
-              >
-                Browse books
-              </a>
-            </div>
-          )}
-        </div>
-
-        {daily && (
-          <div class="mt-8 lg:mt-10" x-show="continueUrl" x-cloak>
-            <DailyVerse
-              text={daily.text}
-              book={daily.book}
-              chapter={daily.chapter}
-              verse={daily.verse}
-              versionLabel={meta.shortLabel}
-              url={daily.url}
-            />
-          </div>
-        )}
-      </div>
-
-      <!-- Side panel on laptop+ -->
-      <aside
-        class="lg:col-span-5 xl:col-span-4"
-        aria-label="Reading dashboard"
-      >
-        <div class="border-y border-[var(--color-line)] py-5 sm:py-6 lg:sticky lg:top-28 lg:border lg:border-[var(--color-line)] lg:bg-[var(--color-surface-elevated)] lg:px-5 lg:py-6 xl:px-6">
-          <p class="text-xs font-semibold uppercase tracking-[0.12em] text-[var(--color-ink-subtle)]">
-            Your dashboard
-          </p>
-          <p class="mt-2 text-base font-medium text-[var(--color-ink)]">
-            {meta.shortLabel}
-          </p>
-          <p class="mt-1 text-sm text-[var(--color-ink-muted)]">
-            {books.length} books ready to read
-          </p>
-
-          <nav class="mt-5 flex flex-col gap-1 sm:mt-6" aria-label="Dashboard links">
-            <a
-              href="#books"
-              class="flex min-h-11 items-center justify-between gap-3 rounded-md px-3 text-sm text-[var(--color-ink)] transition hover:bg-[var(--color-surface)] lg:hover:bg-[var(--color-surface)]"
-            >
-              <span>Browse books</span>
-              <span class="text-[var(--color-ink-subtle)]" aria-hidden="true">→</span>
-            </a>
-            <a
-              href="/saved"
-              class="flex min-h-11 items-center justify-between gap-3 rounded-md px-3 text-sm text-[var(--color-ink)] transition hover:bg-[var(--color-surface)]"
-            >
-              <span x-text="savedCount > 0 ? `Saved (${savedCount})` : 'Saved highlights'"></span>
-              <span class="text-[var(--color-ink-subtle)]" aria-hidden="true">→</span>
-            </a>
-            <a
-              href="#why-god"
-              class="flex min-h-11 items-center justify-between gap-3 rounded-md px-3 text-sm text-[var(--color-ink-muted)] transition hover:bg-[var(--color-surface)] hover:text-[var(--color-ink)]"
-            >
-              <span>Why we need God</span>
-              <span class="text-[var(--color-ink-subtle)]" aria-hidden="true">→</span>
-            </a>
-          </nav>
-        </div>
-      </aside>
-    </div>
-
-    <BookIndex
-      version={version}
-      books={books}
-      defaultTab={defaultTab}
-      showTabs={showTabs}
+  <!--
+    Simple home flow:
+    1) Hero + today’s verse
+    2) Quick actions (continue / saved / streak)
+    3) Books
+    4) Short encouragement
+  -->
+  <div x-data={`homeDashboard('${version}')`}>
+    <HomeHero
+      headline="Open God’s Word today"
+      subcopy="Read calmly. Highlight what speaks to you. Keep notes on this device."
+      ctaHref={startHref}
+      ctaLabel={daily ? "Read today’s chapter" : "Start reading"}
+      booksHref="#books"
+      verseText={daily?.text}
+      verseCite={daily ? `${daily.book} ${daily.chapter}:${daily.verse} · ${meta.shortLabel}` : undefined}
+      verseUrl={daily?.url}
     />
 
-    <FaithEncouragement booksHref="#books" />
+    <div class="space-y-10 sm:space-y-12">
+      <QuickActions />
+
+      <BookIndex
+        version={version}
+        books={books}
+        defaultTab={defaultTab}
+        showTabs={showTabs}
+      />
+
+      <FaithEncouragement booksHref="#books" />
+    </div>
   </div>
 </Layout>

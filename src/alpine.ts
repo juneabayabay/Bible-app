@@ -10,7 +10,7 @@ import {
   type AnnotationMap,
 } from "./lib/annotations";
 import { DEFAULT_VERSION, VERSIONS, type VersionId } from "./lib/versions";
-import { loadLastRead, saveLastRead } from "./lib/reading";
+import { loadLastRead, loadStreak, saveLastRead } from "./lib/reading";
 import { parseReference } from "./lib/parseReference";
 
 type SearchDoc = {
@@ -117,15 +117,19 @@ export default (Alpine: Alpine) => {
     continueUrl: "",
     continueLabel: "",
     savedCount: 0,
+    streak: 0,
+    welcome: "Welcome. God’s Word is waiting for you.",
 
     init() {
       const last = loadLastRead();
       if (last) {
         this.continueUrl = `/${last.version}/chapter/${last.slug}/${last.chapter}`;
         this.continueLabel = `${last.book} ${last.chapter}`;
+        this.welcome = "Welcome back. Your journey of faith continues today.";
       }
       const map = loadAnnotations();
       this.savedCount = Object.keys(map).length;
+      this.streak = loadStreak().count;
     },
   }));
 
@@ -140,6 +144,9 @@ export default (Alpine: Alpine) => {
       openNote: null as number | null,
       flashVerse: null as number | null,
       showTip: false,
+      fontScale: 1,
+      progress: 0,
+      _onScroll: null as null | (() => void),
 
       init() {
         this.annotations = loadAnnotations();
@@ -148,13 +155,39 @@ export default (Alpine: Alpine) => {
         } catch {
           this.showTip = true;
         }
+        try {
+          const saved = Number(localStorage.getItem("bible-font-scale"));
+          if (saved >= 0.9 && saved <= 1.35) this.fontScale = saved;
+        } catch {
+          /* ignore */
+        }
         saveLastRead({
           version: this.version,
           slug: this.bookSlug,
           book: this.bookName || titleCaseSlug(this.bookSlug),
           chapter: this.chapter,
         });
+        this._onScroll = () => {
+          const doc = document.documentElement;
+          const max = doc.scrollHeight - window.innerHeight;
+          this.progress =
+            max > 0 ? Math.min(100, Math.round((window.scrollY / max) * 100)) : 0;
+        };
+        window.addEventListener("scroll", this._onScroll, { passive: true });
+        this._onScroll();
         this.$nextTick(() => this.scrollToHash());
+      },
+
+      bump(delta: number) {
+        this.fontScale = Math.min(
+          1.35,
+          Math.max(0.9, Number((this.fontScale + delta).toFixed(2))),
+        );
+        try {
+          localStorage.setItem("bible-font-scale", String(this.fontScale));
+        } catch {
+          /* ignore */
+        }
       },
 
       dismissTip() {
@@ -218,6 +251,20 @@ export default (Alpine: Alpine) => {
         } catch {
           /* ignore */
         }
+      },
+
+      async shareVerse(verse: number, text: string) {
+        const label = `${this.bookName || titleCaseSlug(this.bookSlug)} ${this.chapter}:${verse}`;
+        const line = `"${text}" — ${label}`;
+        try {
+          if (navigator.share) {
+            await navigator.share({ title: label, text: line });
+            return;
+          }
+        } catch {
+          /* user cancelled or unsupported */
+        }
+        await this.copyVerse(verse, text);
       },
     }),
   );

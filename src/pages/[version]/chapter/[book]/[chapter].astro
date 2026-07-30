@@ -31,15 +31,32 @@ const nextChapter =
     ? book.chapters[chapterIndex + 1]
     : null;
 
+const wordCount = verses.reduce(
+  (sum, v) => sum + v.text.trim().split(/\s+/).filter(Boolean).length,
+  0,
+);
+const minutes = Math.max(1, Math.ceil(wordCount / 200));
+
 const safeBookName = JSON.stringify(bookName);
 const navBtn =
-  "inline-flex min-h-11 min-w-[2.75rem] flex-1 items-center justify-center rounded-md border border-[var(--color-line)] bg-[var(--color-surface-elevated)] px-3 text-sm text-[var(--color-ink)] transition hover:bg-[var(--color-line)] active:scale-[0.98] sm:flex-none sm:min-w-0";
+  "btn-secondary !min-h-11 flex-1 sm:flex-none";
 ---
 
 <Layout title={`${bookName} ${chapterNumber}`} version={version}>
   <SearchBar slot="header" version={version} />
 
   <div x-data={`chapterReader('${version}', '${bookSlug}', ${chapterNumber}, ${safeBookName})`}>
+    <!-- Reading progress -->
+    <div
+      class="fixed inset-x-0 top-0 z-50 h-0.5 bg-[var(--color-line)]"
+      aria-hidden="true"
+    >
+      <div
+        class="h-full bg-[var(--color-gold)] transition-[width] duration-150"
+        :style="`width: ${progress}%`"
+      ></div>
+    </div>
+
     <nav class="mb-5 text-sm" aria-label="Breadcrumb">
       <a
         class="text-[var(--color-ink-muted)] transition hover:text-[var(--color-ink)]"
@@ -50,49 +67,57 @@ const navBtn =
       </a>
     </nav>
 
-    <div class="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
+    <div class="flex flex-col gap-5 sm:flex-row sm:items-end sm:justify-between">
       <div class="min-w-0">
         <h1 class="font-scripture text-2xl font-semibold tracking-tight sm:text-3xl">
           {bookName}
           <span class="text-[var(--color-ink-muted)]">{chapterNumber}</span>
         </h1>
+        <p class="mt-2 text-sm text-[var(--color-ink-muted)]">
+          ~{minutes} min · {chapterIndex + 1}/{book.chapters.length}
+        </p>
         <p class="mt-2 text-sm text-[var(--color-ink-subtle)]" x-show="showTip" x-cloak>
           Tap a verse number to highlight.
-          <button
-            type="button"
-            class="ml-1 underline hover:text-[var(--color-ink)]"
-            @click="dismissTip()"
-          >
+          <button type="button" class="ml-1 font-medium text-[var(--color-primary)] underline" @click="dismissTip()">
             Got it
           </button>
         </p>
       </div>
 
-      <div class="flex w-full gap-2 sm:w-auto" aria-label="Chapter">
-        {prevChapter ? (
-          <a class={navBtn} href={`/${version}/chapter/${bookSlug}/${prevChapter.number}`} data-astro-prefetch>
-            ← {prevChapter.number}
-          </a>
-        ) : null}
-        {nextChapter ? (
-          <a class={navBtn} href={`/${version}/chapter/${bookSlug}/${nextChapter.number}`} data-astro-prefetch>
-            {nextChapter.number} →
-          </a>
-        ) : null}
+      <div class="flex w-full flex-col gap-2 sm:w-auto">
+        <div class="flex items-center gap-2" aria-label="Text size">
+          <button type="button" class="btn-secondary !min-h-10 !px-3" @click="bump(-0.08)" aria-label="Smaller text">A−</button>
+          <button type="button" class="btn-secondary !min-h-10 !px-3" @click="bump(0.08)" aria-label="Larger text">A+</button>
+        </div>
+        <div class="flex gap-2" aria-label="Chapter">
+          {prevChapter ? (
+            <a class={navBtn} href={`/${version}/chapter/${bookSlug}/${prevChapter.number}`} data-astro-prefetch>
+              ← {prevChapter.number}
+            </a>
+          ) : null}
+          {nextChapter ? (
+            <a class={navBtn} href={`/${version}/chapter/${bookSlug}/${nextChapter.number}`} data-astro-prefetch>
+              {nextChapter.number} →
+            </a>
+          ) : null}
+        </div>
       </div>
     </div>
 
-    <div class="mt-8 max-w-prose space-y-0.5 sm:mt-10">
+    <div
+      class="mt-8 max-w-prose space-y-0.5 sm:mt-10"
+      :style="`font-size: ${fontScale}rem`"
+    >
       {verses.map((verse) => (
         <div
           id={`v${verse.number}`}
-          class="group scroll-mt-28 rounded-md px-1.5 py-2.5 transition sm:px-2 sm:py-2"
+          class="group scroll-mt-28 rounded-xl px-1.5 py-2.5 transition sm:px-2 sm:py-2"
           :class={`(isHighlighted(${verse.number}) ? 'bg-[var(--color-highlight)] ' : '') + (flashVerse === ${verse.number} ? 'verse-flash' : '')`}
         >
           <div class="flex gap-2.5 sm:gap-3">
             <button
               type="button"
-              class="mt-0.5 inline-flex h-9 w-9 shrink-0 items-center justify-center rounded text-sm font-semibold tabular-nums text-[var(--color-ink-subtle)] transition hover:bg-[var(--color-line)] hover:text-[var(--color-accent)] sm:mt-1 sm:h-auto sm:w-8 sm:justify-start"
+              class="mt-0.5 inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-lg text-sm font-semibold tabular-nums text-[var(--color-ink-subtle)] transition hover:bg-[var(--color-line)] hover:text-[var(--color-primary)] sm:mt-1 sm:h-auto sm:w-8 sm:justify-start"
               title="Toggle highlight"
               aria-label={`Highlight verse ${verse.number}`}
               @click={`toggleHighlight(${verse.number})`}
@@ -100,7 +125,7 @@ const navBtn =
               {verse.number}
             </button>
             <div class="min-w-0 flex-1">
-              <p class="font-scripture text-[1.125rem] leading-[1.75] text-[var(--color-ink)] sm:text-[1.2rem] sm:leading-[1.8]">
+              <p class="font-scripture text-[1.125rem] leading-[1.8] text-[var(--color-ink)] sm:text-[1.2rem] sm:leading-[1.85]">
                 {verse.text}
               </p>
               <div class="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1">
@@ -119,8 +144,15 @@ const navBtn =
                 >
                   Copy
                 </button>
+                <button
+                  type="button"
+                  class="min-h-9 text-xs font-medium text-[var(--color-ink-subtle)] transition hover:text-[var(--color-ink)] sm:min-h-8 sm:opacity-0 sm:group-hover:opacity-100 sm:focus:opacity-100 sm:group-focus-within:opacity-100"
+                  @click={`shareVerse(${verse.number}, ${JSON.stringify(verse.text)})`}
+                >
+                  Share
+                </button>
                 <span
-                  class="text-xs text-[var(--color-accent)]"
+                  class="text-xs text-[var(--color-gold)]"
                   x-show={`noteText(${verse.number}).trim()`}
                   x-cloak
                 >
@@ -129,9 +161,9 @@ const navBtn =
               </div>
               <div class="mt-2" x-show={`openNote === ${verse.number}`} x-cloak>
                 <textarea
-                  class="w-full rounded-md border border-[var(--color-line)] bg-[var(--color-surface-elevated)] p-3 text-sm text-[var(--color-ink)] outline-none ring-[var(--color-accent)] placeholder:text-[var(--color-ink-subtle)] focus:ring-2"
+                  class="w-full rounded-2xl border border-[var(--color-line)] bg-[var(--color-surface-elevated)] p-3 text-sm text-[var(--color-ink)] outline-none ring-[var(--color-primary)] placeholder:text-[var(--color-ink-subtle)] focus:ring-2"
                   rows="3"
-                  placeholder="Write a note for this verse…"
+                  placeholder="Write what God is speaking to you…"
                   x-bind:value={`noteText(${verse.number})`}
                   @input={`setNote(${verse.number}, $event.target.value)`}
                 />
@@ -142,8 +174,12 @@ const navBtn =
       ))}
     </div>
 
+    <p class="mt-8 max-w-prose text-sm text-[var(--color-ink-muted)]">
+      Take a breath. Every verse is a step closer to Him.
+    </p>
+
     <nav
-      class="mt-10 flex items-center justify-between gap-3 border-t border-[var(--color-line)] pt-6 sm:mt-12"
+      class="mt-8 flex items-center justify-between gap-3 border-t border-[var(--color-line)] pt-6 sm:mt-10"
       aria-label="Chapter footer"
     >
       {prevChapter ? (

@@ -1,0 +1,35 @@
+---
+/**
+ * Compact action row — only the next useful steps (no duplicate dashboard cards).
+ */
+---
+
+<section class="mt-8 sm:mt-10" aria-label="Quick actions">
+  <div class="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between">
+    <p class="text-sm text-[var(--color-ink-muted)]" x-text="welcome"></p>
+
+    <div class="flex flex-wrap gap-2">
+      <a
+        class="btn-secondary !min-h-10 !px-3.5 text-sm"
+        :href="continueUrl || '#books'"
+        data-astro-prefetch
+        x-show="continueUrl"
+        x-cloak
+      >
+        Continue <span class="font-medium" x-text="continueLabel"></span>
+      </a>
+
+      <a class="btn-secondary !min-h-10 !px-3.5 text-sm" href="/saved">
+        <span x-text="savedCount > 0 ? `Saved (${savedCount})` : 'Saved'"></span>
+      </a>
+
+      <span
+        class="inline-flex min-h-10 items-center rounded-[0.875rem] border border-[var(--color-line)] bg-[var(--color-surface-elevated)] px-3.5 text-sm text-[var(--color-ink-muted)]"
+        x-show="streak > 0"
+        x-cloak
+      >
+        <span x-text="`${streak}-day streak`"></span>
+      </span>
+    </div>
+  </div>
+</section>

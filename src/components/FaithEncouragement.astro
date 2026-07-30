@@ -1,6 +1,5 @@
 ---
 interface Props {
-  /** Deep-link into the books list on this page */
   booksHref?: string;
 }
 
@@ -9,128 +8,83 @@ const { booksHref = "#books" } = Astro.props;
 const sections = [
   {
     id: "word",
-    eyebrow: "His Word",
-    title: "We need God’s Word to live",
-    body: "Food keeps the body alive. Scripture keeps the heart alive. When we feel empty, confused, or tired, God speaks through His Word — not as noise, but as truth we can stand on.",
-    verse: "“Man shall not live by bread alone, but by every word that proceeds out of God’s mouth.”",
-    cite: "Matthew 4:4",
+    title: "We need His Word",
+    body: "Scripture feeds the heart when we feel empty. God speaks truth we can stand on.",
+    verse: "Matthew 4:4",
     image: "/images/faith/word.jpg",
-    alt: "An open Bible resting in soft morning light",
-    imageFirst: true,
+    alt: "An open Bible in soft morning light",
   },
   {
     id: "path",
-    eyebrow: "His guidance",
-    title: "We need God to show the way",
-    body: "Life is a long path with turns we cannot see ahead. We need God because our own wisdom is limited. His Word is a lamp — not for the whole journey at once, but for the next faithful step.",
-    verse: "“Your word is a lamp to my feet, and a light for my path.”",
-    cite: "Psalm 119:105",
+    title: "We need His guidance",
+    body: "We cannot see every turn ahead. His Word lights the next faithful step.",
+    verse: "Psalm 119:105",
     image: "/images/faith/path.jpg",
-    alt: "A quiet path through hills at sunrise",
-    imageFirst: false,
+    alt: "A quiet path through morning light",
   },
   {
     id: "presence",
-    eyebrow: "His presence",
-    title: "We need God close to us",
-    body: "We were made for relationship with our Creator. Success, comfort, and plans are not enough. We need God’s presence — His peace when we worry, His mercy when we fail, and His love that does not leave.",
-    verse: "“Come to me, all you who labor and are heavily burdened, and I will give you rest.”",
-    cite: "Matthew 11:28",
+    title: "We need His presence",
+    body: "We were made for God. His peace meets us when we worry, and His love does not leave.",
+    verse: "Matthew 11:28",
     image: "/images/faith/presence.jpg",
-    alt: "Hands open in quiet prayer in warm light",
-    imageFirst: true,
+    alt: "Hands resting in quiet prayer",
   },
 ] as const;
 ---
 
 <section
   id="why-god"
-  class="faith-journey scroll-mt-28 border-t border-[var(--color-line)] pt-10 sm:pt-12 lg:pt-14"
+  class="scroll-mt-28 border-t border-[var(--color-line)] pt-10 sm:pt-12"
   aria-labelledby="faith-heading"
   data-faith-root
 >
-  <header class="faith-reveal mx-auto max-w-3xl text-center lg:max-w-4xl">
-    <p class="text-xs font-semibold uppercase tracking-[0.14em] text-[var(--color-accent)]">
-      Why we need God
-    </p>
+  <header class="faith-reveal max-w-2xl">
+    <p class="eyebrow">Encouragement</p>
     <h2
       id="faith-heading"
-      class="font-scripture mt-3 text-3xl font-semibold tracking-tight text-[var(--color-ink)] sm:text-4xl lg:text-[2.75rem] lg:leading-tight"
+      class="font-scripture mt-2 text-2xl font-semibold tracking-tight text-[var(--color-ink)] sm:text-3xl"
     >
-      Every day, we need Him
+      Why we need God
     </h2>
-    <p class="mx-auto mt-4 max-w-2xl text-base leading-relaxed text-[var(--color-ink-muted)] sm:text-lg">
-      This app is here to help you open Scripture — because we do not walk through life alone.
-      We need God’s Word, guidance, and presence.
+    <p class="mt-2 text-base leading-relaxed text-[var(--color-ink-muted)]">
+      Three simple reasons to open Scripture today.
     </p>
   </header>
 
-  <div class="mt-10 space-y-12 sm:mt-12 sm:space-y-16 lg:mt-14 lg:space-y-20">
+  <div class="mt-8 grid gap-5 sm:grid-cols-2 lg:grid-cols-3 lg:gap-6">
     {
       sections.map((section) => (
-        <article
-          class="faith-reveal"
-          aria-labelledby={`faith-${section.id}-title`}
-        >
-          <div class="grid items-center gap-6 md:grid-cols-2 md:gap-8 lg:gap-12 xl:gap-16">
-            <figure
-              class:list={[
-                "relative -mx-4 overflow-hidden sm:-mx-6 lg:mx-0",
-                section.imageFirst ? "md:order-1" : "md:order-2",
-              ]}
+        <article class="faith-reveal ui-card overflow-hidden" aria-labelledby={`faith-${section.id}-title`}>
+          <img
+            src={section.image}
+            alt={section.alt}
+            width="800"
+            height="600"
+            loading="lazy"
+            decoding="async"
+            class="aspect-[4/3] w-full object-cover"
+          />
+          <div class="p-5">
+            <h3
+              id={`faith-${section.id}-title`}
+              class="font-scripture text-xl font-semibold text-[var(--color-ink)]"
             >
-              <img
-                src={section.image}
-                alt={section.alt}
-                width="1600"
-                height="900"
-                loading="lazy"
-                decoding="async"
-                class="aspect-[16/10] w-full object-cover sm:aspect-[16/9] md:aspect-[4/3] lg:aspect-[16/11] lg:rounded-sm"
-              />
-            </figure>
-
-            <div
-              class:list={[
-                "min-w-0",
-                section.imageFirst ? "md:order-2" : "md:order-1",
-              ]}
-            >
-              <p class="text-xs font-semibold uppercase tracking-[0.12em] text-[var(--color-accent)]">
-                {section.eyebrow}
-              </p>
-              <h3
-                id={`faith-${section.id}-title`}
-                class="font-scripture mt-2 text-2xl font-semibold tracking-tight text-[var(--color-ink)] sm:text-3xl lg:text-[2rem] lg:leading-snug"
-              >
-                {section.title}
-              </h3>
-              <p class="mt-3 max-w-prose text-base leading-relaxed text-[var(--color-ink-muted)] sm:mt-4 sm:text-[1.05rem]">
-                {section.body}
-              </p>
-              <blockquote class="font-scripture mt-5 max-w-prose border-l-2 border-[var(--color-accent)] pl-4 text-[1.05rem] leading-snug text-[var(--color-ink)] sm:mt-6 sm:text-xl sm:leading-snug">
-                {section.verse}
-              </blockquote>
-              <p class="mt-2 text-sm text-[var(--color-ink-subtle)]">{section.cite}</p>
-            </div>
+              {section.title}
+            </h3>
+            <p class="mt-2 text-sm leading-relaxed text-[var(--color-ink-muted)]">
+              {section.body}
+            </p>
+            <p class="mt-3 text-xs font-medium text-[var(--color-gold)]">{section.verse}</p>
           </div>
         </article>
       ))
     }
   </div>
 
-  <div class="faith-reveal mt-12 border-t border-[var(--color-line)] pt-10 text-center sm:mt-14 sm:pt-12 lg:mt-16 lg:pt-14">
-    <h3 class="font-scripture text-2xl font-semibold tracking-tight text-[var(--color-ink)] sm:text-3xl">
-      Start with one page today
-    </h3>
-    <p class="mx-auto mt-3 max-w-lg text-base leading-relaxed text-[var(--color-ink-muted)]">
-      You do not need to read everything at once. Open a book, read a chapter, and let God meet you there.
-    </p>
-    <a
-      href={booksHref}
-      class="mt-6 inline-flex min-h-11 items-center justify-center rounded-md bg-[var(--color-ink)] px-6 text-sm font-medium text-[var(--color-surface)] transition hover:opacity-90 sm:mt-8"
-    >
-      Browse the books
+  <div class="faith-reveal mt-8 text-center sm:mt-10">
+    <a href={booksHref} class="btn-primary">
+      Choose a book
     </a>
   </div>
 </section>
@@ -144,10 +98,10 @@ const sections = [
   @media (prefers-reduced-motion: no-preference) {
     .faith-reveal {
       opacity: 0;
-      transform: translateY(1rem);
+      transform: translateY(0.75rem);
       transition:
-        opacity 0.7s ease,
-        transform 0.7s ease;
+        opacity 0.6s ease,
+        transform 0.6s ease;
     }
 
     .faith-reveal.is-visible {
@@ -161,7 +115,6 @@ const sections = [
   function initFaithReveals() {
     const root = document.querySelector("[data-faith-root]");
     if (!root) return;
-
     const items = root.querySelectorAll(".faith-reveal");
     if (!items.length) return;
 
@@ -179,7 +132,7 @@ const sections = [
           }
         }
       },
-      { rootMargin: "0px 0px -8% 0px", threshold: 0.12 },
+      { rootMargin: "0px 0px -6% 0px", threshold: 0.1 },
     );
 
     items.forEach((el) => observer.observe(el));

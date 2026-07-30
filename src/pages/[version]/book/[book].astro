@@ -45,7 +45,7 @@ if (!book) {
     {book.chapters.map((chapter) => (
       <li>
         <a
-          class="inline-flex h-11 w-full items-center justify-center rounded-md border border-[var(--color-line)] bg-[var(--color-surface-elevated)] text-sm tabular-nums text-[var(--color-ink)] transition hover:border-[var(--color-accent)] hover:bg-[var(--color-line)] active:scale-[0.98] sm:h-10"
+          class="inline-flex h-11 w-full items-center justify-center rounded-xl border border-[var(--color-line)] bg-[var(--color-surface-elevated)] text-sm tabular-nums text-[var(--color-ink)] transition hover:border-[var(--color-primary)] hover:bg-[color-mix(in_srgb,var(--color-primary)_6%,var(--color-surface-elevated))] active:scale-[0.98] sm:h-10"
           href={`/${version}/chapter/${book.slug}/${chapter}`}
           data-astro-prefetch
         >
