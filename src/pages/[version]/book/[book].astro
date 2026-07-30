@@ -18,27 +18,34 @@ if (!book) {
 }
 ---
 
-<Layout title={book.name} version={version}>
+<Layout title={book.name} version={version} width="wide">
   <SearchBar slot="header" version={version} />
 
-  <p class="mb-4 text-sm">
+  <nav class="mb-5 text-sm" aria-label="Breadcrumb">
     <a
-      class="text-[var(--color-ink-muted)] transition hover:text-[var(--color-ink)] hover:underline"
+      class="text-[var(--color-ink-muted)] transition hover:text-[var(--color-ink)]"
       href={`/${version}/`}
       data-astro-prefetch
     >
       ← All books
     </a>
+  </nav>
+
+  <h1 class="font-scripture text-2xl font-semibold tracking-tight sm:text-3xl">
+    {book.name}
+  </h1>
+  <p class="mt-2 text-sm text-[var(--color-ink-muted)]">
+    {book.chapters.length} {book.chapters.length === 1 ? "chapter" : "chapters"}
   </p>
 
-  <h1 class="text-2xl font-semibold tracking-tight sm:text-3xl">{book.name}</h1>
-
-  <h2 class="mt-8 text-lg font-medium sm:text-xl">Chapters</h2>
-  <ul class="mt-4 grid grid-cols-5 gap-2 sm:grid-cols-8 md:grid-cols-10">
+  <h2 class="mt-8 text-sm font-semibold uppercase tracking-[0.1em] text-[var(--color-ink-subtle)]">
+    Chapters
+  </h2>
+  <ul class="mt-4 grid grid-cols-5 gap-2 sm:grid-cols-8 md:grid-cols-10 lg:grid-cols-12">
     {book.chapters.map((chapter) => (
       <li>
         <a
-          class="inline-flex h-10 w-full items-center justify-center rounded-md border border-[var(--color-line)] bg-[var(--color-surface-elevated)] text-sm text-[var(--color-ink)] transition hover:border-[var(--color-accent)] hover:bg-[var(--color-line)] active:scale-[0.98] sm:h-9"
+          class="inline-flex h-11 w-full items-center justify-center rounded-md border border-[var(--color-line)] bg-[var(--color-surface-elevated)] text-sm tabular-nums text-[var(--color-ink)] transition hover:border-[var(--color-accent)] hover:bg-[var(--color-line)] active:scale-[0.98] sm:h-10"
           href={`/${version}/chapter/${book.slug}/${chapter}`}
           data-astro-prefetch
         >

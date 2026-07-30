@@ -1,0 +1,23 @@
+---
+import { getVersion, type VersionId } from "../lib/versions";
+
+interface Props {
+  version: VersionId;
+}
+
+const { version } = Astro.props;
+const meta = getVersion(version);
+---
+
+<footer class="mt-14 border-t border-[var(--color-line)] pt-8 pb-2 sm:mt-16 sm:pt-10">
+  <div class="flex flex-col gap-3 text-sm text-[var(--color-ink-subtle)] sm:flex-row sm:items-start sm:justify-between sm:gap-6">
+    <p class="max-w-md leading-relaxed">
+      <span class="font-medium text-[var(--color-ink-muted)]">{meta.label}</span>
+      <span class="mx-1.5 text-[var(--color-line)]">·</span>
+      {meta.description.replace(/\s*\(.*\)\s*$/, "") || "Public domain text"}
+    </p>
+    <p class="shrink-0 leading-relaxed sm:text-right">
+      Highlights &amp; notes stay on this device.
+    </p>
+  </div>
+</footer>

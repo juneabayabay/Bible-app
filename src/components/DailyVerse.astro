@@ -1,0 +1,72 @@
+---
+interface Props {
+  text: string;
+  book: string;
+  chapter: number;
+  verse: number;
+  versionLabel: string;
+  url: string;
+  /** When true, this is the page hero (larger type). */
+  featured?: boolean;
+}
+
+const {
+  text,
+  book,
+  chapter,
+  verse,
+  versionLabel,
+  url,
+  featured = false,
+} = Astro.props;
+
+const copyLabel = `${book} ${chapter}:${verse}`;
+---
+
+<section
+  class:list={[
+    featured ? "pt-1" : "border-t border-[var(--color-line)] pt-8 sm:pt-10",
+  ]}
+  aria-labelledby={featured ? "votd-heading-hero" : "votd-heading"}
+  x-data={`copyVerse(${JSON.stringify(text)}, ${JSON.stringify(copyLabel)})`}
+>
+  <p
+    id={featured ? "votd-heading-hero" : "votd-heading"}
+    class="text-xs font-semibold uppercase tracking-[0.12em] text-[var(--color-accent)]"
+  >
+    Verse of the day
+  </p>
+
+  <blockquote
+    class:list={[
+      "font-scripture mt-4 max-w-3xl text-[var(--color-ink)]",
+      featured
+        ? "text-[1.35rem] leading-[1.55] sm:text-3xl sm:leading-snug lg:text-[2.15rem] lg:leading-snug"
+        : "text-xl leading-relaxed sm:text-2xl sm:leading-snug",
+    ]}
+  >
+    {text}
+  </blockquote>
+
+  <p class="mt-4 text-sm text-[var(--color-ink-muted)]">
+    <span class="font-medium">{book} {chapter}:{verse}</span>
+    <span class="text-[var(--color-ink-subtle)]"> · {versionLabel}</span>
+  </p>
+
+  <div class="mt-6 flex flex-wrap items-center gap-3">
+    <a
+      class="inline-flex min-h-11 items-center justify-center rounded-md bg-[var(--color-ink)] px-5 text-sm font-medium text-[var(--color-surface)] transition hover:opacity-90"
+      href={url}
+      data-astro-prefetch
+    >
+      Read chapter
+    </a>
+    <button
+      type="button"
+      class="inline-flex min-h-11 items-center justify-center px-2 text-sm text-[var(--color-ink-muted)] transition hover:text-[var(--color-ink)] hover:underline"
+      @click="copy()"
+    >
+      <span x-text="copied ? 'Copied' : 'Copy'"></span>
+    </button>
+  </div>
+</section>

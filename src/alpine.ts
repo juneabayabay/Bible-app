@@ -139,9 +139,15 @@ export default (Alpine: Alpine) => {
       annotations: {} as AnnotationMap,
       openNote: null as number | null,
       flashVerse: null as number | null,
+      showTip: false,
 
       init() {
         this.annotations = loadAnnotations();
+        try {
+          this.showTip = localStorage.getItem("bible-tip-seen") !== "1";
+        } catch {
+          this.showTip = true;
+        }
         saveLastRead({
           version: this.version,
           slug: this.bookSlug,
@@ -149,6 +155,15 @@ export default (Alpine: Alpine) => {
           chapter: this.chapter,
         });
         this.$nextTick(() => this.scrollToHash());
+      },
+
+      dismissTip() {
+        this.showTip = false;
+        try {
+          localStorage.setItem("bible-tip-seen", "1");
+        } catch {
+          /* ignore */
+        }
       },
 
       scrollToHash() {
@@ -181,6 +196,7 @@ export default (Alpine: Alpine) => {
           highlighted: !this.isHighlighted(verse),
         });
         saveAnnotations(this.annotations);
+        if (this.showTip) this.dismissTip();
       },
 
       setNote(verse: number, note: string) {

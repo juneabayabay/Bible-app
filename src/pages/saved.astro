@@ -7,17 +7,11 @@ import { DEFAULT_VERSION } from "../lib/versions";
 <Layout title="Saved" version={DEFAULT_VERSION}>
   <SearchBar slot="header" version={DEFAULT_VERSION} />
 
-  <h1 class="text-2xl font-semibold tracking-tight sm:text-3xl">Saved</h1>
-  <p class="mt-2 text-sm text-[var(--color-ink-muted)] sm:text-base">
-    Your highlights and notes in this browser.
-  </p>
-  <p class="mt-4">
-    <a
-      href={`/${DEFAULT_VERSION}/`}
-      class="text-sm text-[var(--color-accent)] hover:underline"
-    >
-      ← Back to home
-    </a>
+  <h1 class="font-scripture text-2xl font-semibold tracking-tight sm:text-3xl">
+    Saved
+  </h1>
+  <p class="mt-2 max-w-md text-sm text-[var(--color-ink-muted)] sm:text-base">
+    Highlights and notes stored in this browser.
   </p>
 
   <div class="mt-8" x-data="savedList">
@@ -25,32 +19,36 @@ import { DEFAULT_VERSION } from "../lib/versions";
       Nothing saved yet. Open a chapter and highlight a verse or add a note.
     </p>
 
-    <ul class="space-y-3 sm:space-y-4" x-cloak>
+    <ul class="divide-y divide-[var(--color-line)] border-t border-[var(--color-line)]" x-cloak>
       <template x-for="item in items" :key="item.key">
-        <li class="rounded-md border border-[var(--color-line)] bg-[var(--color-surface-elevated)] p-4">
-          <a
-            class="font-medium text-[var(--color-ink)] hover:underline"
-            :href="item.url"
-            x-text="item.label"
-          ></a>
-          <p
-            class="mt-1 text-sm text-[var(--color-accent)]"
-            x-show="item.highlighted"
-          >
-            Highlighted
-          </p>
-          <p
-            class="mt-2 whitespace-pre-wrap text-sm text-[var(--color-ink-muted)]"
-            x-show="item.note"
-            x-text="item.note"
-          ></p>
-          <button
-            type="button"
-            class="mt-3 min-h-8 text-xs text-red-600 hover:underline dark:text-red-400"
-            @click="remove(item.key)"
-          >
-            Remove
-          </button>
+        <li class="py-4 sm:py-5">
+          <div class="flex flex-wrap items-start justify-between gap-3">
+            <div class="min-w-0 flex-1">
+              <a
+                class="font-medium text-[var(--color-ink)] hover:underline"
+                :href="item.url"
+                x-text="item.label"
+              ></a>
+              <p
+                class="mt-1 text-xs font-medium uppercase tracking-wide text-[var(--color-accent)]"
+                x-show="item.highlighted"
+              >
+                Highlighted
+              </p>
+              <p
+                class="mt-2 whitespace-pre-wrap text-sm leading-relaxed text-[var(--color-ink-muted)]"
+                x-show="item.note"
+                x-text="item.note"
+              ></p>
+            </div>
+            <button
+              type="button"
+              class="min-h-9 shrink-0 text-xs text-[var(--color-ink-subtle)] transition hover:text-red-600 dark:hover:text-red-400"
+              @click="remove(item.key)"
+            >
+              Remove
+            </button>
+          </div>
         </li>
       </template>
     </ul>
