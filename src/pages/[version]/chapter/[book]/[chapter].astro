@@ -113,7 +113,7 @@ const nextChapter =
 
   <div
     class="mt-6 space-y-1 leading-relaxed sm:space-y-2"
-    x-data={`chapterReader('${version}', '${bookSlug}', ${chapterNumber})`}
+    x-data={`chapterReader('${version}', '${bookSlug}', ${chapterNumber}, ${JSON.stringify(bookName)})`}
   >
     <p class="text-sm text-[var(--color-ink-subtle)]" x-show="loading" x-cloak>Loading chapter…</p>
     <p class="text-sm text-red-600 dark:text-red-400" x-show="error" x-text="error" x-cloak></p>

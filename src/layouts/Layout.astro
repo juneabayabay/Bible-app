@@ -45,6 +45,12 @@ const { title = "Bible", version = DEFAULT_VERSION } = Astro.props;
               Bible
             </a>
             <a
+              href={`/${version}/#books`}
+              class="hidden shrink-0 text-sm text-[var(--color-ink-muted)] transition hover:text-[var(--color-ink)] hover:underline sm:inline"
+            >
+              Books
+            </a>
+            <a
               href="/saved"
               class="shrink-0 text-sm text-[var(--color-ink-muted)] transition hover:text-[var(--color-ink)] hover:underline"
             >

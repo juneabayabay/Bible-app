@@ -1,0 +1,82 @@
+/** Classic references that exist across most Protestant canons. */
+export type VerseRef = {
+  slug: string;
+  book: string;
+  chapter: number;
+  verse: number;
+};
+
+export const DAILY_VERSE_POOL: VerseRef[] = [
+  { slug: "john", book: "John", chapter: 3, verse: 16 },
+  { slug: "psalms", book: "Psalms", chapter: 23, verse: 1 },
+  { slug: "philippians", book: "Philippians", chapter: 4, verse: 13 },
+  { slug: "romans", book: "Romans", chapter: 8, verse: 28 },
+  { slug: "proverbs", book: "Proverbs", chapter: 3, verse: 5 },
+  { slug: "isaiah", book: "Isaiah", chapter: 41, verse: 10 },
+  { slug: "matthew", book: "Matthew", chapter: 11, verse: 28 },
+  { slug: "joshua", book: "Joshua", chapter: 1, verse: 9 },
+  { slug: "jeremiah", book: "Jeremiah", chapter: 29, verse: 11 },
+  { slug: "psalms", book: "Psalms", chapter: 46, verse: 1 },
+  { slug: "2-timothy", book: "2 Timothy", chapter: 1, verse: 7 },
+  { slug: "romans", book: "Romans", chapter: 12, verse: 2 },
+  { slug: "galatians", book: "Galatians", chapter: 5, verse: 22 },
+  { slug: "ephesians", book: "Ephesians", chapter: 2, verse: 8 },
+  { slug: "hebrews", book: "Hebrews", chapter: 11, verse: 1 },
+  { slug: "james", book: "James", chapter: 1, verse: 5 },
+  { slug: "1-peter", book: "1 Peter", chapter: 5, verse: 7 },
+  { slug: "1-john", book: "1 John", chapter: 4, verse: 8 },
+  { slug: "revelation", book: "Revelation", chapter: 21, verse: 4 },
+  { slug: "genesis", book: "Genesis", chapter: 1, verse: 1 },
+  { slug: "exodus", book: "Exodus", chapter: 14, verse: 14 },
+  { slug: "deuteronomy", book: "Deuteronomy", chapter: 31, verse: 6 },
+  { slug: "psalms", book: "Psalms", chapter: 119, verse: 105 },
+  { slug: "proverbs", book: "Proverbs", chapter: 16, verse: 3 },
+  { slug: "isaiah", book: "Isaiah", chapter: 40, verse: 31 },
+  { slug: "lamentations", book: "Lamentations", chapter: 3, verse: 22 },
+  { slug: "micah", book: "Micah", chapter: 6, verse: 8 },
+  { slug: "matthew", book: "Matthew", chapter: 5, verse: 16 },
+  { slug: "matthew", book: "Matthew", chapter: 6, verse: 33 },
+  { slug: "luke", book: "Luke", chapter: 6, verse: 31 },
+  { slug: "john", book: "John", chapter: 14, verse: 6 },
+  { slug: "john", book: "John", chapter: 14, verse: 27 },
+  { slug: "acts", book: "Acts", chapter: 1, verse: 8 },
+  { slug: "romans", book: "Romans", chapter: 5, verse: 8 },
+  { slug: "romans", book: "Romans", chapter: 15, verse: 13 },
+  { slug: "1-corinthians", book: "1 Corinthians", chapter: 13, verse: 4 },
+  { slug: "1-corinthians", book: "1 Corinthians", chapter: 16, verse: 14 },
+  { slug: "2-corinthians", book: "2 Corinthians", chapter: 5, verse: 17 },
+  { slug: "galatians", book: "Galatians", chapter: 2, verse: 20 },
+  { slug: "ephesians", book: "Ephesians", chapter: 3, verse: 20 },
+  { slug: "philippians", book: "Philippians", chapter: 4, verse: 6 },
+  { slug: "colossians", book: "Colossians", chapter: 3, verse: 23 },
+  { slug: "1-thessalonians", book: "1 Thessalonians", chapter: 5, verse: 16 },
+  { slug: "hebrews", book: "Hebrews", chapter: 13, verse: 8 },
+  { slug: "james", book: "James", chapter: 1, verse: 17 },
+  { slug: "1-john", book: "1 John", chapter: 1, verse: 9 },
+  { slug: "psalms", book: "Psalms", chapter: 27, verse: 1 },
+  { slug: "psalms", book: "Psalms", chapter: 34, verse: 8 },
+  { slug: "psalms", book: "Psalms", chapter: 37, verse: 4 },
+  { slug: "psalms", book: "Psalms", chapter: 91, verse: 1 },
+  { slug: "proverbs", book: "Proverbs", chapter: 18, verse: 10 },
+  { slug: "isaiah", book: "Isaiah", chapter: 26, verse: 3 },
+  { slug: "matthew", book: "Matthew", chapter: 28, verse: 19 },
+  { slug: "mark", book: "Mark", chapter: 10, verse: 27 },
+  { slug: "luke", book: "Luke", chapter: 1, verse: 37 },
+  { slug: "john", book: "John", chapter: 8, verse: 32 },
+  { slug: "john", book: "John", chapter: 16, verse: 33 },
+  { slug: "romans", book: "Romans", chapter: 8, verse: 38 },
+  { slug: "philippians", book: "Philippians", chapter: 1, verse: 6 },
+  { slug: "2-timothy", book: "2 Timothy", chapter: 3, verse: 16 },
+];
+
+/** Stable day index (UTC) so everyone sees the same verse on a given date. */
+export function dayOfYearIndex(date = new Date()): number {
+  const start = Date.UTC(date.getUTCFullYear(), 0, 0);
+  const now = Date.UTC(date.getUTCFullYear(), date.getUTCMonth(), date.getUTCDate());
+  return Math.floor((now - start) / 86_400_000);
+}
+
+export function verseOfTheDay(date = new Date()): VerseRef {
+  const idx = dayOfYearIndex(date) % DAILY_VERSE_POOL.length;
+  return DAILY_VERSE_POOL[idx];
+}

@@ -10,6 +10,8 @@ import {
   type AnnotationMap,
 } from "./lib/annotations";
 import { DEFAULT_VERSION, VERSIONS, type VersionId } from "./lib/versions";
+import { DAILY_VERSE_POOL, dayOfYearIndex } from "./lib/dailyVerse";
+import { loadLastRead, saveLastRead } from "./lib/reading";
 
 type SearchDoc = {
   id: string;
@@ -87,12 +89,85 @@ export default (Alpine: Alpine) => {
     },
   }));
 
+  Alpine.data("dailyVerse", (version: string) => ({
+    version,
+    loading: true,
+    error: "",
+    ref: null as null | {
+      slug: string;
+      book: string;
+      chapter: number;
+      verse: number;
+    },
+    text: "",
+    url: "",
+
+    async init() {
+      const start = dayOfYearIndex();
+      for (let offset = 0; offset < DAILY_VERSE_POOL.length; offset++) {
+        const pick = DAILY_VERSE_POOL[(start + offset) % DAILY_VERSE_POOL.length];
+        this.ref = pick;
+        this.url = `/${this.version}/chapter/${pick.slug}/${pick.chapter}`;
+        try {
+          const res = await fetch(`/bibles/${this.version}/${pick.slug}.json`);
+          if (!res.ok) continue;
+          const book = (await res.json()) as {
+            name?: string;
+            chapters: Array<{
+              number: number;
+              verses: Array<{ number: number; text: string }>;
+            }>;
+          };
+          if (book.name) this.ref = { ...pick, book: book.name };
+          const chapter = book.chapters.find((c) => c.number === pick.chapter);
+          const verse = chapter?.verses.find((v) => v.number === pick.verse);
+          if (!verse?.text) continue;
+          this.text = verse.text;
+          this.loading = false;
+          return;
+        } catch {
+          /* try next */
+        }
+      }
+      this.error = "Could not load today’s verse for this version";
+      this.loading = false;
+    },
+
+    async copy() {
+      if (!this.text || !this.ref) return;
+      const line = `"${this.text}" — ${this.ref.book} ${this.ref.chapter}:${this.ref.verse}`;
+      try {
+        await navigator.clipboard.writeText(line);
+      } catch {
+        /* ignore */
+      }
+    },
+  }));
+
+  Alpine.data("homeDashboard", (version: string) => ({
+    version,
+    continueUrl: "",
+    continueLabel: "",
+    savedCount: 0,
+
+    init() {
+      const last = loadLastRead();
+      if (last) {
+        this.continueUrl = `/${last.version}/chapter/${last.slug}/${last.chapter}`;
+        this.continueLabel = `${last.book} ${last.chapter}`;
+      }
+      const map = loadAnnotations();
+      this.savedCount = Object.keys(map).length;
+    },
+  }));
+
   Alpine.data(
     "chapterReader",
-    (version: string, bookSlug: string, chapter: number) => ({
+    (version: string, bookSlug: string, chapter: number, bookName = "") => ({
       version,
       bookSlug,
       chapter,
+      bookName,
       verses: [] as Array<{ number: number; text: string }>,
       loading: true,
       error: "",
@@ -105,11 +180,22 @@ export default (Alpine: Alpine) => {
           const res = await fetch(`/bibles/${this.version}/${this.bookSlug}.json`);
           if (!res.ok) throw new Error("Could not load chapter");
           const book = (await res.json()) as {
+            name?: string;
             chapters: Array<{ number: number; verses: Array<{ number: number; text: string }> }>;
           };
+          if (!this.bookName && book.name) this.bookName = book.name;
           const found = book.chapters.find((c) => c.number === this.chapter);
           this.verses = found?.verses ?? [];
-          if (!this.verses.length) this.error = "Chapter not found in this version.";
+          if (!this.verses.length) {
+            this.error = "Chapter not found in this version.";
+          } else {
+            saveLastRead({
+              version: this.version,
+              slug: this.bookSlug,
+              book: String(this.bookName || this.bookSlug),
+              chapter: this.chapter,
+            });
+          }
         } catch (e) {
           this.error = e instanceof Error ? e.message : "Failed to load chapter";
         } finally {
