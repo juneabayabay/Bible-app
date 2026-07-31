@@ -20,6 +20,14 @@
         <span x-show="!continueUrl">Browse books</span>
       </a>
 
+      <a
+        class="btn-secondary !min-h-11 w-full !px-4 text-sm sm:w-auto"
+        :href="`/${version}/prayer`"
+        data-astro-prefetch
+      >
+        Prayer
+      </a>
+
       <a class="btn-secondary !min-h-11 w-full !px-4 text-sm sm:w-auto" href="/saved">
         <span x-text="savedCount > 0 ? `Saved (${savedCount})` : 'Saved'"></span>
       </a>

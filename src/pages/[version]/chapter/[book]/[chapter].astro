@@ -156,6 +156,23 @@ const quiz = getQuiz(bookSlug, chapterNumber);
               ></span>
             </button>
           )}
+          <button
+            type="button"
+            class={toolbarBtn}
+            x-show="!speaking"
+            @click={`speakChapter(${JSON.stringify(verses.map((v) => ({ number: v.number, text: v.text })))})`}
+          >
+            Listen
+          </button>
+          <button
+            type="button"
+            class={toolbarBtn}
+            x-show="speaking"
+            x-cloak
+            @click="stopSpeaking()"
+          >
+            Stop
+          </button>
         </div>
       </div>
 
@@ -252,6 +269,14 @@ const quiz = getQuiz(bookSlug, chapterNumber);
                 aria-label={`Verse ${verse.number} actions`}
               >
                 <div class="flex flex-wrap items-center gap-1.5" x-show="menuPanel === 'actions'">
+                  <button
+                    type="button"
+                    class="inline-flex min-h-10 items-center rounded-lg border border-[var(--color-line)] px-2.5 text-xs font-medium text-[var(--color-ink-muted)] transition hover:text-[var(--color-ink)] sm:min-h-9"
+                    role="menuitem"
+                    @click={`speakVerse(${verse.number}, ${JSON.stringify(verse.text)})`}
+                  >
+                    Listen
+                  </button>
                   <button
                     type="button"
                     class="inline-flex min-h-10 items-center rounded-lg border border-[var(--color-line)] px-2.5 text-xs font-medium text-[var(--color-ink-muted)] transition hover:text-[var(--color-ink)] sm:min-h-9"

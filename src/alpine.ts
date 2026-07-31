@@ -37,6 +37,7 @@ import {
   setActivePlan,
   isQuizDone,
 } from "./lib/progress";
+import { addPrayer, loadPrayers, removePrayer, type PrayerEntry } from "./lib/prayers";
 import { getChallengeForDate } from "./lib/challenges";
 import { getPlan, nextPlanDay } from "./lib/plans";
 
@@ -472,6 +473,8 @@ export default (Alpine: Alpine) => {
       _activePointerId: null as number | null,
       _ignoreOutsideUntil: 0,
       _statusTimer: null as ReturnType<typeof setTimeout> | null,
+      speaking: false,
+      speakingVerse: null as number | null,
 
       init() {
         this.annotations = loadAnnotations();
@@ -534,6 +537,7 @@ export default (Alpine: Alpine) => {
       },
 
       destroy() {
+        this.stopSpeaking();
         this.clearPress();
         if (this._statusTimer) clearTimeout(this._statusTimer);
         if (this._onScroll) {
@@ -765,6 +769,81 @@ export default (Alpine: Alpine) => {
         }
         this.closeMenu();
       },
+
+      canSpeak() {
+        return typeof window !== "undefined" && "speechSynthesis" in window;
+      },
+
+      stopSpeaking() {
+        try {
+          window.speechSynthesis?.cancel();
+        } catch {
+          /* ignore */
+        }
+        this.speaking = false;
+        this.speakingVerse = null;
+      },
+
+      speakVerse(verse: number, text: string) {
+        if (!this.canSpeak()) {
+          this.flashStatus("Listening isn’t supported here");
+          this.closeMenu();
+          return;
+        }
+        this.stopSpeaking();
+        const label = `${this.bookName || titleCaseSlug(this.bookSlug)} ${this.chapter}:${verse}`;
+        const utter = new SpeechSynthesisUtterance(`${label}. ${text}`);
+        utter.rate = 0.92;
+        utter.onend = () => {
+          this.speaking = false;
+          this.speakingVerse = null;
+        };
+        utter.onerror = () => {
+          this.speaking = false;
+          this.speakingVerse = null;
+        };
+        this.speaking = true;
+        this.speakingVerse = verse;
+        this.closeMenu();
+        this.flashStatus("Listening…");
+        window.speechSynthesis.speak(utter);
+      },
+
+      speakChapter(texts: Array<{ number: number; text: string }>) {
+        if (!this.canSpeak()) {
+          this.flashStatus("Listening isn’t supported here");
+          return;
+        }
+        this.stopSpeaking();
+        if (!texts.length) return;
+        this.speaking = true;
+        this.speakingVerse = null;
+        this.flashStatus("Listening to chapter…");
+
+        const book = this.bookName || titleCaseSlug(this.bookSlug);
+        let i = 0;
+        const speakNext = () => {
+          if (i >= texts.length) {
+            this.speaking = false;
+            this.speakingVerse = null;
+            this.flashStatus("Finished listening");
+            return;
+          }
+          const v = texts[i++];
+          this.speakingVerse = v.number;
+          const utter = new SpeechSynthesisUtterance(
+            `${book} ${this.chapter}:${v.number}. ${v.text}`,
+          );
+          utter.rate = 0.92;
+          utter.onend = speakNext;
+          utter.onerror = () => {
+            this.speaking = false;
+            this.speakingVerse = null;
+          };
+          window.speechSynthesis.speak(utter);
+        };
+        speakNext();
+      },
     }),
   );
 
@@ -808,6 +887,73 @@ export default (Alpine: Alpine) => {
       delete map[key];
       saveAnnotations(map);
       this.refresh();
+    },
+  }));
+
+  Alpine.data("prayerJournal", () => ({
+    items: [] as PrayerEntry[],
+    forWhom: "",
+    note: "",
+    status: "" as string,
+    _statusTimer: null as ReturnType<typeof setTimeout> | null,
+
+    init() {
+      this.items = loadPrayers();
+    },
+
+    flash(message: string) {
+      this.status = message;
+      if (this._statusTimer) clearTimeout(this._statusTimer);
+      this._statusTimer = setTimeout(() => {
+        this.status = "";
+      }, 2200);
+    },
+
+    add() {
+      if (!this.forWhom.trim()) return;
+      this.items = addPrayer(this.forWhom, this.note);
+      this.forWhom = "";
+      this.note = "";
+      this.flash("Saved");
+    },
+
+    remove(id: string) {
+      this.items = removePrayer(id);
+    },
+
+    formatDate(iso: string) {
+      try {
+        return new Date(iso).toLocaleString(undefined, {
+          dateStyle: "medium",
+          timeStyle: "short",
+        });
+      } catch {
+        return iso;
+      }
+    },
+
+    exportList() {
+      if (!this.items.length) {
+        this.flash("Nothing to export");
+        return;
+      }
+      const stamp = new Date().toISOString().slice(0, 10);
+      const lines = this.items.map((item) => {
+        const when = this.formatDate(item.createdAt);
+        const note = item.note.trim() ? `\n${item.note.trim()}` : "";
+        return `Prayed for ${item.forWhom}\n${when}${note}`;
+      });
+      const blob = new Blob(
+        [`Prayer journal · ${stamp}\n\n${lines.join("\n\n---\n\n")}\n`],
+        { type: "text/plain;charset=utf-8" },
+      );
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `prayer-journal-${stamp}.txt`;
+      a.click();
+      URL.revokeObjectURL(url);
+      this.flash("Exported");
     },
   }));
 

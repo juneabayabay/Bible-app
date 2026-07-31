@@ -1,0 +1,113 @@
+---
+import Layout from "../../layouts/Layout.astro";
+import SearchBar from "../../components/SearchBar.astro";
+import { resolveVersionId } from "../../lib/bible";
+import { getVersion } from "../../lib/versions";
+import { getVersionHomePaths } from "../../lib/staticPaths";
+
+export function getStaticPaths() {
+  return getVersionHomePaths();
+}
+
+const version = resolveVersionId(Astro.params.version);
+const meta = getVersion(version);
+---
+
+<Layout title={`Prayer · ${meta.shortLabel}`} version={version}>
+  <SearchBar slot="header" version={version} />
+
+  <div class="page-stack measure" x-data="prayerJournal">
+    <header class="border-b border-[var(--color-line)] pb-5">
+      <p class="text-sm text-[var(--color-ink-muted)]">
+        <a href={`/${version}/`} class="hover:underline" data-astro-prefetch>← Home</a>
+      </p>
+      <p class="eyebrow mt-5">Journal</p>
+      <h1 class="font-scripture mt-1.5 text-3xl font-semibold tracking-tight sm:text-4xl">
+        Prayer
+      </h1>
+      <p class="mt-2 text-sm leading-relaxed text-[var(--color-ink-muted)] sm:text-base">
+        Write who you prayed for. Kept on this device only.
+      </p>
+    </header>
+
+    <form class="ui-card space-y-3 p-4 sm:p-5" @submit.prevent="add()">
+      <label class="block">
+        <span class="text-xs font-semibold uppercase tracking-[0.08em] text-[var(--color-ink-subtle)]">
+          Prayed for
+        </span>
+        <input
+          type="text"
+          class="mt-1.5 w-full rounded-xl border border-[var(--color-line)] bg-[var(--color-surface)] px-3 py-2.5 text-base text-[var(--color-ink)] outline-none ring-[var(--color-primary)] placeholder:text-[var(--color-ink-subtle)] focus:ring-2"
+          placeholder="A friend, family, church, nation…"
+          x-model="forWhom"
+          maxlength="120"
+          required
+        />
+      </label>
+      <label class="block">
+        <span class="text-xs font-semibold uppercase tracking-[0.08em] text-[var(--color-ink-subtle)]">
+          Note <span class="font-normal normal-case tracking-normal">(optional)</span>
+        </span>
+        <textarea
+          class="mt-1.5 w-full rounded-xl border border-[var(--color-line)] bg-[var(--color-surface)] px-3 py-2.5 text-base text-[var(--color-ink)] outline-none ring-[var(--color-primary)] placeholder:text-[var(--color-ink-subtle)] focus:ring-2 sm:text-sm"
+          rows="3"
+          placeholder="What you asked, or a verse that came to mind…"
+          x-model="note"
+          maxlength="500"
+        ></textarea>
+      </label>
+      <div class="flex flex-wrap items-center gap-2">
+        <button type="submit" class="btn-primary !min-h-11 !px-5 text-sm">
+          Save prayer
+        </button>
+        <p class="text-sm text-[var(--color-gold)]" x-show="status" x-text="status" x-cloak></p>
+      </div>
+    </form>
+
+    <div>
+      <div class="mb-3 flex flex-wrap items-center justify-between gap-2">
+        <h2 class="font-scripture text-xl font-semibold">Your list</h2>
+        <button
+          type="button"
+          class="btn-secondary !min-h-10 !px-3 text-sm"
+          x-show="items.length > 0"
+          x-cloak
+          @click="exportList()"
+        >
+          Export
+        </button>
+      </div>
+
+      <p class="text-sm text-[var(--color-ink-subtle)]" x-show="items.length === 0" x-cloak>
+        Nothing yet. Add a name above when you pray.
+      </p>
+
+      <ul class="space-y-3" x-show="items.length > 0" x-cloak>
+        <template x-for="item in items" :key="item.id">
+          <li class="ui-card p-4 sm:p-5">
+            <div class="flex items-start justify-between gap-3">
+              <div class="min-w-0 flex-1">
+                <p class="font-medium text-[var(--color-ink)]">
+                  Prayed for <span x-text="item.forWhom"></span>
+                </p>
+                <p
+                  class="mt-2 whitespace-pre-wrap text-sm leading-relaxed text-[var(--color-ink-muted)]"
+                  x-show="item.note"
+                  x-text="item.note"
+                ></p>
+                <p class="mt-2 text-xs text-[var(--color-ink-subtle)]" x-text="formatDate(item.createdAt)"></p>
+              </div>
+              <button
+                type="button"
+                class="min-h-10 shrink-0 rounded-lg px-2 text-xs text-[var(--color-ink-subtle)] transition hover:bg-[var(--color-line)]/50 hover:text-red-600 dark:hover:text-red-400"
+                @click="remove(item.id)"
+              >
+                Remove
+              </button>
+            </div>
+          </li>
+        </template>
+      </ul>
+    </div>
+  </div>
+</Layout>

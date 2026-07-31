@@ -9,6 +9,11 @@ const { version } = Astro.props;
 
 const links = [
   {
+    href: `/${version}/prayer`,
+    label: "Prayer",
+    hint: "Prayed for… journal",
+  },
+  {
     href: `/${version}/devotionals`,
     label: "Grow",
     hint: "Devotionals & prayer",
@@ -48,7 +53,7 @@ const links = [
     </p>
   </header>
 
-  <ul class="mt-7 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+  <ul class="mt-7 grid gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
     {
       links.map((link) => (
         <li>
