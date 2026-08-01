@@ -919,7 +919,21 @@ export default (Alpine: Alpine) => {
     _statusTimer: null as ReturnType<typeof setTimeout> | null,
     _wallStatusTimer: null as ReturnType<typeof setTimeout> | null,
 
+    setTab(next: "wall" | "journal") {
+      this.tab = next;
+      try {
+        const url = new URL(window.location.href);
+        url.hash = next === "journal" ? "journal" : "wall";
+        history.replaceState(null, "", url);
+      } catch {
+        /* ignore */
+      }
+    },
+
     async init() {
+      const hash = window.location.hash.replace(/^#/, "").toLowerCase();
+      if (hash === "journal") this.tab = "journal";
+      else if (hash === "wall") this.tab = "wall";
       this.wallLive = isWallLive();
       this.deviceId = getDeviceId();
       this.items = loadPrayers();
