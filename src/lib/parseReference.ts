@@ -279,17 +279,223 @@ export type ParsedReference = {
   verse?: number;
 };
 
+const ONES: Record<string, number> = {
+  zero: 0,
+  oh: 0,
+  o: 0,
+  one: 1,
+  first: 1,
+  two: 2,
+  second: 2,
+  three: 3,
+  third: 3,
+  four: 4,
+  fourth: 4,
+  five: 5,
+  fifth: 5,
+  six: 6,
+  sixth: 6,
+  seven: 7,
+  seventh: 7,
+  eight: 8,
+  eighth: 8,
+  nine: 9,
+  ninth: 9,
+  ten: 10,
+  tenth: 10,
+  eleven: 11,
+  eleventh: 11,
+  twelve: 12,
+  twelfth: 12,
+  thirteen: 13,
+  fourteenth: 14,
+  fourteen: 14,
+  fifteen: 15,
+  fifteenth: 15,
+  sixteen: 16,
+  sixteenth: 16,
+  seventeen: 17,
+  seventeenth: 17,
+  eighteen: 18,
+  eighteenth: 18,
+  nineteen: 19,
+  nineteenth: 19,
+};
+
+const TENS: Record<string, number> = {
+  twenty: 20,
+  twentieth: 20,
+  thirty: 30,
+  thirtieth: 30,
+  forty: 40,
+  fortieth: 40,
+  fifty: 50,
+  fiftieth: 50,
+  sixty: 60,
+  sixtieth: 60,
+  seventy: 70,
+  seventieth: 70,
+  eighty: 80,
+  eightieth: 80,
+  ninety: 90,
+  ninetieth: 90,
+};
+
+/** Turn spoken number words into digits (“three sixteen” → “3 16”). */
+function spokenNumbersToDigits(text: string): string {
+  const words = text.split(/\s+/).filter(Boolean);
+  const out: string[] = [];
+  let i = 0;
+
+  while (i < words.length) {
+    const w = words[i];
+    const next = words[i + 1];
+
+    if (TENS[w] != null && next && ONES[next] != null && ONES[next]! < 10) {
+      out.push(String(TENS[w]! + ONES[next]!));
+      i += 2;
+      continue;
+    }
+    if (TENS[w] != null) {
+      out.push(String(TENS[w]));
+      i += 1;
+      continue;
+    }
+    if (ONES[w] != null) {
+      out.push(String(ONES[w]));
+      i += 1;
+      continue;
+    }
+    // “a hundred” / “one hundred fifty” — keep simple: hundred alone → 100
+    if (w === "hundred") {
+      const prev = out[out.length - 1];
+      if (prev && /^\d+$/.test(prev) && Number(prev) < 10) {
+        out[out.length - 1] = String(Number(prev) * 100);
+      } else {
+        out.push("100");
+      }
+      i += 1;
+      continue;
+    }
+
+    out.push(w);
+    i += 1;
+  }
+
+  return out.join(" ");
+}
+
 /** Clean spoken transcripts before parsing (e.g. “John chapter 3 verse 16”). */
 export function normalizeSpokenReference(query: string): string {
-  return query
+  let q = query
     .toLowerCase()
-    .replace(/[?!]/g, " ")
+    .replace(/[?!'"“”‘’]/g, " ")
+    .replace(/\b(please|open|go to|goto|find|show|read|basahin|buksan|hanapin)\b/g, " ")
     .replace(/\b(chapter|kapitulo|kabanata)\b/g, " ")
-    .replace(/\b(verse|talata|bersikulo)\b/g, " ")
-    .replace(/\b(book of|libro ng|sa)\b/g, " ")
+    .replace(/\b(verse|verses|talata|bersikulo)\b/g, " ")
+    .replace(/\b(book of|libro ng|libro|sa)\b/g, " ")
     .replace(/,/g, " ")
+    .replace(/:/g, " ")
     .replace(/\s+/g, " ")
     .trim();
+
+  q = spokenNumbersToDigits(q);
+  return q.replace(/\s+/g, " ").trim();
+}
+
+/** Extra spoken forms like “john 316” → try “john 3 16”. */
+function spokenGluedCandidates(q: string): string[] {
+  const m = q.match(/^(.+?)\s+(\d{3,4})$/);
+  if (!m) return [q];
+  const book = m[1];
+  const digits = m[2];
+  const splits: string[] = [];
+  if (digits.length === 3) {
+    splits.push(`${book} ${digits[0]} ${digits.slice(1)}`);
+    splits.push(`${book} ${digits.slice(0, 2)} ${digits[2]}`);
+  } else if (digits.length === 4) {
+    splits.push(`${book} ${digits.slice(0, 2)} ${digits.slice(2)}`);
+    splits.push(`${book} ${digits[0]} ${digits.slice(1)}`);
+  }
+  // Prefer split chapter:verse forms before treating the whole number as a chapter.
+  return [...splits, q];
+}
+
+/** Protestant chapter counts — used to disambiguate spoken “john 316” vs “psalm 119”. */
+const MAX_CHAPTER: Record<string, number> = {
+  genesis: 50,
+  exodus: 40,
+  leviticus: 27,
+  numbers: 36,
+  deuteronomy: 34,
+  joshua: 24,
+  judges: 21,
+  ruth: 4,
+  "1-samuel": 31,
+  "2-samuel": 24,
+  "1-kings": 22,
+  "2-kings": 25,
+  "1-chronicles": 29,
+  "2-chronicles": 36,
+  ezra: 10,
+  nehemiah: 13,
+  esther: 10,
+  job: 42,
+  psalms: 150,
+  proverbs: 31,
+  ecclesiastes: 12,
+  "song-of-solomon": 8,
+  isaiah: 66,
+  jeremiah: 52,
+  lamentations: 5,
+  ezekiel: 48,
+  daniel: 12,
+  hosea: 14,
+  joel: 3,
+  amos: 9,
+  obadiah: 1,
+  jonah: 4,
+  micah: 7,
+  nahum: 3,
+  habakkuk: 3,
+  zephaniah: 3,
+  haggai: 2,
+  zechariah: 14,
+  malachi: 4,
+  matthew: 28,
+  mark: 16,
+  luke: 24,
+  john: 21,
+  acts: 28,
+  romans: 16,
+  "1-corinthians": 16,
+  "2-corinthians": 13,
+  galatians: 6,
+  ephesians: 6,
+  philippians: 4,
+  colossians: 4,
+  "1-thessalonians": 5,
+  "2-thessalonians": 3,
+  "1-timothy": 6,
+  "2-timothy": 4,
+  titus: 3,
+  philemon: 1,
+  hebrews: 13,
+  james: 5,
+  "1-peter": 5,
+  "2-peter": 3,
+  "1-john": 5,
+  "2-john": 1,
+  "3-john": 1,
+  jude: 1,
+  revelation: 22,
+};
+
+function isPlausibleRef(ref: ParsedReference): boolean {
+  const max = MAX_CHAPTER[ref.slug] ?? 50;
+  if (ref.chapter < 1 || ref.chapter > max) return false;
+  if (ref.verse !== undefined && (ref.verse < 1 || ref.verse > 176)) return false;
+  return true;
 }
 
 /**
@@ -297,28 +503,42 @@ export function normalizeSpokenReference(query: string): string {
  * Returns null if the query does not look like a reference.
  */
 export function parseReference(query: string): ParsedReference | null {
-  const q = normalizeSpokenReference(query);
-  if (!q) return null;
+  const base = normalizeSpokenReference(query);
+  if (!base) return null;
 
-  const match = q.match(
-    /^((?:\d\s*)?[a-z][a-z\s]*?)\s+(\d+)(?:\s*[:.]\s*(\d+)|\s+(\d+))?$/i,
-  );
-  if (!match) return null;
+  const candidates: ParsedReference[] = [];
 
-  const bookRaw = match[1].replace(/\s+/g, " ").trim();
-  const compact = bookRaw.replace(/\s+/g, "");
-  const slug =
-    BOOK_ALIASES[bookRaw] ??
-    BOOK_ALIASES[compact] ??
-    (bookRaw.includes(" ") ? null : BOOK_ALIASES[bookRaw]);
+  for (const q of spokenGluedCandidates(base)) {
+    const match = q.match(
+      /^((?:\d\s*)?[a-z][a-z\s]*?)\s+(\d+)(?:\s*[:.]\s*(\d+)|\s+(\d+))?$/i,
+    );
+    if (!match) continue;
 
-  if (!slug) return null;
+    const bookRaw = match[1].replace(/\s+/g, " ").trim();
+    const compact = bookRaw.replace(/\s+/g, "");
+    const slug =
+      BOOK_ALIASES[bookRaw] ??
+      BOOK_ALIASES[compact] ??
+      (bookRaw.includes(" ") ? null : BOOK_ALIASES[bookRaw]);
 
-  const chapter = Number(match[2]);
-  const verseRaw = match[3] ?? match[4];
-  const verse = verseRaw ? Number(verseRaw) : undefined;
-  if (!Number.isFinite(chapter) || chapter < 1) return null;
-  if (verse !== undefined && (!Number.isFinite(verse) || verse < 1)) return null;
+    if (!slug) continue;
 
-  return { slug, chapter, verse };
+    const chapter = Number(match[2]);
+    const verseRaw = match[3] ?? match[4];
+    const verse = verseRaw ? Number(verseRaw) : undefined;
+    if (!Number.isFinite(chapter) || chapter < 1) continue;
+    if (verse !== undefined && (!Number.isFinite(verse) || verse < 1)) continue;
+
+    const ref = { slug, chapter, verse };
+    if (!isPlausibleRef(ref)) continue;
+    candidates.push(ref);
+  }
+
+  if (!candidates.length) return null;
+
+  // Prefer a whole chapter when it is a valid chapter number (e.g. Psalm 119),
+  // otherwise the first chapter:verse split (e.g. John 316 → 3:16).
+  const chapterOnly = candidates.find((c) => c.verse === undefined);
+  if (chapterOnly) return chapterOnly;
+  return candidates[0];
 }

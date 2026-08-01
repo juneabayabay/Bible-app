@@ -135,6 +135,19 @@ type VersionPickerGroup = {
   versions: Array<{ id: string; shortLabel: string; description: string }>;
 };
 
+type SpeechRecognitionLike = {
+  lang: string;
+  continuous: boolean;
+  interimResults: boolean;
+  maxAlternatives: number;
+  start: () => void;
+  stop: () => void;
+  abort: () => void;
+  onresult: ((ev: Event) => void) | null;
+  onerror: ((ev: Event) => void) | null;
+  onend: (() => void) | null;
+};
+
 function resolveDark(): boolean {
   const saved = localStorage.getItem(THEME_KEY);
   if (saved === "dark") return true;
@@ -2417,6 +2430,7 @@ export default (Alpine: Alpine) => {
     listening: false,
     voiceSupported: false,
     voiceHint: "",
+    _voiceSeq: 0,
     loadPromise: null as Promise<void> | null,
     worker: null as Worker | null,
     searchSeq: 0,
@@ -2446,11 +2460,16 @@ export default (Alpine: Alpine) => {
           /* ignore */
         }
       }
-      const SR =
-        (window as unknown as { SpeechRecognition?: new () => unknown }).SpeechRecognition ||
-        (window as unknown as { webkitSpeechRecognition?: new () => unknown })
-          .webkitSpeechRecognition;
-      this.voiceSupported = Boolean(SR);
+      this.voiceSupported = this.getSpeechRecognition() != null;
+    },
+
+    getSpeechRecognition() {
+      if (typeof window === "undefined") return null;
+      const w = window as unknown as {
+        SpeechRecognition?: new () => SpeechRecognitionLike;
+        webkitSpeechRecognition?: new () => SpeechRecognitionLike;
+      };
+      return w.SpeechRecognition || w.webkitSpeechRecognition || null;
     },
 
     destroy() {
@@ -2463,133 +2482,151 @@ export default (Alpine: Alpine) => {
 
     stopVoice(abort = false) {
       const rec = this._recognition;
-      if (rec) {
-        try {
-          if (abort) rec.abort();
-          else rec.stop();
-        } catch {
-          /* ignore */
-        }
-      }
       this._recognition = null;
       this.listening = false;
+      if (!rec) return;
+      try {
+        rec.onresult = null;
+        rec.onerror = null;
+        rec.onend = null;
+        if (abort) rec.abort();
+        else rec.stop();
+      } catch {
+        /* ignore */
+      }
     },
 
     toggleVoice() {
       if (this.listening) {
-        this.stopVoice();
-        this.voiceHint = "";
+        this.stopVoice(true);
+        this.voiceHint = "Stopped.";
         return;
       }
       this.startVoice();
     },
 
     startVoice() {
-      if (!this.voiceSupported) {
-        this.voiceHint = "Voice isn’t available here. Try Chrome or Safari.";
-        this.error = "";
+      if (typeof window !== "undefined" && !window.isSecureContext) {
+        this.voiceHint =
+          "Mic needs a secure page (https or localhost). Open the site over https.";
         return;
       }
 
-      type SRCtor = new () => {
-        lang: string;
-        continuous: boolean;
-        interimResults: boolean;
-        maxAlternatives?: number;
-        start: () => void;
-        stop: () => void;
-        abort: () => void;
-        onresult: ((ev: Event) => void) | null;
-        onerror: ((ev: Event) => void) | null;
-        onend: (() => void) | null;
-      };
-
-      const SR =
-        (window as unknown as { SpeechRecognition?: SRCtor }).SpeechRecognition ||
-        (window as unknown as { webkitSpeechRecognition?: SRCtor }).webkitSpeechRecognition;
+      const SR = this.getSpeechRecognition();
       if (!SR) {
         this.voiceSupported = false;
-        this.voiceHint = "Voice isn’t available here.";
+        this.voiceHint = "Voice isn’t available here. Use Chrome or Safari, then try again.";
         return;
       }
 
+      // Tear down any prior session without racing the new listeners.
       this.stopVoice(true);
       this.error = "";
-      this.voiceHint = "Listening… say a verse, like John 3 16";
+      const seq = ++this._voiceSeq;
+      this.voiceHint = "Listening… say a verse, like “John 3 16”";
 
       const recognition = new SR();
-      recognition.lang =
-        (typeof navigator !== "undefined" && navigator.language) || "en-PH";
+      // Bible book names are usually English even for Tagalog users.
+      recognition.lang = "en-US";
       recognition.continuous = false;
       recognition.interimResults = false;
-      if ("maxAlternatives" in recognition) recognition.maxAlternatives = 3;
+      recognition.maxAlternatives = 5;
 
       recognition.onresult = (ev: Event) => {
+        if (seq !== this._voiceSeq) return;
         const e = ev as unknown as {
-          results: ArrayLike<{ 0: { transcript: string }; isFinal?: boolean }>;
+          results: ArrayLike<ArrayLike<{ transcript: string }>>;
         };
-        const first = e.results?.[0]?.[0]?.transcript?.trim() ?? "";
-        if (!first) {
-          this.voiceHint = "Didn’t catch that. Tap the mic and try again.";
+        const transcripts: string[] = [];
+        for (let i = 0; i < e.results.length; i++) {
+          const alt = e.results[i];
+          for (let j = 0; j < alt.length; j++) {
+            const t = alt[j]?.transcript?.trim();
+            if (t && !transcripts.includes(t)) transcripts.push(t);
+          }
+        }
+        if (!transcripts.length) {
+          this.voiceHint = "Didn’t catch that. Tap the mic and speak again.";
           return;
         }
-        void this.applyVoiceTranscript(first);
+        void this.applyVoiceTranscript(transcripts);
       };
 
       recognition.onerror = (ev: Event) => {
+        if (seq !== this._voiceSeq) return;
+        if (this._recognition !== recognition) return;
         const code = (ev as unknown as { error?: string }).error || "";
-        this.listening = false;
         this._recognition = null;
-        if (code === "aborted" || code === "no-speech") {
-          this.voiceHint =
-            code === "no-speech"
-              ? "No speech heard. Tap the mic and speak clearly."
-              : "";
+        this.listening = false;
+        if (code === "aborted") return;
+        if (code === "no-speech") {
+          this.voiceHint = "No speech heard. Tap the mic and speak clearly.";
           return;
         }
-        if (code === "not-allowed") {
-          this.voiceHint = "Microphone blocked. Allow mic access, then try again.";
+        if (code === "not-allowed" || code === "service-not-allowed") {
+          this.voiceHint = "Allow microphone access for this site, then tap the mic again.";
           return;
         }
-        this.voiceHint = "Voice search failed. You can still type a verse.";
+        if (code === "network") {
+          this.voiceHint = "Voice needs internet. Check your connection and try again.";
+          return;
+        }
+        this.voiceHint = `Mic error (${code || "unknown"}). You can still type the verse.`;
       };
 
       recognition.onend = () => {
-        this.listening = false;
+        if (seq !== this._voiceSeq) return;
+        if (this._recognition !== recognition) return;
         this._recognition = null;
+        this.listening = false;
       };
 
       this._recognition = recognition;
       this.listening = true;
-      try {
-        recognition.start();
-      } catch {
-        this.listening = false;
-        this._recognition = null;
-        this.voiceHint = "Could not start the mic. Try again.";
-      }
+
+      // Browsers often fail if start() runs in the same tick as abort().
+      window.setTimeout(() => {
+        if (seq !== this._voiceSeq || this._recognition !== recognition) return;
+        try {
+          recognition.start();
+        } catch (err) {
+          this.listening = false;
+          this._recognition = null;
+          const msg = err instanceof Error ? err.message : "";
+          this.voiceHint = msg
+            ? `Could not start mic: ${msg}`
+            : "Could not start the mic. Tap again.";
+        }
+      }, 60);
     },
 
-    async applyVoiceTranscript(raw: string) {
-      const cleaned = normalizeSpokenReference(raw) || raw.trim();
-      this.q = cleaned;
-      this.voiceHint = `Heard: “${cleaned}”`;
+    async applyVoiceTranscript(transcripts: string[]) {
+      const tried = transcripts.map((t) => t.trim()).filter(Boolean);
+      this.voiceHint = `Heard: “${tried[0]}” — opening…`;
 
-      const refHits = this.referenceResult(cleaned);
-      if (refHits?.[0]?.url) {
-        this.results = refHits;
-        window.location.href = refHits[0].url;
-        return;
+      for (const raw of tried) {
+        const cleaned = normalizeSpokenReference(raw) || raw;
+        this.q = cleaned;
+        const refHits = this.referenceResult(cleaned);
+        if (refHits?.[0]?.url) {
+          this.results = refHits;
+          this.voiceHint = `Opening ${refHits[0].label}…`;
+          window.location.assign(refHits[0].url);
+          return;
+        }
       }
 
+      // Fallback: full-text search on best transcript
+      this.q = normalizeSpokenReference(tried[0]) || tried[0];
       await this.search();
       const first = this.results[0];
       if (first?.url) {
-        window.location.href = first.url;
+        this.voiceHint = `Opening ${first.label}…`;
+        window.location.assign(first.url);
         return;
       }
 
-      this.voiceHint = `Heard “${cleaned}” — no verse found. Try “John 3 16”.`;
+      this.voiceHint = `Heard “${tried[0]}” — no verse found. Try “John 3 16” or “Juan 3 16”.`;
     },
 
     referenceResult(query: string) {

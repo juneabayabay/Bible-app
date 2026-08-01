@@ -43,11 +43,11 @@ const { version } = Astro.props;
     <button
       type="button"
       class="inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-xl border border-[var(--color-line)] bg-[var(--color-surface-elevated)] text-[var(--color-ink)] transition hover:bg-[var(--color-line)]/50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-primary)] sm:h-10 sm:w-10"
-      :class="listening && 'border-[var(--color-primary)] bg-[var(--color-primary)]/15 text-[var(--color-primary)]'"
+      :class="listening && 'border-[var(--color-primary)] bg-[var(--color-primary)]/15 text-[var(--color-primary)] animate-pulse'"
       :aria-pressed="listening.toString()"
       :aria-label="listening ? 'Stop listening' : 'Speak a verse reference'"
-      title="Speak a verse"
-      @click="toggleVoice()"
+      title="Speak a verse — opens it automatically"
+      @click.prevent.stop="toggleVoice()"
     >
       <svg
         class="h-5 w-5"
