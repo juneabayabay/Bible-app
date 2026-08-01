@@ -12,20 +12,41 @@ export function resolveDailyVerse(
   version: VersionId,
   date = new Date(),
 ): ResolvedDailyVerse | null {
+  const list = resolveGameVerses(version, 1, date);
+  return list[0] ?? null;
+}
+
+/**
+ * Resolve `count` distinct verses that exist in this version.
+ * Starts from today's pool index and walks forward — each verse unique.
+ */
+export function resolveGameVerses(
+  version: VersionId,
+  count: number,
+  date = new Date(),
+): ResolvedDailyVerse[] {
   const start = dayOfYearIndex(date);
-  for (let offset = 0; offset < DAILY_VERSE_POOL.length; offset++) {
+  const out: ResolvedDailyVerse[] = [];
+  const seen = new Set<string>();
+
+  for (let offset = 0; offset < DAILY_VERSE_POOL.length && out.length < count; offset++) {
     const pick = DAILY_VERSE_POOL[(start + offset) % DAILY_VERSE_POOL.length];
+    const key = `${pick.slug}-${pick.chapter}-${pick.verse}`;
+    if (seen.has(key)) continue;
+
     const chapter = getChapter(version, pick.slug, pick.chapter);
     const verse = chapter?.verses.find((v) => v.number === pick.verse);
     if (!verse?.text) continue;
 
     const book = getBook(version, pick.slug);
-    return {
+    seen.add(key);
+    out.push({
       ...pick,
       book: book?.name ?? pick.book,
       text: verse.text,
       url: `/${version}/chapter/${pick.slug}/${pick.chapter}#v${pick.verse}`,
-    };
+    });
   }
-  return null;
+
+  return out;
 }

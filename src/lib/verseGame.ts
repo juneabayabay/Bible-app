@@ -8,10 +8,18 @@ export type VerseToken = {
   isWord: boolean;
 };
 
+export type GameVerse = {
+  text: string;
+  cite: string;
+  url: string;
+};
+
 export type FillBlankRound = {
   id: number;
+  cite: string;
+  url: string;
+  fullText: string;
   segments: Array<{ type: "text" | "blank"; text: string; answer?: string; blankId?: number }>;
-  /** One or more answers in blank order */
   answers: string[];
   choices: string[];
 };
@@ -24,9 +32,7 @@ export type DifficultyConfig = {
   blanksPerRound: number;
   choiceCount: number;
   minWordLen: number;
-  /** Show first letter under blank before answering */
   firstLetterHint: boolean;
-  /** Study peek seconds; 0 = stay visible until ready */
   studySeconds: number;
 };
 
@@ -34,7 +40,7 @@ export const DIFFICULTIES: DifficultyConfig[] = [
   {
     id: "easy",
     label: "Easy",
-    blurb: "1 blank · 3 choices · first-letter hint",
+    blurb: "3 different verses · 3 choices · first-letter hint",
     rounds: 3,
     blanksPerRound: 1,
     choiceCount: 3,
@@ -45,7 +51,7 @@ export const DIFFICULTIES: DifficultyConfig[] = [
   {
     id: "medium",
     label: "Medium",
-    blurb: "1 blank · 4 close choices · no hint",
+    blurb: "4 different verses · 4 close choices · no hint",
     rounds: 4,
     blanksPerRound: 1,
     choiceCount: 4,
@@ -56,18 +62,23 @@ export const DIFFICULTIES: DifficultyConfig[] = [
   {
     id: "hard",
     label: "Hard",
-    blurb: "2 blanks · 5 tricky choices · brief study",
+    blurb: "5 different verses · 5 tricky choices · brief study each",
     rounds: 5,
-    blanksPerRound: 2,
+    blanksPerRound: 1,
     choiceCount: 5,
     minWordLen: 3,
     firstLetterHint: false,
-    studySeconds: 8,
+    studySeconds: 6,
   },
 ];
 
 export function getDifficultyConfig(id: Difficulty): DifficultyConfig {
   return DIFFICULTIES.find((d) => d.id === id) ?? DIFFICULTIES[1];
+}
+
+/** Max verses to pre-resolve for the hardest level. */
+export function maxGameVerseCount(): number {
+  return Math.max(...DIFFICULTIES.map((d) => d.rounds));
 }
 
 const STOP = new Set(
@@ -177,6 +188,7 @@ function makeRound(
   rand: () => number,
   wordPool: string[],
   choiceCount: number,
+  meta: GameVerse,
 ): FillBlankRound {
   const blankSet = new Set(blankIndexes);
   const answers = blankIndexes.map((i) => tokens[i].word);
@@ -197,30 +209,24 @@ function makeRound(
 
   return {
     id,
+    cite: meta.cite,
+    url: meta.url,
+    fullText: meta.text,
     segments,
     answers,
     choices: buildTrickyChoices(answers, wordPool, rand, choiceCount),
   };
 }
 
-/**
- * Build fill-the-blank rounds for a difficulty.
- * Seeded by day + difficulty so the same day feels consistent.
- */
-export function buildFillBlankRounds(
-  verseText: string,
-  difficulty: Difficulty = "medium",
-  date = new Date(),
-): FillBlankRound[] {
-  const cfg = getDifficultyConfig(difficulty);
-  const tokens = tokenize(verseText.trim());
+function buildRoundFromVerse(
+  verse: GameVerse,
+  id: number,
+  cfg: DifficultyConfig,
+  rand: () => number,
+  difficulty: Difficulty,
+): FillBlankRound | null {
+  const tokens = tokenize(verse.text.trim());
   const candidates = blankableIndexes(tokens, cfg.minWordLen);
-  const seed =
-    dayOfYearIndex(date) * 9973 +
-    verseText.length * 13 +
-    difficulty.charCodeAt(0) * 101;
-  const rand = mulberry32(seed);
-
   const wordPool = [
     ...tokens.filter((t) => t.isWord && t.word.length >= 3).map((t) => t.word),
     ...EXTRA_DISTRACTORS,
@@ -235,39 +241,52 @@ export function buildFillBlankRounds(
         bestLen = t.word.length;
       }
     });
-    if (best < 0) return [];
-    return [makeRound(tokens, [best], 0, rand, wordPool, cfg.choiceCount)];
+    if (best < 0) return null;
+    return makeRound(tokens, [best], id, rand, wordPool, cfg.choiceCount, verse);
   }
 
-  const needed = cfg.rounds * cfg.blanksPerRound;
   let poolIdx = shuffle(candidates, rand);
-  // Prefer longer / more distinctive words on hard
   if (difficulty === "hard") {
     poolIdx = [...poolIdx].sort(
       (a, b) => tokens[b].word.length - tokens[a].word.length,
     );
-    poolIdx = shuffle(poolIdx.slice(0, Math.min(poolIdx.length, needed + 4)), rand);
+    poolIdx = shuffle(poolIdx.slice(0, Math.min(poolIdx.length, 6)), rand);
   }
 
+  const blanks: number[] = [];
+  for (let b = 0; b < cfg.blanksPerRound; b++) {
+    const next = poolIdx[b % poolIdx.length];
+    if (!blanks.includes(next)) blanks.push(next);
+  }
+  blanks.sort((a, b) => a - b);
+  return makeRound(tokens, blanks, id, rand, wordPool, cfg.choiceCount, verse);
+}
+
+/**
+ * One round per verse — every blank is from a different Scripture.
+ */
+export function buildFillBlankRounds(
+  verses: GameVerse[],
+  difficulty: Difficulty = "medium",
+  date = new Date(),
+): FillBlankRound[] {
+  const cfg = getDifficultyConfig(difficulty);
+  const seed =
+    dayOfYearIndex(date) * 9973 +
+    verses.map((v) => v.cite).join("|").length * 17 +
+    difficulty.charCodeAt(0) * 101;
+  const rand = mulberry32(seed);
+
+  const unique = verses.filter(
+    (v, i, arr) => arr.findIndex((x) => x.cite === v.cite) === i,
+  );
+  // Keep pool order (already day-rotated) but take first N for stability
+  const selected = unique.slice(0, cfg.rounds);
   const rounds: FillBlankRound[] = [];
-  let cursor = 0;
-  for (let r = 0; r < cfg.rounds; r++) {
-    const blanks: number[] = [];
-    for (let b = 0; b < cfg.blanksPerRound; b++) {
-      if (cursor >= poolIdx.length) {
-        // reuse shuffled leftovers
-        poolIdx = shuffle(candidates, rand);
-        cursor = 0;
-      }
-      const next = poolIdx[cursor++];
-      if (!blanks.includes(next)) blanks.push(next);
-    }
-    if (!blanks.length) break;
-    // Keep blank order as they appear in the verse
-    blanks.sort((a, b) => a - b);
-    rounds.push(makeRound(tokens, blanks, r, rand, wordPool, cfg.choiceCount));
-  }
-
+  selected.forEach((verse, i) => {
+    const round = buildRoundFromVerse(verse, i, cfg, rand, difficulty);
+    if (round) rounds.push(round);
+  });
   return rounds;
 }
 

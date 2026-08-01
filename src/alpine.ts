@@ -71,6 +71,7 @@ import {
   type Difficulty,
   type DifficultyConfig,
   type FillBlankRound,
+  type GameVerse,
 } from "./lib/verseGame";
 
 type SearchDoc = {
@@ -455,7 +456,7 @@ export default (Alpine: Alpine) => {
 
   Alpine.data("verseFillGame", () => ({
     version: "web",
-    verse: null as { text: string; cite: string; url: string } | null,
+    verses: [] as GameVerse[],
     difficulties: DIFFICULTIES as DifficultyConfig[],
     difficulty: "medium" as Difficulty,
     rounds: [] as FillBlankRound[],
@@ -475,6 +476,9 @@ export default (Alpine: Alpine) => {
     get current(): FillBlankRound {
       return this.rounds[this.roundIndex] ?? {
         id: 0,
+        cite: "",
+        url: "",
+        fullText: "",
         segments: [],
         answers: [],
         choices: [],
@@ -488,9 +492,9 @@ export default (Alpine: Alpine) => {
     get studyHint() {
       const cfg = getDifficultyConfig(this.difficulty);
       if (cfg.studySeconds > 0) {
-        return `Hard mode: memorize quickly — the verse hides after ${cfg.studySeconds} seconds (or tap ready sooner).`;
+        return `Memorize this verse — it hides after ${cfg.studySeconds}s (or tap ready sooner). Next round will be a different verse.`;
       }
-      return "Read it once, then fill the missing word(s).";
+      return "Read this verse, then fill the blank. Each round uses a different verse.";
     },
 
     get activeAnswer() {
@@ -505,7 +509,11 @@ export default (Alpine: Alpine) => {
       const locked = new Set<string>();
       this.current.answers.forEach((answer, i) => {
         const filled = this.filled[i];
-        if (filled && filled.toLowerCase() === answer.toLowerCase() && i !== this.activeBlank) {
+        if (
+          filled &&
+          filled.toLowerCase() === answer.toLowerCase() &&
+          i !== this.activeBlank
+        ) {
           locked.add(answer.toLowerCase());
         }
       });
@@ -518,17 +526,17 @@ export default (Alpine: Alpine) => {
         if (el?.textContent) {
           const data = JSON.parse(el.textContent) as {
             version: string;
-            verse: { text: string; cite: string; url: string } | null;
+            verses: GameVerse[];
             difficulties: DifficultyConfig[];
           };
           this.version = data.version;
-          this.verse = data.verse;
+          this.verses = data.verses ?? [];
           this.difficulties = data.difficulties?.length
             ? data.difficulties
             : DIFFICULTIES;
         }
       } catch {
-        this.verse = null;
+        this.verses = [];
       }
       this.difficulty = loadSavedDifficulty();
       this.alreadyDone = isVerseGameDoneToday();
@@ -549,17 +557,24 @@ export default (Alpine: Alpine) => {
     },
 
     begin() {
-      if (!this.verse?.text) return;
-      this.rounds = buildFillBlankRounds(this.verse.text, this.difficulty);
+      if (!this.verses.length) return;
+      this.rounds = buildFillBlankRounds(this.verses, this.difficulty);
       if (!this.rounds.length) {
         this.phase = "choose";
         return;
       }
       this.score = 0;
       this.totalBlanks = this.rounds.reduce((n, r) => n + r.answers.length, 0);
+      this.roundIndex = 0;
       const cfg = getDifficultyConfig(this.difficulty);
       this.firstLetterHint = cfg.firstLetterHint;
+      this.enterStudy();
+    },
+
+    enterStudy() {
       this.clearStudyTimer();
+      this.resetRoundState();
+      const cfg = getDifficultyConfig(this.difficulty);
       this.phase = "study";
       if (cfg.studySeconds > 0) {
         this.studySecondsLeft = cfg.studySeconds;
@@ -583,7 +598,6 @@ export default (Alpine: Alpine) => {
     startPlay() {
       this.clearStudyTimer();
       this.phase = "play";
-      this.roundIndex = 0;
       this.resetRoundState();
     },
 
@@ -621,10 +635,6 @@ export default (Alpine: Alpine) => {
     },
 
     choiceClass(choice: string) {
-      const filledVals = Object.values(this.filled);
-      if (!this.feedback && !filledVals.length) {
-        return "border-[var(--color-line)] text-[var(--color-ink)] hover:border-[var(--color-gold)] hover:bg-[var(--color-highlight)]/50";
-      }
       const answer = this.activeAnswer;
       if (this.filled[this.activeBlank]) {
         if (choice.toLowerCase() === answer.toLowerCase()) {
@@ -649,10 +659,7 @@ export default (Alpine: Alpine) => {
       if (ok) {
         this.filled = { ...this.filled, [blank]: choice };
         this.score += 1;
-        this.feedback =
-          blank + 1 < this.current.answers.length
-            ? "Yes — next blank."
-            : "Yes — locked in.";
+        this.feedback = "Yes — locked in.";
       } else {
         this.filled = { ...this.filled, [blank]: answer };
         this.feedback = `Not quite — it’s “${answer}.”`;
@@ -665,7 +672,7 @@ export default (Alpine: Alpine) => {
     next() {
       if (this.roundIndex + 1 < this.rounds.length) {
         this.roundIndex += 1;
-        this.resetRoundState();
+        this.enterStudy();
         return;
       }
       markVerseGameDoneToday();

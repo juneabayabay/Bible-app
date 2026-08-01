@@ -4,8 +4,8 @@ import SearchBar from "../../components/SearchBar.astro";
 import { resolveVersionId } from "../../lib/bible";
 import { getVersion } from "../../lib/versions";
 import { getVersionHomePaths } from "../../lib/staticPaths";
-import { resolveDailyVerse } from "../../lib/resolveDailyVerse";
-import { DIFFICULTIES } from "../../lib/verseGame";
+import { resolveGameVerses } from "../../lib/resolveDailyVerse";
+import { DIFFICULTIES, maxGameVerseCount } from "../../lib/verseGame";
 
 export function getStaticPaths() {
   return getVersionHomePaths();
@@ -13,16 +13,15 @@ export function getStaticPaths() {
 
 const version = resolveVersionId(Astro.params.version);
 const meta = getVersion(version);
-const daily = resolveDailyVerse(version);
+const resolved = resolveGameVerses(version, maxGameVerseCount());
+const verses = resolved.map((v) => ({
+  text: v.text,
+  cite: `${v.book} ${v.chapter}:${v.verse}`,
+  url: v.url,
+}));
 const payload = {
   version,
-  verse: daily
-    ? {
-        text: daily.text,
-        cite: `${daily.book} ${daily.chapter}:${daily.verse}`,
-        url: daily.url,
-      }
-    : null,
+  verses,
   difficulties: DIFFICULTIES,
 };
 ---
@@ -42,16 +41,15 @@ const payload = {
         Fill the blank
       </h1>
       <p class="mt-2 text-sm leading-relaxed text-[var(--color-ink-muted)] sm:text-base">
-        Choose a challenge level, then lock in today’s verse.
+        Each blank is a different verse — choose your level and grow.
       </p>
     </header>
 
-    <p class="text-sm text-[var(--color-ink-muted)]" x-show="!verse" x-cloak>
-      No verse available for this version today.
+    <p class="text-sm text-[var(--color-ink-muted)]" x-show="verses.length === 0" x-cloak>
+      No verses available for this version today.
     </p>
 
-    <div x-show="verse" x-cloak class="space-y-6">
-      <!-- Choose difficulty -->
+    <div x-show="verses.length > 0" x-cloak class="space-y-6">
       <section x-show="phase === 'choose'" class="space-y-4">
         <p class="text-[0.65rem] font-semibold uppercase tracking-[0.12em] text-[var(--color-ink-subtle)]">
           Choose level
@@ -81,23 +79,19 @@ const payload = {
         </button>
       </section>
 
-      <!-- Study -->
       <section x-show="phase === 'study'" class="space-y-4" x-cloak>
         <div class="flex flex-wrap items-center justify-between gap-2">
           <p class="text-[0.65rem] font-semibold uppercase tracking-[0.12em] text-[var(--color-ink-subtle)]">
             Study · <span x-text="difficultyLabel"></span>
+            · verse <span x-text="roundIndex + 1"></span>/<span x-text="rounds.length"></span>
           </p>
-          <p
-            class="text-sm text-[var(--color-gold)]"
-            x-show="studySecondsLeft > 0"
-            x-cloak
-          >
+          <p class="text-sm text-[var(--color-gold)]" x-show="studySecondsLeft > 0" x-cloak>
             Hides in <span x-text="studySecondsLeft"></span>s
           </p>
         </div>
         <blockquote class="font-scripture rounded-xl border border-[var(--color-line)] bg-[var(--color-surface-elevated)] p-5 sm:p-6">
-          <p class="text-lg leading-relaxed text-[var(--color-ink)] sm:text-xl" x-text="verse.text"></p>
-          <p class="mt-3 text-sm text-[var(--color-ink-muted)]" x-text="verse.cite"></p>
+          <p class="text-lg leading-relaxed text-[var(--color-ink)] sm:text-xl" x-text="current.fullText"></p>
+          <p class="mt-3 text-sm text-[var(--color-ink-muted)]" x-text="current.cite"></p>
         </blockquote>
         <p class="text-sm text-[var(--color-ink-muted)]" x-text="studyHint"></p>
         <div class="flex flex-wrap gap-2">
@@ -110,7 +104,6 @@ const payload = {
         </div>
       </section>
 
-      <!-- Play -->
       <section x-show="phase === 'play'" class="space-y-5" x-cloak>
         <div class="flex flex-wrap items-center justify-between gap-2">
           <p class="text-[0.65rem] font-semibold uppercase tracking-[0.12em] text-[var(--color-ink-subtle)]">
@@ -121,15 +114,6 @@ const payload = {
             · <span x-text="score"></span> correct
           </p>
         </div>
-
-        <p
-          class="text-sm text-[var(--color-ink-muted)]"
-          x-show="current.answers.length > 1"
-          x-cloak
-        >
-          Fill blank <span x-text="activeBlank + 1"></span> of
-          <span x-text="current.answers.length"></span>
-        </p>
 
         <div class="font-scripture text-lg leading-relaxed text-[var(--color-ink)] sm:text-xl">
           <template x-for="(seg, i) in current.segments" :key="i">
@@ -144,7 +128,7 @@ const payload = {
             </span>
           </template>
         </div>
-        <p class="text-sm text-[var(--color-ink-muted)]" x-text="verse.cite"></p>
+        <p class="text-sm text-[var(--color-ink-muted)]" x-text="current.cite"></p>
         <p
           class="text-xs text-[var(--color-ink-subtle)]"
           x-show="firstLetterHint && !filled[activeBlank]"
@@ -180,37 +164,45 @@ const payload = {
           x-show="roundComplete"
           x-cloak
           @click="next()"
-          x-text="roundIndex + 1 < rounds.length ? 'Next' : 'Finish'"
+          x-text="roundIndex + 1 < rounds.length ? 'Next verse' : 'Finish'"
         ></button>
       </section>
 
-      <!-- Done -->
       <section x-show="phase === 'done'" class="space-y-4" x-cloak>
         <p class="text-[0.65rem] font-semibold uppercase tracking-[0.12em] text-[var(--color-gold)]">
-          Verse locked in
+          Verses locked in
         </p>
         <h2 class="font-scripture text-2xl font-semibold text-[var(--color-ink)]">
           Well done
         </h2>
         <p class="text-sm leading-relaxed text-[var(--color-ink-muted)]">
           <span x-text="difficultyLabel"></span>:
-          <span x-text="score"></span> / <span x-text="totalBlanks"></span> first-try correct.
+          <span x-text="score"></span> / <span x-text="totalBlanks"></span> first-try correct
+          across <span x-text="rounds.length"></span> different verses.
           Counts toward Grow for today.
         </p>
-        <blockquote class="font-scripture border-l-2 border-[var(--color-gold)] pl-4">
-          <p class="text-base leading-relaxed text-[var(--color-ink)]" x-text="verse.text"></p>
-          <p class="mt-2 text-sm text-[var(--color-ink-muted)]" x-text="verse.cite"></p>
-        </blockquote>
+        <ul class="space-y-3">
+          <template x-for="r in rounds" :key="r.id">
+            <li class="border-l-2 border-[var(--color-line)] pl-3">
+              <p class="font-scripture text-sm leading-relaxed text-[var(--color-ink)]" x-text="r.fullText"></p>
+              <p class="mt-1 text-xs text-[var(--color-ink-muted)]" x-text="r.cite"></p>
+            </li>
+          </template>
+        </ul>
         <div class="flex flex-wrap gap-2">
-          <a class="btn-primary !min-h-10 !px-5 text-sm" :href="verse.url" data-astro-prefetch>
-            Read in chapter
-          </a>
-          <button type="button" class="btn-secondary !min-h-10 !px-5 text-sm" @click="replay()">
+          <button type="button" class="btn-primary !min-h-10 !px-5 text-sm" @click="replay()">
             Play again
           </button>
           <button type="button" class="btn-secondary !min-h-10 !px-5 text-sm" @click="backToChoose()">
             Change level
           </button>
+          <a
+            class="btn-secondary !min-h-10 !px-5 text-sm"
+            href={`/${version}/`}
+            data-astro-prefetch
+          >
+            Home
+          </a>
         </div>
       </section>
     </div>
