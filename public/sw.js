@@ -1,6 +1,14 @@
 /* Bible app — offline shell cache + daily reminder scheduling */
 const CACHE = "bible-shell-v3";
-const PRECACHE = ["/", "/manifest.webmanifest", "/icons/icon.svg", "/favicon.svg"];
+const PRECACHE = [
+  "/",
+  "/manifest.webmanifest",
+  "/icons/icon.svg",
+  "/icons/icon-192.png",
+  "/icons/icon-512.png",
+  "/icons/apple-touch-icon.png",
+  "/favicon.svg",
+];
 const REMINDER_TAG = "bible-daily-reminder";
 
 self.addEventListener("install", (event) => {

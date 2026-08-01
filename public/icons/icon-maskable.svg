@@ -1,8 +1,11 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" fill="none">
-  <rect width="512" height="512" fill="#1e3a5f"/>
+  <!-- Full-bleed for Android maskable; cross inset in safe zone -->
+  <rect width="512" height="512" fill="#0a1628"/>
   <path
-    fill="#f4efe6"
-    d="M168 348c-18 8-36 14-54 18l46-124c2-6 6-10 12-10h92c6 0 10 4 12 10l46 124c-18-4-36-10-54-18l-28-76c-2-6-6-10-12-10s-10 4-12 10l-28 76zm8 52c-6 18-2 42 12 54 2-2 4-4 4-6 2-8 8-14 16-14 8 0 12 4 14 12 1 4 1 8 1 12v2c0 8 2 14 6 20 6 8 14 14 24 16v-2c-6-16-2-26 12-36l6-4c8-6 14-12 18-20 8-14 10-30 6-46-2-6-4-12-8-16l-4 2-6 4c-14 8-30 12-48 8-14-2-26-6-36-18z"
-    transform="translate(0 8) scale(0.92) translate(22 18)"
+    stroke="#c9a227"
+    stroke-width="32"
+    stroke-linecap="round"
+    stroke-linejoin="round"
+    d="M256 140v232M184 226h144"
   />
 </svg>
