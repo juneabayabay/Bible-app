@@ -10,12 +10,33 @@ const meta = getVersion(version);
 ---
 
 <footer class="mt-14 border-t border-[var(--color-line)] pt-7 pb-[max(0.75rem,env(safe-area-inset-bottom))] sm:mt-16 sm:pt-8">
-  <div class="flex flex-col gap-2 text-sm text-[var(--color-ink-subtle)] sm:flex-row sm:items-center sm:justify-between sm:gap-6">
-    <p>
-      <span class="font-medium text-[var(--color-ink-muted)]">{meta.label}</span>
-      <span class="mx-1.5 opacity-50">·</span>
-      Highlights &amp; notes stay on this device.
+  <div class="flex flex-col gap-3 text-sm text-[var(--color-ink-subtle)] sm:gap-4">
+    <div class="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between sm:gap-6">
+      <p>
+        <span class="font-medium text-[var(--color-ink-muted)]">{meta.label}</span>
+        <span class="mx-1.5 opacity-50">·</span>
+        Highlights &amp; notes stay on this device.
+      </p>
+      <p class="sm:text-right">With gratitude to Angela D.</p>
+    </div>
+    <p class="text-[var(--color-ink-subtle)]">
+      <a
+        href={`/${version}/support#feedback`}
+        data-nav-version="/support#feedback"
+        class="text-[var(--color-ink-muted)] transition hover:text-[var(--color-ink)] hover:underline"
+        data-astro-prefetch
+      >
+        Feedback
+      </a>
+      <span class="mx-1.5 opacity-40">·</span>
+      <a
+        href={`/${version}/support`}
+        data-nav-version="/support"
+        class="text-[var(--color-ink-muted)] transition hover:text-[var(--color-ink)] hover:underline"
+        data-astro-prefetch
+      >
+        Support
+      </a>
     </p>
-    <p class="sm:text-right">With gratitude to Angela D.</p>
   </div>
 </footer>

@@ -334,6 +334,24 @@ export default (Alpine: Alpine) => {
     },
   }));
 
+  Alpine.data("givePage", () => ({
+    copiedId: "" as string,
+    _copyTimer: null as ReturnType<typeof setTimeout> | null,
+
+    async copyNumber(number: string, id: string) {
+      try {
+        await navigator.clipboard.writeText(number);
+        this.copiedId = id;
+        if (this._copyTimer) clearTimeout(this._copyTimer);
+        this._copyTimer = setTimeout(() => {
+          this.copiedId = "";
+        }, 1800);
+      } catch {
+        this.copiedId = "";
+      }
+    },
+  }));
+
   Alpine.data("homeDashboard", (version: string) => ({
     version,
     continueUrl: "",
@@ -2471,6 +2489,42 @@ export default (Alpine: Alpine) => {
       } catch {
         if (this.q.trim() === query) this.results = [];
       }
+    },
+  }));
+
+  Alpine.data("supportPage", () => ({
+    copied: "" as "" | "gcash" | "gotyme",
+    _copyTimer: null as ReturnType<typeof setTimeout> | null,
+
+    init() {
+      /* ready for copy actions */
+    },
+
+    async copyNumber(value: string, which: "gcash" | "gotyme") {
+      const text = value.trim();
+      if (!text) return;
+      try {
+        await navigator.clipboard.writeText(text);
+      } catch {
+        try {
+          const el = document.createElement("textarea");
+          el.value = text;
+          el.setAttribute("readonly", "");
+          el.style.position = "fixed";
+          el.style.left = "-9999px";
+          document.body.appendChild(el);
+          el.select();
+          document.execCommand("copy");
+          document.body.removeChild(el);
+        } catch {
+          return;
+        }
+      }
+      this.copied = which;
+      if (this._copyTimer) clearTimeout(this._copyTimer);
+      this._copyTimer = setTimeout(() => {
+        this.copied = "";
+      }, 2000);
     },
   }));
 };

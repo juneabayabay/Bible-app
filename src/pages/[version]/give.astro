@@ -1,0 +1,96 @@
+---
+import Layout from "../../layouts/Layout.astro";
+import SearchBar from "../../components/SearchBar.astro";
+import { resolveVersionId } from "../../lib/bible";
+import { getVersion } from "../../lib/versions";
+import { getVersionHomePaths } from "../../lib/staticPaths";
+
+export function getStaticPaths() {
+  return getVersionHomePaths();
+}
+
+const version = resolveVersionId(Astro.params.version);
+const meta = getVersion(version);
+
+const methods = [
+  {
+    id: "gcash",
+    label: "GCash",
+    number: "09668873328",
+  },
+  {
+    id: "gotyme",
+    label: "GoTyme",
+    number: "018587187647",
+  },
+] as const;
+---
+
+<Layout title={`Give · ${meta.shortLabel}`} version={version}>
+  <SearchBar slot="header" version={version} />
+
+  <div class="page-stack measure" x-data="givePage()">
+    <header class="border-b border-[var(--color-line)] pb-5">
+      <p class="text-sm text-[var(--color-ink-muted)]">
+        <a href={`/${version}/`} class="hover:underline" data-astro-prefetch>← Home</a>
+      </p>
+      <p class="eyebrow mt-5">Support</p>
+      <h1 class="font-scripture mt-1.5 text-3xl font-semibold tracking-tight sm:text-4xl">
+        Give
+      </h1>
+      <p class="mt-2 text-sm leading-relaxed text-[var(--color-ink-muted)] sm:text-base">
+        Your optional gift helps keep this Bible app running.
+      </p>
+    </header>
+
+    <section class="space-y-3" aria-labelledby="why-give">
+      <h2 id="why-give" class="font-scripture text-xl font-semibold text-[var(--color-ink)]">
+        Why give
+      </h2>
+      <p class="text-sm leading-relaxed text-[var(--color-ink-muted)] sm:text-base">
+        Gifts help with hosting, the domain, the database, and future listing on the Google Play Store
+        — so the Word stays free to read.
+      </p>
+    </section>
+
+    <section class="space-y-4" aria-labelledby="how-give">
+      <div>
+        <h2 id="how-give" class="font-scripture text-xl font-semibold text-[var(--color-ink)]">
+          How to give
+        </h2>
+        <p class="mt-1 text-sm text-[var(--color-ink-muted)]">
+          Send to <span class="font-medium text-[var(--color-ink)]">Arjune Abayabay</span> via GCash or GoTyme.
+        </p>
+      </div>
+
+      <ul class="space-y-3">
+        {
+          methods.map((method) => (
+            <li class="rounded-xl border border-[var(--color-line)] bg-[var(--color-surface-elevated)] p-4 sm:p-5">
+              <p class="text-[0.65rem] font-semibold uppercase tracking-[0.12em] text-[var(--color-gold)]">
+                {method.label}
+              </p>
+              <p class="mt-2 font-scripture text-2xl font-semibold tracking-wide break-all text-[var(--color-ink)]">
+                {method.number}
+              </p>
+              <button
+                type="button"
+                class="btn-secondary mt-3 !min-h-11 !px-4 text-sm"
+                @click={`copyNumber('${method.number}', '${method.id}')`}
+              >
+                <span x-show={`copiedId !== '${method.id}'`}>Copy number</span>
+                <span x-show={`copiedId === '${method.id}'`} x-cloak>
+                  Copied
+                </span>
+              </button>
+            </li>
+          ))
+        }
+      </ul>
+
+      <p class="text-sm leading-relaxed text-[var(--color-ink-muted)]">
+        Use your GCash or GoTyme app to send. Giving is optional — thank you.
+      </p>
+    </section>
+  </div>
+</Layout>
