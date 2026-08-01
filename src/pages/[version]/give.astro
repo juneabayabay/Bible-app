@@ -24,6 +24,12 @@ const methods = [
     number: "018587187647",
   },
 ] as const;
+
+const uses = [
+  "Web hosting and the domain name",
+  "Database for shared features (like the prayer wall)",
+  "Costs toward listing the app on Google Play",
+] as const;
 ---
 
 <Layout title={`Give · ${meta.shortLabel}`} version={version}>
@@ -39,27 +45,38 @@ const methods = [
         Give
       </h1>
       <p class="mt-2 text-sm leading-relaxed text-[var(--color-ink-muted)] sm:text-base">
-        Your optional gift helps keep this Bible app running.
+        Giving is optional. Any gift helps keep this Bible app free for everyone.
       </p>
     </header>
 
-    <section class="space-y-3" aria-labelledby="why-give">
-      <h2 id="why-give" class="font-scripture text-xl font-semibold text-[var(--color-ink)]">
-        Why give
+    <section class="space-y-3" aria-labelledby="where-goes">
+      <h2 id="where-goes" class="font-scripture text-xl font-semibold text-[var(--color-ink)]">
+        Where your gift goes
       </h2>
       <p class="text-sm leading-relaxed text-[var(--color-ink-muted)] sm:text-base">
-        Gifts help with hosting, the domain, the database, and future listing on the Google Play Store
-        — so the Word stays free to read.
+        This app is built and cared for personally. Gifts are used only for running and improving it:
       </p>
+      <ul class="space-y-2 text-sm leading-relaxed text-[var(--color-ink)] sm:text-base">
+        {
+          uses.map((item) => (
+            <li class="flex gap-2">
+              <span class="mt-2 h-1.5 w-1.5 shrink-0 rounded-full bg-[var(--color-gold)]" aria-hidden="true"></span>
+              <span>{item}</span>
+            </li>
+          ))
+        }
+      </ul>
     </section>
 
-    <section class="space-y-4" aria-labelledby="how-give">
+    <section class="space-y-4" aria-labelledby="send-gift">
       <div>
-        <h2 id="how-give" class="font-scripture text-xl font-semibold text-[var(--color-ink)]">
-          How to give
+        <h2 id="send-gift" class="font-scripture text-xl font-semibold text-[var(--color-ink)]">
+          Send a gift
         </h2>
-        <p class="mt-1 text-sm text-[var(--color-ink-muted)]">
-          Send to <span class="font-medium text-[var(--color-ink)]">Arjune Abayabay</span> via GCash or GoTyme.
+        <p class="mt-1.5 text-sm leading-relaxed text-[var(--color-ink-muted)]">
+          Recipient name on both accounts:
+          <span class="font-medium text-[var(--color-ink)]">Arjune Abayabay</span>.
+          Please confirm the name before you send.
         </p>
       </div>
 
@@ -70,6 +87,7 @@ const methods = [
               <p class="text-[0.65rem] font-semibold uppercase tracking-[0.12em] text-[var(--color-gold)]">
                 {method.label}
               </p>
+              <p class="mt-1 text-xs text-[var(--color-ink-subtle)]">Arjune Abayabay</p>
               <p class="mt-2 font-scripture text-2xl font-semibold tracking-wide break-all text-[var(--color-ink)]">
                 {method.number}
               </p>
@@ -89,7 +107,8 @@ const methods = [
       </ul>
 
       <p class="text-sm leading-relaxed text-[var(--color-ink-muted)]">
-        Use your GCash or GoTyme app to send. Giving is optional — thank you.
+        Open your own GCash or GoTyme app to complete the transfer. No payment is processed on this
+        site. Thank you for your trust.
       </p>
     </section>
   </div>
