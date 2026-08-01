@@ -243,3 +243,48 @@ export function getWeekStats() {
   ).length;
   return { days, opened, read, grow, challenges, completeDays };
 }
+
+export type AttendanceDay = DayLog & {
+  weekday: string;
+  dayNum: number;
+  /** 0–4 from open/read/grow/challenge */
+  level: number;
+  label: string;
+};
+
+/** Rolling attendance grid (default 28 days) — like a presence chart. */
+export function getAttendanceDays(count = 28): AttendanceDay[] {
+  const state = loadProgress();
+  const out: AttendanceDay[] = [];
+  for (let i = count - 1; i >= 0; i--) {
+    const d = new Date();
+    d.setDate(d.getDate() - i);
+    const key = todayKey(d);
+    const log =
+      state.days[key] ?? {
+        date: key,
+        opened: false,
+        read: false,
+        grow: false,
+        challenge: false,
+      };
+    const flags = [log.opened, log.read, log.grow, log.challenge];
+    const level = flags.filter(Boolean).length;
+    const parts: string[] = [];
+    if (log.opened) parts.push("opened");
+    if (log.read) parts.push("read");
+    if (log.grow) parts.push("grew");
+    if (log.challenge) parts.push("challenge");
+    out.push({
+      ...log,
+      weekday: d.toLocaleDateString(undefined, { weekday: "narrow" }),
+      dayNum: d.getDate(),
+      level,
+      label: parts.length
+        ? `${key}: ${parts.join(", ")}`
+        : `${key}: no activity`,
+    });
+  }
+  return out;
+}
+

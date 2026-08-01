@@ -1,6 +1,12 @@
-import { dayOfYearIndex } from "./dailyVerse";
+import { DAILY_VERSE_POOL } from "./dailyVerse";
+import { preferFreshVerses, sessionSeed } from "./gameRewards";
 
 export type Difficulty = "easy" | "medium" | "hard";
+
+export type RoundBuildOpts = {
+  seed?: number;
+  avoidCites?: string[];
+};
 
 export type VerseToken = {
   raw: string;
@@ -76,9 +82,9 @@ export function getDifficultyConfig(id: Difficulty): DifficultyConfig {
   return DIFFICULTIES.find((d) => d.id === id) ?? DIFFICULTIES[1];
 }
 
-/** Prefer a deep pool so games can draw many unique verses. */
+/** Full curated pool — games pick randomly without day-locked repeats. */
 export function maxGameVerseCount(): number {
-  return 50;
+  return DAILY_VERSE_POOL.length;
 }
 
 const STOP = new Set(
@@ -264,24 +270,24 @@ function buildRoundFromVerse(
 
 /**
  * One round per verse — every blank is from a different Scripture.
+ * Pass a fresh `seed` each open so blanks and order stay random.
  */
 export function buildFillBlankRounds(
   verses: GameVerse[],
   difficulty: Difficulty = "medium",
-  date = new Date(),
+  opts: RoundBuildOpts = {},
 ): FillBlankRound[] {
   const cfg = getDifficultyConfig(difficulty);
   const seed =
-    dayOfYearIndex(date) * 9973 +
-    verses.map((v) => v.cite).join("|").length * 17 +
-    difficulty.charCodeAt(0) * 101;
+    opts.seed ??
+    sessionSeed(difficulty.charCodeAt(0) * 101 + verses.length);
   const rand = mulberry32(seed);
 
   const unique = verses.filter(
     (v, i, arr) => arr.findIndex((x) => x.cite === v.cite) === i,
   );
-  // Keep pool order (already day-rotated) but take first N for stability
-  const selected = unique.slice(0, cfg.rounds);
+  const ordered = preferFreshVerses(unique, opts.avoidCites ?? [], rand);
+  const selected = ordered.slice(0, cfg.rounds);
   const rounds: FillBlankRound[] = [];
   selected.forEach((verse, i) => {
     const round = buildRoundFromVerse(verse, i, cfg, rand, difficulty);

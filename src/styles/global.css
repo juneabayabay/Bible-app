@@ -514,3 +514,131 @@ button.ui-card:hover {
 .hero-btn-secondary:hover {
   background: rgb(255 255 255 / 0.94);
 }
+
+/* Game rank / tenure frames */
+.rank-frame {
+  border-radius: 1rem;
+  border-style: solid;
+  border-width: 2px;
+  background: color-mix(in srgb, var(--color-surface-elevated) 92%, transparent);
+  padding: 1rem 1.1rem;
+}
+
+.rank-border-linen {
+  border-color: color-mix(in srgb, var(--color-line) 85%, var(--color-ink-subtle));
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--color-surface) 70%, transparent);
+}
+
+.rank-border-clay {
+  border-color: #9a6b45;
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, #c4a484 35%, transparent);
+}
+
+.rank-border-olive {
+  border-color: color-mix(in srgb, var(--color-sage) 80%, #2f4a34);
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--color-sage-soft) 40%, transparent);
+}
+
+.rank-border-cedar {
+  border-color: #6e4a2e;
+  box-shadow:
+    inset 0 0 0 1px color-mix(in srgb, #8b5e3c 45%, transparent),
+    0 0 0 1px color-mix(in srgb, #6e4a2e 25%, transparent);
+}
+
+.rank-border-gold {
+  border-color: var(--color-gold);
+  box-shadow:
+    inset 0 0 0 1px color-mix(in srgb, var(--color-gold-soft) 55%, transparent),
+    0 0 0 1px color-mix(in srgb, var(--color-gold) 30%, transparent);
+}
+
+.rank-border-scarlet {
+  border-color: #1e4a7a;
+  box-shadow:
+    inset 0 0 0 1px color-mix(in srgb, #c45c4a 55%, transparent),
+    0 0 0 2px color-mix(in srgb, #1e4a7a 35%, transparent);
+}
+
+.dark .rank-border-clay {
+  border-color: #c49a72;
+}
+
+.dark .rank-border-cedar {
+  border-color: #c09060;
+}
+
+.dark .rank-border-scarlet {
+  border-color: #7aa0d4;
+  box-shadow:
+    inset 0 0 0 1px color-mix(in srgb, #e07a68 45%, transparent),
+    0 0 0 2px color-mix(in srgb, #7aa0d4 30%, transparent);
+}
+
+/* Journey presence / attendance chart */
+.attendance-wrap {
+  max-width: 22rem;
+}
+
+.attendance-weekdays {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 0.35rem;
+  margin-bottom: 0.35rem;
+}
+
+.attendance-weekday {
+  text-align: center;
+  font-size: 0.65rem;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--color-ink-subtle);
+}
+
+.attendance-grid {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 0.35rem;
+}
+
+.attendance-cell {
+  aspect-ratio: 1;
+  border-radius: 0.3rem;
+  border: 1px solid var(--color-line);
+  background: color-mix(in srgb, var(--color-line) 55%, transparent);
+}
+
+.attendance-cell[data-level="1"] {
+  background: color-mix(in srgb, var(--color-primary) 22%, var(--color-surface));
+  border-color: color-mix(in srgb, var(--color-primary) 30%, var(--color-line));
+}
+
+.attendance-cell[data-level="2"] {
+  background: color-mix(in srgb, var(--color-primary) 40%, var(--color-surface));
+  border-color: color-mix(in srgb, var(--color-primary) 45%, var(--color-line));
+}
+
+.attendance-cell[data-level="3"] {
+  background: color-mix(in srgb, var(--color-primary) 62%, var(--color-surface));
+  border-color: color-mix(in srgb, var(--color-primary) 55%, var(--color-line));
+}
+
+.attendance-cell[data-level="4"] {
+  background: var(--color-primary);
+  border-color: var(--color-primary);
+}
+
+.attendance-legend {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  font-size: 0.75rem;
+  color: var(--color-ink-subtle);
+}
+
+.attendance-legend .attendance-cell {
+  width: 0.75rem;
+  height: 0.75rem;
+  aspect-ratio: auto;
+}

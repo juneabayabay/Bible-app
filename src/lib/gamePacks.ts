@@ -1,6 +1,6 @@
-import { dayOfYearIndex } from "./dailyVerse";
 import type { GameVerse } from "./verseGame";
-import { buildFillBlankRounds, type FillBlankRound } from "./verseGame";
+import { buildFillBlankRounds, type FillBlankRound, type RoundBuildOpts } from "./verseGame";
+import { preferFreshVerses, sessionSeed } from "./gameRewards";
 
 export type ThemeId = "hope" | "peace" | "love" | "faith" | "courage";
 
@@ -114,6 +114,33 @@ export const THEME_BY_REF: Record<string, ThemeId> = {
   "1-john-4-19": "love",
   "jude-1-24": "hope",
   "revelation-3-20": "love",
+  "psalms-1-1": "faith",
+  "psalms-16-8": "peace",
+  "psalms-42-1": "hope",
+  "psalms-103-1": "hope",
+  "proverbs-4-23": "faith",
+  "proverbs-22-6": "faith",
+  "isaiah-43-2": "courage",
+  "zephaniah-3-17": "love",
+  "matthew-5-9": "peace",
+  "matthew-6-9": "faith",
+  "matthew-11-29": "peace",
+  "luke-19-10": "love",
+  "john-11-25": "hope",
+  "john-13-34": "love",
+  "acts-2-38": "faith",
+  "romans-8-1": "hope",
+  "romans-12-12": "hope",
+  "2-corinthians-5-7": "faith",
+  "galatians-5-1": "courage",
+  "ephesians-2-10": "faith",
+  "philippians-3-14": "courage",
+  "colossians-3-2": "faith",
+  "hebrews-11-6": "faith",
+  "james-1-2": "courage",
+  "1-peter-3-15": "courage",
+  "1-john-4-7": "love",
+  "revelation-21-5": "hope",
 };
 
 function mulberry32(seed: number) {
@@ -135,8 +162,8 @@ function shuffle<T>(items: T[], rand: () => number): T[] {
   return arr;
 }
 
-function seedFor(name: string, date = new Date()) {
-  return dayOfYearIndex(date) * 7919 + name.length * 31;
+function resolveSeed(name: string, opts: RoundBuildOpts = {}) {
+  return opts.seed ?? sessionSeed(name.length * 31 + (opts.avoidCites?.length ?? 0));
 }
 
 function wordsFrom(text: string): string[] {
@@ -167,14 +194,15 @@ export function buildUnscrambleRounds(
   verses: GameVerse[],
   count = 40,
   hard = false,
-  date = new Date(),
+  opts: RoundBuildOpts = {},
 ): UnscrambleRound[] {
-  const rand = mulberry32(seedFor("unscramble", date));
-  const picked = verses.filter((v) => {
+  const rand = mulberry32(resolveSeed(hard ? "unscramble-hard" : "unscramble", opts));
+  const eligible = verses.filter((v) => {
     const n = wordsFrom(v.text).length;
-    return n >= 5 && n <= (hard ? 14 : 10);
+    return n >= 5 && n <= (hard ? 16 : 12);
   });
-  return shuffle(picked, rand)
+  const picked = preferFreshVerses(eligible, opts.avoidCites ?? [], rand);
+  return picked
     .slice(0, count)
     .map((v, id) => {
       let answer = wordsFrom(v.text);
@@ -210,15 +238,16 @@ export type MatchRound = {
 export function buildMatchRounds(
   verses: GameVerse[],
   count = 40,
-  date = new Date(),
+  opts: RoundBuildOpts = {},
 ): MatchRound[] {
-  const rand = mulberry32(seedFor("match", date));
-  const pool = shuffle(verses, rand).slice(0, Math.max(count, 6));
-  const allCites = pool.map((v) => v.cite);
+  const rand = mulberry32(resolveSeed("match", opts));
+  const ordered = preferFreshVerses(verses, opts.avoidCites ?? [], rand);
+  const pool = ordered.slice(0, Math.max(count, 6));
+  const allCites = verses.map((v) => v.cite);
 
   return pool.slice(0, count).map((v, id) => {
     const words = wordsFrom(v.text);
-    const mid = Math.max(4, Math.floor(words.length * 0.55));
+    const mid = Math.max(5, Math.floor(words.length * 0.65));
     const snippet = words.slice(0, mid).join(" ") + "…";
 
     // Near-misses: same book if possible
@@ -261,11 +290,11 @@ export type NextRound = {
 export function buildNextRounds(
   verses: GameVerse[],
   count = 40,
-  date = new Date(),
+  opts: RoundBuildOpts = {},
 ): NextRound[] {
-  const rand = mulberry32(seedFor("next", date));
+  const rand = mulberry32(resolveSeed("next", opts));
   const eligible = verses.filter((v) => wordsFrom(v.text).length >= 8);
-  const picked = shuffle(eligible, rand).slice(0, count);
+  const picked = preferFreshVerses(eligible, opts.avoidCites ?? [], rand).slice(0, count);
 
   return picked.map((v, id) => {
     const words = wordsFrom(v.text);
@@ -313,9 +342,9 @@ export type ThemeRound = {
 export function buildThemeRounds(
   verses: GameVerse[],
   count = 40,
-  date = new Date(),
+  opts: RoundBuildOpts = {},
 ): ThemeRound[] {
-  const rand = mulberry32(seedFor("theme", date));
+  const rand = mulberry32(resolveSeed("theme", opts));
   const tagged = verses
     .map((v) => {
       const key = refKeyFromUrl(v.url);
@@ -324,8 +353,17 @@ export function buildThemeRounds(
     })
     .filter(Boolean) as Array<{ v: GameVerse; theme: ThemeId }>;
 
+  const freshTagged = preferFreshVerses(
+    tagged.map(({ v, theme }) => ({ ...v, theme, cite: v.cite })),
+    opts.avoidCites ?? [],
+    rand,
+  ).map((row) => ({
+    v: { text: row.text, cite: row.cite, url: row.url },
+    theme: row.theme as ThemeId,
+  }));
+
   const allThemes = Object.keys(THEME_LABELS) as ThemeId[];
-  return shuffle(tagged, rand)
+  return freshTagged
     .slice(0, count)
     .map(({ v, theme }, id) => {
       const others = shuffle(
@@ -346,11 +384,11 @@ export function buildThemeRounds(
 /* ——— Sprint (timed fill) ——— */
 export function buildSprintRounds(
   verses: GameVerse[],
-  date = new Date(),
+  opts: RoundBuildOpts = {},
 ): FillBlankRound[] {
-  // Many single-blank rounds; timer stops the run
-  return buildFillBlankRounds(verses, "medium", date).concat(
-    buildFillBlankRounds(verses.slice().reverse(), "hard", date),
+  const seed = resolveSeed("sprint", opts);
+  return buildFillBlankRounds(verses, "medium", { ...opts, seed }).concat(
+    buildFillBlankRounds(verses, "hard", { ...opts, seed: seed ^ 0x9e3779b9 }),
   );
 }
 

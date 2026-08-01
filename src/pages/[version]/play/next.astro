@@ -1,11 +1,12 @@
 ---
 import Layout from "../../../layouts/Layout.astro";
 import SearchBar from "../../../components/SearchBar.astro";
+import GameRewardPanel from "../../../components/GameRewardPanel.astro";
 import { resolveVersionId } from "../../../lib/bible";
 import { getVersion } from "../../../lib/versions";
 import { getVersionHomePaths } from "../../../lib/staticPaths";
 import { resolveGameVerses } from "../../../lib/resolveDailyVerse";
-import { buildNextRounds } from "../../../lib/gamePacks";
+import { maxGameVerseCount } from "../../../lib/verseGame";
 
 export function getStaticPaths() {
   return getVersionHomePaths();
@@ -13,13 +14,12 @@ export function getStaticPaths() {
 
 const version = resolveVersionId(Astro.params.version);
 const meta = getVersion(version);
-const verses = resolveGameVerses(version, 50).map((v) => ({
+const verses = resolveGameVerses(version, maxGameVerseCount()).map((v) => ({
   text: v.text,
   cite: `${v.book} ${v.chapter}:${v.verse}`,
   url: v.url,
 }));
-const rounds = buildNextRounds(verses, 50);
-const payload = { version, rounds };
+const payload = { version, verses };
 ---
 
 <Layout title={`Finish the line · ${meta.shortLabel}`} version={version}>
@@ -64,12 +64,14 @@ const payload = { version, rounds };
       </div>
 
       <p class="text-sm" x-show="feedback" x-cloak :class="ok ? 'text-[var(--color-success)]' : 'text-[var(--color-ink-muted)]'" x-text="feedback"></p>
+      <p class="font-scripture text-sm leading-relaxed text-[var(--color-ink-muted)]" x-show="locked" x-cloak x-text="current.fullText"></p>
       <button type="button" class="btn-primary !min-h-10 !px-5 text-sm" x-show="locked" x-cloak @click="next()" x-text="roundIndex + 1 < rounds.length ? 'Next line' : 'Finish'"></button>
     </div>
 
     <div x-show="phase === 'done'" x-cloak class="space-y-4">
       <h2 class="font-scripture text-2xl font-semibold">Lines complete</h2>
       <p class="text-sm text-[var(--color-ink-muted)]"><span x-text="score"></span> endings true. Grow counted.</p>
+      <GameRewardPanel />
       <div class="flex flex-wrap gap-2">
         <button type="button" class="btn-primary !min-h-10 !px-5 text-sm" @click="restart()">Again</button>
         <a class="btn-secondary !min-h-10 !px-5 text-sm" href={`/${version}/play`}>All games</a>

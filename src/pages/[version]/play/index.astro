@@ -1,6 +1,7 @@
 ---
 import Layout from "../../../layouts/Layout.astro";
 import SearchBar from "../../../components/SearchBar.astro";
+import GameRewardPanel from "../../../components/GameRewardPanel.astro";
 import { resolveVersionId } from "../../../lib/bible";
 import { getVersion } from "../../../lib/versions";
 import { getVersionHomePaths } from "../../../lib/staticPaths";
@@ -27,9 +28,13 @@ const meta = getVersion(version);
         Games
       </h1>
       <p class="mt-2 text-sm leading-relaxed text-[var(--color-ink-muted)] sm:text-base">
-        Short Scripture games — pick one and grow.
+        Short Scripture games — finish a run for score and wisdom. Harder play unlocks medals on Journey.
       </p>
     </header>
+
+    <div class="mb-2" x-data="playRankPanel()" x-init="boot()">
+      <GameRewardPanel mode="hub" />
+    </div>
 
     <ul class="divide-y divide-[var(--color-line)] border-t border-[var(--color-line)]">
       {

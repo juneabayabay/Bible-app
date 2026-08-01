@@ -1,11 +1,13 @@
 ---
 import Layout from "../../../layouts/Layout.astro";
 import SearchBar from "../../../components/SearchBar.astro";
+import GameRewardPanel from "../../../components/GameRewardPanel.astro";
 import { resolveVersionId } from "../../../lib/bible";
 import { getVersion } from "../../../lib/versions";
 import { getVersionHomePaths } from "../../../lib/staticPaths";
 import { resolveGameVerses } from "../../../lib/resolveDailyVerse";
-import { buildThemeRounds, THEME_LABELS } from "../../../lib/gamePacks";
+import { THEME_LABELS } from "../../../lib/gamePacks";
+import { maxGameVerseCount } from "../../../lib/verseGame";
 
 export function getStaticPaths() {
   return getVersionHomePaths();
@@ -13,13 +15,12 @@ export function getStaticPaths() {
 
 const version = resolveVersionId(Astro.params.version);
 const meta = getVersion(version);
-const verses = resolveGameVerses(version, 50).map((v) => ({
+const verses = resolveGameVerses(version, maxGameVerseCount()).map((v) => ({
   text: v.text,
   cite: `${v.book} ${v.chapter}:${v.verse}`,
   url: v.url,
 }));
-const rounds = buildThemeRounds(verses, 50);
-const payload = { version, rounds, labels: THEME_LABELS };
+const payload = { version, verses, labels: THEME_LABELS };
 ---
 
 <Layout title={`Heart compass · ${meta.shortLabel}`} version={version}>
@@ -71,7 +72,8 @@ const payload = { version, rounds, labels: THEME_LABELS };
 
     <div x-show="phase === 'done'" x-cloak class="space-y-4">
       <h2 class="font-scripture text-2xl font-semibold">Compass set</h2>
-      <p class="text-sm text-[var(--color-ink-muted)]"><span x-text="score"></span> true. Grow counted.</p>
+      <p class="text-sm text-[var(--color-ink-muted)]" x-show="rounds.length"><span x-text="score"></span> true. Grow counted.</p>
+      <GameRewardPanel />
       <div class="flex flex-wrap gap-2">
         <button type="button" class="btn-primary !min-h-10 !px-5 text-sm" @click="restart()">Again</button>
         <a class="btn-secondary !min-h-10 !px-5 text-sm" href={`/${version}/play`}>All games</a>

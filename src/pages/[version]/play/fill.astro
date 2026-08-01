@@ -1,6 +1,7 @@
 ---
 import Layout from "../../../layouts/Layout.astro";
 import SearchBar from "../../../components/SearchBar.astro";
+import GameRewardPanel from "../../../components/GameRewardPanel.astro";
 import { resolveVersionId } from "../../../lib/bible";
 import { getVersion } from "../../../lib/versions";
 import { getVersionHomePaths } from "../../../lib/staticPaths";
@@ -168,16 +169,16 @@ const payload = {
 
       <section x-show="phase === 'done'" class="space-y-4" x-cloak>
         <p class="text-[0.65rem] font-semibold uppercase tracking-[0.12em] text-[var(--color-gold)]">
-          Verses locked in
+          Run finished
         </p>
         <h2 class="font-scripture text-2xl font-semibold text-[var(--color-ink)]">
           Well done
         </h2>
         <p class="text-sm leading-relaxed text-[var(--color-ink-muted)]">
-          <span x-text="difficultyLabel"></span>:
-          <span x-text="score"></span> first-try correct.
-          Counts toward Grow for today.
+          <span x-text="difficultyLabel"></span> · counts toward Grow today.
+          Medals unlock on Journey when you meet the challenge.
         </p>
+        <GameRewardPanel />
         <div class="flex flex-wrap gap-2">
           <button type="button" class="btn-primary !min-h-10 !px-5 text-sm" @click="replay()">
             Play again
@@ -191,6 +192,13 @@ const payload = {
             data-astro-prefetch
           >
             All games
+          </a>
+          <a
+            class="btn-secondary !min-h-10 !px-5 text-sm"
+            href={`/${version}/journey`}
+            data-astro-prefetch
+          >
+            Medals
           </a>
         </div>
       </section>

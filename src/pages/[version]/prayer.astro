@@ -83,8 +83,23 @@ const wallLive = isSupabaseConfigured();
 
     <!-- ========== PUBLIC WALL ========== -->
     <div x-show="tab === 'wall'" x-cloak class="space-y-8">
-      <p class="text-sm text-[var(--color-ink-subtle)]" x-show="!wallLive">
-        Demo mode — visible on this device only until Supabase is connected.
+      <p
+        class="rounded-xl border border-[var(--color-line)] bg-[var(--color-surface-elevated)] px-3.5 py-2.5 text-sm text-[var(--color-ink-muted)]"
+        x-show="wallLive"
+        x-cloak
+      >
+        Live wall — everyone with this app can read, react, and comment. Refreshes automatically.
+      </p>
+      <p
+        class="rounded-xl border border-[var(--color-gold)]/50 bg-[var(--color-highlight)]/40 px-3.5 py-2.5 text-sm text-[var(--color-ink)]"
+        x-show="!wallLive"
+        x-cloak
+      >
+        <span class="font-semibold">This device only.</span>
+        Requests are not shared yet.
+        <span x-show="wallLiveDetail" x-text="wallLiveDetail"></span>
+        Run <code class="text-xs">supabase/prayer-wall.sql</code> in Supabase, set
+        <code class="text-xs">PUBLIC_SUPABASE_*</code> in <code class="text-xs">.env</code>, then restart the app.
       </p>
 
       <!-- Section 1: Share -->

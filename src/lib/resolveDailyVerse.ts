@@ -18,7 +18,7 @@ export function resolveDailyVerse(
 
 /**
  * Resolve `count` distinct verses that exist in this version.
- * Starts from today's pool index and walks forward — each verse unique.
+ * Starts from a day-rotated offset, then walks the whole pool so games get deep context.
  */
 export function resolveGameVerses(
   version: VersionId,

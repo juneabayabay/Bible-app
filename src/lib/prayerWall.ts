@@ -1,5 +1,5 @@
 import { getDeviceId } from "./deviceId";
-import { getSupabase, isSupabaseConfigured } from "./supabase";
+import { getSupabase, isSupabaseConfigured, probePrayerWall } from "./supabase";
 
 export type ReactionType = "prayed" | "heart" | "amen";
 
@@ -54,6 +54,17 @@ type LocalStore = {
 
 export function isWallLive(): boolean {
   return isSupabaseConfigured();
+}
+
+export async function checkWallLive(): Promise<{ live: boolean; detail?: string }> {
+  if (!isSupabaseConfigured()) {
+    return {
+      live: false,
+      detail: "Demo mode — visible on this device only until Supabase is connected.",
+    };
+  }
+  const probe = await probePrayerWall();
+  return { live: probe.ok, detail: probe.detail };
 }
 
 function emptyCounts(): Record<ReactionType, number> {
@@ -217,12 +228,17 @@ export async function createWallRequest(
   }
 
   const sb = getSupabase()!;
-  const { error } = await sb.from("prayer_requests").insert({
-    display_name: name.slice(0, 40),
-    body: trimmedBody.slice(0, 500),
-    device_id: deviceId,
-  });
+  const { data, error } = await sb
+    .from("prayer_requests")
+    .insert({
+      display_name: name.slice(0, 40),
+      body: trimmedBody.slice(0, 500),
+      device_id: deviceId,
+    })
+    .select("id")
+    .single();
   if (error) throw error;
+  if (!data?.id) throw new Error("Request was not saved to the shared wall.");
   return listRemote();
 }
 

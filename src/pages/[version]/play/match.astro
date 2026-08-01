@@ -1,11 +1,12 @@
 ---
 import Layout from "../../../layouts/Layout.astro";
 import SearchBar from "../../../components/SearchBar.astro";
+import GameRewardPanel from "../../../components/GameRewardPanel.astro";
 import { resolveVersionId } from "../../../lib/bible";
 import { getVersion } from "../../../lib/versions";
 import { getVersionHomePaths } from "../../../lib/staticPaths";
 import { resolveGameVerses } from "../../../lib/resolveDailyVerse";
-import { buildMatchRounds } from "../../../lib/gamePacks";
+import { maxGameVerseCount } from "../../../lib/verseGame";
 
 export function getStaticPaths() {
   return getVersionHomePaths();
@@ -13,13 +14,12 @@ export function getStaticPaths() {
 
 const version = resolveVersionId(Astro.params.version);
 const meta = getVersion(version);
-const verses = resolveGameVerses(version, 50).map((v) => ({
+const verses = resolveGameVerses(version, maxGameVerseCount()).map((v) => ({
   text: v.text,
   cite: `${v.book} ${v.chapter}:${v.verse}`,
   url: v.url,
 }));
-const rounds = buildMatchRounds(verses, 50);
-const payload = { version, rounds };
+const payload = { version, verses };
 ---
 
 <Layout title={`Cite snap · ${meta.shortLabel}`} version={version}>
@@ -36,7 +36,7 @@ const payload = { version, rounds };
         Cite snap
       </h1>
       <p class="mt-2 text-sm text-[var(--color-ink-muted)]">
-        Only a fragment. Near-misses share the same book — stay sharp.
+        A longer fragment. Near-misses share the same book — stay sharp.
       </p>
     </header>
 
@@ -77,6 +77,7 @@ const payload = { version, rounds };
     <div x-show="phase === 'done'" x-cloak class="space-y-4">
       <h2 class="font-scripture text-2xl font-semibold">Snaps complete</h2>
       <p class="text-sm text-[var(--color-ink-muted)]"><span x-text="score"></span> true cites. Grow counted.</p>
+      <GameRewardPanel />
       <div class="flex flex-wrap gap-2">
         <button type="button" class="btn-primary !min-h-10 !px-5 text-sm" @click="restart()">Again</button>
         <a class="btn-secondary !min-h-10 !px-5 text-sm" href={`/${version}/play`}>All games</a>

@@ -1,11 +1,12 @@
 ---
 import Layout from "../../../layouts/Layout.astro";
 import SearchBar from "../../../components/SearchBar.astro";
+import GameRewardPanel from "../../../components/GameRewardPanel.astro";
 import { resolveVersionId } from "../../../lib/bible";
 import { getVersion } from "../../../lib/versions";
 import { getVersionHomePaths } from "../../../lib/staticPaths";
 import { resolveGameVerses } from "../../../lib/resolveDailyVerse";
-import { buildUnscrambleRounds } from "../../../lib/gamePacks";
+import { maxGameVerseCount } from "../../../lib/verseGame";
 
 export function getStaticPaths() {
   return getVersionHomePaths();
@@ -13,14 +14,12 @@ export function getStaticPaths() {
 
 const version = resolveVersionId(Astro.params.version);
 const meta = getVersion(version);
-const verses = resolveGameVerses(version, 50).map((v) => ({
+const verses = resolveGameVerses(version, maxGameVerseCount()).map((v) => ({
   text: v.text,
   cite: `${v.book} ${v.chapter}:${v.verse}`,
   url: v.url,
 }));
-const easy = buildUnscrambleRounds(verses, 40, false);
-const hard = buildUnscrambleRounds(verses, 50, true);
-const payload = { version, easy, hard };
+const payload = { version, verses };
 ---
 
 <Layout title={`Word river · ${meta.shortLabel}`} version={version}>
@@ -90,6 +89,7 @@ const payload = { version, easy, hard };
 
       <p class="text-sm" x-show="feedback" x-cloak :class="ok ? 'text-[var(--color-success)]' : 'text-[var(--color-ink-muted)]'" x-text="feedback"></p>
       <p class="text-xs text-[var(--color-ink-subtle)]" x-text="current.cite"></p>
+      <p class="font-scripture text-sm leading-relaxed text-[var(--color-ink-muted)]" x-show="locked" x-cloak x-text="current.fullText"></p>
 
       <button type="button" class="btn-primary !min-h-10 !px-5 text-sm" x-show="locked" x-cloak @click="next()" x-text="roundIndex + 1 < rounds.length ? 'Next verse' : 'Finish'"></button>
     </div>
@@ -97,6 +97,7 @@ const payload = { version, easy, hard };
     <div x-show="phase === 'done'" x-cloak class="space-y-4">
       <h2 class="font-scripture text-2xl font-semibold">River settled</h2>
       <p class="text-sm text-[var(--color-ink-muted)]"><span x-text="score"></span> verses rebuilt. Grow step counted.</p>
+      <GameRewardPanel />
       <div class="flex flex-wrap gap-2">
         <button type="button" class="btn-primary !min-h-10 !px-5 text-sm" @click="phase = 'choose'">Play again</button>
         <a class="btn-secondary !min-h-10 !px-5 text-sm" href={`/${version}/play`}>All games</a>

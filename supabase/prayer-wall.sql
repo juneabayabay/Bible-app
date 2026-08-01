@@ -1,6 +1,7 @@
 -- Prayer wall schema for Bible-app
--- Run this in the Supabase SQL editor, then set PUBLIC_SUPABASE_URL
--- and PUBLIC_SUPABASE_ANON_KEY in .env
+-- Run this ENTIRE script in the Supabase SQL editor (Dashboard → SQL),
+-- then set PUBLIC_SUPABASE_URL + PUBLIC_SUPABASE_ANON_KEY in .env
+-- Prefer the legacy "anon" JWT key (eyJ…) OR a publishable key (sb_publishable_…).
 
 create table if not exists prayer_requests (
   id uuid primary key default gen_random_uuid(),
@@ -41,9 +42,23 @@ alter table prayer_requests enable row level security;
 alter table prayer_reactions enable row level security;
 alter table prayer_comments enable row level security;
 
--- Public read + insert (anonymous community wall).
--- Deletes allowed only for matching device_id (spoofable; fine for MVP).
+-- Privileges for the public anon role (required even with RLS policies).
+grant usage on schema public to anon, authenticated;
+grant select, insert, delete on table prayer_requests to anon, authenticated;
+grant select, insert, delete on table prayer_reactions to anon, authenticated;
+grant select, insert, delete on table prayer_comments to anon, authenticated;
 
+-- Recreate policies so re-running this script is safe.
+drop policy if exists "prayer_requests_select" on prayer_requests;
+drop policy if exists "prayer_requests_insert" on prayer_requests;
+drop policy if exists "prayer_requests_delete_own" on prayer_requests;
+drop policy if exists "prayer_reactions_select" on prayer_reactions;
+drop policy if exists "prayer_reactions_insert" on prayer_reactions;
+drop policy if exists "prayer_reactions_delete" on prayer_reactions;
+drop policy if exists "prayer_comments_select" on prayer_comments;
+drop policy if exists "prayer_comments_insert" on prayer_comments;
+
+-- Public community wall: anyone can read, share, react, and comment.
 create policy "prayer_requests_select" on prayer_requests
   for select using (true);
 

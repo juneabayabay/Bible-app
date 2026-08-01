@@ -1,0 +1,86 @@
+---
+/** Alpine-bound reward / rank frame. Parent exposes `reward` (run) or `rank` (hub). */
+type Props = {
+  mode?: "run" | "hub";
+};
+
+const { mode = "run" } = Astro.props;
+---
+
+{
+  mode === "hub" ? (
+    <div class="rank-frame space-y-2" :class="rank?.border.frameClass" x-show="rank" x-cloak>
+      <p class="text-[0.65rem] font-semibold uppercase tracking-[0.12em] text-[var(--color-gold)]">
+        Your calling
+      </p>
+      <p class="font-scripture text-2xl font-semibold text-[var(--color-ink)]" x-text="rank.title.name"></p>
+      <p class="text-sm leading-relaxed text-[var(--color-ink-muted)]" x-text="rank.title.blurb"></p>
+      <p class="text-xs text-[var(--color-ink-subtle)]">
+        <span x-text="rank.border.name"></span>
+        · <span x-text="rank.tenureLabel"></span>
+        · <span x-text="rank.xp"></span> wisdom
+        · <span x-text="rank.totalRuns"></span> runs
+      </p>
+      <p class="text-xs text-[var(--color-ink-muted)]" x-show="rank.next" x-cloak>
+        Next title: <span class="text-[var(--color-ink)]" x-text="rank.next.name"></span>
+        · <span x-text="rank.next.minXp"></span> wisdom
+      </p>
+    </div>
+  ) : (
+    <div class="rank-frame space-y-3" :class="reward?.border.frameClass" x-show="reward" x-cloak>
+      <div>
+        <p class="text-[0.65rem] font-semibold uppercase tracking-[0.12em] text-[var(--color-gold)]">
+          Score
+        </p>
+        <p class="mt-1 font-scripture text-3xl font-semibold text-[var(--color-ink)]">
+          <span x-text="reward.score"></span>
+          <span class="text-xl text-[var(--color-ink-muted)]">/</span>
+          <span class="text-xl text-[var(--color-ink-muted)]" x-text="reward.total"></span>
+        </p>
+        <p class="mt-1 text-sm text-[var(--color-ink-muted)]">
+          +<span x-text="reward.xpGained"></span> wisdom ·
+          <span x-text="Math.round(reward.accuracy * 100)"></span>% accurate
+        </p>
+      </div>
+
+      <div>
+        <p
+          class="text-[0.65rem] font-semibold uppercase tracking-[0.12em] text-[var(--color-gold)]"
+          x-text="reward.runHonor.title"
+        ></p>
+        <p class="text-sm leading-relaxed text-[var(--color-ink-muted)]" x-text="reward.runHonor.blurb"></p>
+      </div>
+
+      <div class="pt-0.5">
+        <p class="font-scripture text-xl font-semibold text-[var(--color-ink)]" x-text="reward.title.name"></p>
+        <p class="mt-0.5 text-xs text-[var(--color-ink-subtle)]" x-text="reward.title.verseLabel"></p>
+      </div>
+      <p class="text-xs text-[var(--color-ink-muted)]">
+        <span x-text="reward.border.name"></span>
+        · <span x-text="reward.tenureLabel"></span>
+        · <span x-text="reward.xp"></span> wisdom total
+      </p>
+      <p class="text-sm text-[var(--color-gold)]" x-show="reward.titleChanged" x-cloak>
+        New title unlocked
+      </p>
+      <p class="text-sm text-[var(--color-gold)]" x-show="reward.borderChanged" x-cloak>
+        New border from your days with the Word
+      </p>
+
+      <div x-show="reward.newMedals?.length" x-cloak class="space-y-2 border-t border-[var(--color-line)] pt-3">
+        <p class="text-[0.65rem] font-semibold uppercase tracking-[0.12em] text-[var(--color-gold)]">
+          New medal
+        </p>
+        <template x-for="medal in reward.newMedals" :key="medal.id">
+          <div>
+            <p class="font-scripture text-lg font-semibold text-[var(--color-ink)]" x-text="medal.title"></p>
+            <p class="text-sm text-[var(--color-ink-muted)]" x-text="medal.description"></p>
+          </div>
+        </template>
+        <p class="text-xs text-[var(--color-ink-subtle)]">
+          See all medals on your Journey page.
+        </p>
+      </div>
+    </div>
+  )
+}

@@ -18,9 +18,12 @@ import {
   journeyProgress,
   loadJourney,
   recordAppOpen,
+  CHALLENGE_TROPHIES,
+  STREAK_TROPHIES,
   TROPHIES,
 } from "./lib/journey";
 import {
+  getAttendanceDays,
   getTodayStatus,
   getWeekStats,
   isChallengeDone,
@@ -35,11 +38,14 @@ import {
   saveReflection,
   setActivePlan,
   isQuizDone,
+  type AttendanceDay,
 } from "./lib/progress";
+import { syncJourneyUnlocks } from "./lib/syncUnlocks";
 import { addPrayer, loadPrayers, removePrayer, type PrayerEntry } from "./lib/prayers";
 import { getDeviceId } from "./lib/deviceId";
 import {
   addWallComment,
+  checkWallLive,
   createWallRequest,
   isWallLive,
   listWallRequests,
@@ -74,6 +80,11 @@ import {
   type GameVerse,
 } from "./lib/verseGame";
 import {
+  buildMatchRounds,
+  buildNextRounds,
+  buildSprintRounds,
+  buildThemeRounds,
+  buildUnscrambleRounds,
   markAnyGameDone,
   THEME_LABELS,
   type MatchRound,
@@ -82,6 +93,15 @@ import {
   type ThemeRound,
   type UnscrambleRound,
 } from "./lib/gamePacks";
+import {
+  getRecentCites,
+  loadGameProfile,
+  profileSnapshot,
+  recordGameRun,
+  sessionSeed,
+  type GameId,
+  type RewardSnapshot,
+} from "./lib/gameRewards";
 
 type SearchDoc = {
   id: string;
@@ -315,6 +335,7 @@ export default (Alpine: Alpine) => {
 
     completeChallenge() {
       markChallengeDone(this.challengeId);
+      syncJourneyUnlocks();
       this.refresh();
     },
 
@@ -322,6 +343,7 @@ export default (Alpine: Alpine) => {
       if (!this.reflection.trim()) return;
       saveReflection(this.reflection);
       markChallengeDone(this.challengeId);
+      syncJourneyUnlocks();
       this.refresh();
     },
   }));
@@ -410,56 +432,42 @@ export default (Alpine: Alpine) => {
     finish() {
       markQuizDone(this.slug, this.chapter);
       markGrow();
+      syncJourneyUnlocks();
       this.done = true;
     },
   }));
 
   Alpine.data("journeyPanel", () => ({
     streak: 0,
-    totalDays: 0,
     levelName: "Seed",
     levelBlurb: "",
     progress: 0,
-    remaining: 0,
     nextLevelNote: "",
     streakNote: "Open today to begin.",
     trophyCount: 0,
     trophyTotal: TROPHIES.length,
     trophies: [] as string[],
-    devotionDone: 0,
-    weekOpened: 0,
-    weekRead: 0,
-    weekGrow: 0,
-    weekChallenges: 0,
-    weekComplete: 0,
-    chaptersRead: 0,
+    attendance: [] as AttendanceDay[],
 
     refresh() {
       const state = recordAppOpen();
       markOpened();
+      const unlocked = syncJourneyUnlocks();
       const prog = journeyProgress(state.streak);
+
       this.streak = state.streak;
-      this.totalDays = state.totalDays;
       this.levelName = prog.current.name;
       this.levelBlurb = prog.current.blurb;
       this.progress = prog.ratio;
-      this.remaining = prog.remaining;
-      this.trophies = state.trophies;
-      this.trophyCount = state.trophies.length;
-      this.devotionDone = state.completedDevotions.length;
+      this.trophies = unlocked.trophies;
+      this.trophyCount = this.trophies.length;
       this.streakNote =
         state.streak <= 0 ? "Open today to begin." : "Keep coming back each day.";
       this.nextLevelNote = prog.next
-        ? `${prog.remaining} more day${prog.remaining === 1 ? "" : "s"} to reach ${prog.next.name}.`
-        : "You have reached the highest level. Stay faithful.";
+        ? `${prog.remaining} more day${prog.remaining === 1 ? "" : "s"} to ${prog.next.name}`
+        : "Highest level — stay faithful";
 
-      const week = getWeekStats();
-      this.weekOpened = week.opened;
-      this.weekRead = week.read;
-      this.weekGrow = week.grow;
-      this.weekChallenges = week.challenges;
-      this.weekComplete = week.completeDays;
-      this.chaptersRead = loadProgress().chaptersRead.length;
+      this.attendance = getAttendanceDays(28);
     },
   }));
 
@@ -480,6 +488,7 @@ export default (Alpine: Alpine) => {
     alreadyDone: false,
     studySecondsLeft: 0,
     firstLetterHint: false,
+    reward: null as RewardSnapshot | null,
     _studyTimer: null as ReturnType<typeof setInterval> | null,
 
     get current(): FillBlankRound {
@@ -567,7 +576,11 @@ export default (Alpine: Alpine) => {
 
     begin() {
       if (!this.verses.length) return;
-      this.rounds = buildFillBlankRounds(this.verses, this.difficulty);
+      this.reward = null;
+      this.rounds = buildFillBlankRounds(this.verses, this.difficulty, {
+        seed: sessionSeed(17),
+        avoidCites: getRecentCites(),
+      });
       if (!this.rounds.length) {
         this.phase = "choose";
         return;
@@ -684,8 +697,13 @@ export default (Alpine: Alpine) => {
         this.enterStudy();
         return;
       }
-      markVerseGameDoneToday();
-      markGrow();
+      applyRunReward(this, {
+        gameId: "fill",
+        score: this.score,
+        total: this.totalBlanks,
+        cites: this.rounds.map((r) => r.cite),
+        difficulty: this.difficulty,
+      });
       this.alreadyDone = true;
       this.phase = "done";
     },
@@ -701,11 +719,41 @@ export default (Alpine: Alpine) => {
     markGrow();
   }
 
+  function applyRunReward(
+    target: { reward: RewardSnapshot | null },
+    result: {
+      gameId: GameId;
+      score: number;
+      total: number;
+      cites: string[];
+      difficulty?: Difficulty;
+      bestStreak?: number;
+    },
+  ) {
+    finishGameGrow();
+    const reward = recordGameRun(result);
+    const unlocked = syncJourneyUnlocks();
+    target.reward = {
+      ...reward,
+      newMedals: unlocked.newlyUnlocked.map((t) => ({
+        id: t.id,
+        title: t.title,
+        description: t.description,
+      })),
+    };
+  }
+
+  Alpine.data("playRankPanel", () => ({
+    rank: null as ReturnType<typeof profileSnapshot> | null,
+    boot() {
+      this.rank = profileSnapshot();
+    },
+  }));
+
   Alpine.data("wordRiverGame", () => ({
     phase: "choose" as "choose" | "play" | "done",
+    verses: [] as GameVerse[],
     rounds: [] as UnscrambleRound[],
-    easy: [] as UnscrambleRound[],
-    hard: [] as UnscrambleRound[],
     roundIndex: 0,
     bank: [] as Array<{ word: string; used: boolean }>,
     built: [] as string[],
@@ -713,6 +761,7 @@ export default (Alpine: Alpine) => {
     ok: false,
     feedback: "",
     score: 0,
+    reward: null as RewardSnapshot | null,
 
     get current(): UnscrambleRound {
       return this.rounds[this.roundIndex] ?? {
@@ -730,21 +779,22 @@ export default (Alpine: Alpine) => {
       try {
         const el = document.getElementById("unscramble-payload");
         if (el?.textContent) {
-          const data = JSON.parse(el.textContent) as {
-            easy: UnscrambleRound[];
-            hard: UnscrambleRound[];
-          };
-          this.easy = data.easy ?? [];
-          this.hard = data.hard ?? [];
+          const data = JSON.parse(el.textContent) as { verses: GameVerse[] };
+          this.verses = data.verses ?? [];
         }
       } catch {
-        this.easy = [];
-        this.hard = [];
+        this.verses = [];
       }
     },
 
     start(hardMode: boolean) {
-      this.rounds = hardMode ? this.hard : this.easy;
+      this.reward = null;
+      this.rounds = buildUnscrambleRounds(
+        this.verses,
+        hardMode ? 50 : 40,
+        hardMode,
+        { seed: sessionSeed(hardMode ? 3 : 2), avoidCites: getRecentCites() },
+      );
       if (!this.rounds.length) return;
       this.roundIndex = 0;
       this.score = 0;
@@ -798,13 +848,19 @@ export default (Alpine: Alpine) => {
         this.loadRound();
         return;
       }
-      finishGameGrow();
+      applyRunReward(this, {
+        gameId: "unscramble",
+        score: this.score,
+        total: this.rounds.length,
+        cites: this.rounds.map((r) => r.cite),
+      });
       this.phase = "done";
     },
   }));
 
   Alpine.data("citeSnapGame", () => ({
     phase: "play" as "play" | "done",
+    verses: [] as GameVerse[],
     rounds: [] as MatchRound[],
     roundIndex: 0,
     locked: false,
@@ -812,7 +868,9 @@ export default (Alpine: Alpine) => {
     feedback: "",
     score: 0,
     streak: 0,
+    bestStreak: 0,
     picked: "",
+    reward: null as RewardSnapshot | null,
 
     get current(): MatchRound {
       return this.rounds[this.roundIndex] ?? {
@@ -825,16 +883,24 @@ export default (Alpine: Alpine) => {
       };
     },
 
+    rebuild() {
+      this.rounds = buildMatchRounds(this.verses, 50, {
+        seed: sessionSeed(5),
+        avoidCites: getRecentCites(),
+      });
+    },
+
     boot() {
       try {
         const el = document.getElementById("match-payload");
         if (el?.textContent) {
-          const data = JSON.parse(el.textContent) as { rounds: MatchRound[] };
-          this.rounds = data.rounds ?? [];
+          const data = JSON.parse(el.textContent) as { verses: GameVerse[] };
+          this.verses = data.verses ?? [];
         }
       } catch {
-        this.rounds = [];
+        this.verses = [];
       }
+      this.rebuild();
     },
 
     choiceClass(c: string) {
@@ -858,6 +924,7 @@ export default (Alpine: Alpine) => {
       if (this.ok) {
         this.score += 1;
         this.streak += 1;
+        this.bestStreak = Math.max(this.bestStreak, this.streak);
         this.feedback = this.streak > 1 ? `Snap · streak ${this.streak}` : "Snap — true cite.";
       } else {
         this.streak = 0;
@@ -873,14 +940,23 @@ export default (Alpine: Alpine) => {
         this.picked = "";
         return;
       }
-      finishGameGrow();
+      applyRunReward(this, {
+        gameId: "match",
+        score: this.score,
+        total: this.rounds.length,
+        cites: this.rounds.map((r) => r.cite),
+        bestStreak: this.bestStreak,
+      });
       this.phase = "done";
     },
 
     restart() {
+      this.reward = null;
+      this.rebuild();
       this.roundIndex = 0;
       this.score = 0;
       this.streak = 0;
+      this.bestStreak = 0;
       this.locked = false;
       this.feedback = "";
       this.picked = "";
@@ -890,6 +966,7 @@ export default (Alpine: Alpine) => {
 
   Alpine.data("finishLineGame", () => ({
     phase: "play" as "play" | "done",
+    verses: [] as GameVerse[],
     rounds: [] as NextRound[],
     roundIndex: 0,
     locked: false,
@@ -897,6 +974,7 @@ export default (Alpine: Alpine) => {
     feedback: "",
     score: 0,
     picked: "",
+    reward: null as RewardSnapshot | null,
 
     get current(): NextRound {
       return this.rounds[this.roundIndex] ?? {
@@ -910,16 +988,24 @@ export default (Alpine: Alpine) => {
       };
     },
 
+    rebuild() {
+      this.rounds = buildNextRounds(this.verses, 50, {
+        seed: sessionSeed(7),
+        avoidCites: getRecentCites(),
+      });
+    },
+
     boot() {
       try {
         const el = document.getElementById("next-payload");
         if (el?.textContent) {
-          const data = JSON.parse(el.textContent) as { rounds: NextRound[] };
-          this.rounds = data.rounds ?? [];
+          const data = JSON.parse(el.textContent) as { verses: GameVerse[] };
+          this.verses = data.verses ?? [];
         }
       } catch {
-        this.rounds = [];
+        this.verses = [];
       }
+      this.rebuild();
     },
 
     choiceClass(c: string) {
@@ -956,11 +1042,18 @@ export default (Alpine: Alpine) => {
         this.picked = "";
         return;
       }
-      finishGameGrow();
+      applyRunReward(this, {
+        gameId: "next",
+        score: this.score,
+        total: this.rounds.length,
+        cites: this.rounds.map((r) => r.cite),
+      });
       this.phase = "done";
     },
 
     restart() {
+      this.reward = null;
+      this.rebuild();
       this.roundIndex = 0;
       this.score = 0;
       this.locked = false;
@@ -972,6 +1065,7 @@ export default (Alpine: Alpine) => {
 
   Alpine.data("heartCompassGame", () => ({
     phase: "play" as "play" | "done",
+    verses: [] as GameVerse[],
     rounds: [] as ThemeRound[],
     labels: THEME_LABELS as Record<ThemeId, string>,
     roundIndex: 0,
@@ -980,6 +1074,7 @@ export default (Alpine: Alpine) => {
     feedback: "",
     score: 0,
     picked: "" as ThemeId | "",
+    reward: null as RewardSnapshot | null,
 
     get current(): ThemeRound {
       return this.rounds[this.roundIndex] ?? {
@@ -992,20 +1087,28 @@ export default (Alpine: Alpine) => {
       };
     },
 
+    rebuild() {
+      this.rounds = buildThemeRounds(this.verses, 50, {
+        seed: sessionSeed(11),
+        avoidCites: getRecentCites(),
+      });
+    },
+
     boot() {
       try {
         const el = document.getElementById("theme-payload");
         if (el?.textContent) {
           const data = JSON.parse(el.textContent) as {
-            rounds: ThemeRound[];
+            verses: GameVerse[];
             labels: Record<ThemeId, string>;
           };
-          this.rounds = data.rounds ?? [];
+          this.verses = data.verses ?? [];
           if (data.labels) this.labels = data.labels;
         }
       } catch {
-        this.rounds = [];
+        this.verses = [];
       }
+      this.rebuild();
       if (!this.rounds.length) this.phase = "done";
     },
 
@@ -1043,22 +1146,30 @@ export default (Alpine: Alpine) => {
         this.picked = "";
         return;
       }
-      finishGameGrow();
+      applyRunReward(this, {
+        gameId: "theme",
+        score: this.score,
+        total: this.rounds.length,
+        cites: this.rounds.map((r) => r.cite),
+      });
       this.phase = "done";
     },
 
     restart() {
+      this.reward = null;
+      this.rebuild();
       this.roundIndex = 0;
       this.score = 0;
       this.locked = false;
       this.feedback = "";
       this.picked = "";
-      this.phase = "play";
+      this.phase = this.rounds.length ? "play" : "done";
     },
   }));
 
   Alpine.data("breathSprintGame", () => ({
     phase: "ready" as "ready" | "play" | "done",
+    verses: [] as GameVerse[],
     rounds: [] as FillBlankRound[],
     roundIndex: 0,
     totalTime: 60,
@@ -1067,6 +1178,8 @@ export default (Alpine: Alpine) => {
     streak: 0,
     bestStreak: 0,
     filled: "",
+    attempted: 0,
+    reward: null as RewardSnapshot | null,
     _timer: null as ReturnType<typeof setInterval> | null,
 
     get current(): FillBlankRound {
@@ -1086,15 +1199,15 @@ export default (Alpine: Alpine) => {
         const el = document.getElementById("sprint-payload");
         if (el?.textContent) {
           const data = JSON.parse(el.textContent) as {
-            rounds: FillBlankRound[];
+            verses: GameVerse[];
             seconds: number;
           };
-          this.rounds = data.rounds ?? [];
+          this.verses = data.verses ?? [];
           this.totalTime = data.seconds ?? 60;
           this.timeLeft = this.totalTime;
         }
       } catch {
-        this.rounds = [];
+        this.verses = [];
       }
     },
 
@@ -1106,12 +1219,18 @@ export default (Alpine: Alpine) => {
     },
 
     start() {
+      this.reward = null;
+      this.rounds = buildSprintRounds(this.verses, {
+        seed: sessionSeed(13),
+        avoidCites: getRecentCites(),
+      }).map((r, id) => ({ ...r, id }));
       if (!this.rounds.length) return;
       this.clearTimer();
       this.roundIndex = 0;
       this.score = 0;
       this.streak = 0;
       this.bestStreak = 0;
+      this.attempted = 0;
       this.filled = "";
       this.timeLeft = this.totalTime;
       this.phase = "play";
@@ -1128,6 +1247,7 @@ export default (Alpine: Alpine) => {
       const answer = this.current.answers[0] ?? "";
       const ok = c.toLowerCase() === answer.toLowerCase();
       this.filled = ok ? c : answer;
+      this.attempted += 1;
       if (ok) {
         this.score += 1;
         this.streak += 1;
@@ -1147,7 +1267,6 @@ export default (Alpine: Alpine) => {
       if (this.roundIndex + 1 < this.rounds.length) {
         this.roundIndex += 1;
       } else {
-        // Loop pool if still time
         this.roundIndex = 0;
       }
     },
@@ -1155,7 +1274,13 @@ export default (Alpine: Alpine) => {
     endRun() {
       this.clearTimer();
       this.timeLeft = 0;
-      finishGameGrow();
+      applyRunReward(this, {
+        gameId: "speed",
+        score: this.score,
+        total: Math.max(this.attempted, this.score),
+        cites: this.rounds.slice(0, Math.max(this.attempted, 1)).map((r) => r.cite),
+        bestStreak: this.bestStreak,
+      });
       this.phase = "done";
     },
   }));
@@ -1354,6 +1479,7 @@ export default (Alpine: Alpine) => {
       if (challenge.id === "one-devotion") {
         markChallengeDone(challenge.id);
       }
+      syncJourneyUnlocks();
       this.sync();
     },
   }));
@@ -1819,6 +1945,7 @@ export default (Alpine: Alpine) => {
   Alpine.data("prayerHub", () => ({
     tab: "wall" as "wall" | "journal",
     wallLive: false,
+    wallLiveDetail: "" as string,
     wallItems: [] as WallRequest[],
     wallName: "",
     wallBody: "",
@@ -1833,6 +1960,7 @@ export default (Alpine: Alpine) => {
     status: "" as string,
     _statusTimer: null as ReturnType<typeof setTimeout> | null,
     _wallStatusTimer: null as ReturnType<typeof setTimeout> | null,
+    _wallPoll: null as ReturnType<typeof setInterval> | null,
 
     setTab(next: "wall" | "journal") {
       this.tab = next;
@@ -1849,10 +1977,33 @@ export default (Alpine: Alpine) => {
       const hash = window.location.hash.replace(/^#/, "").toLowerCase();
       if (hash === "journal") this.tab = "journal";
       else if (hash === "wall") this.tab = "wall";
-      this.wallLive = isWallLive();
       this.deviceId = getDeviceId();
       this.items = loadPrayers();
+      await this.verifyWall();
       await this.refreshWall();
+      this.startWallPoll();
+    },
+
+    async verifyWall() {
+      const check = await checkWallLive();
+      this.wallLive = check.live;
+      this.wallLiveDetail = check.detail ?? "";
+      if (!check.live && isWallLive()) {
+        // Configured in env but DB unreachable — do not pretend it is shared.
+        this.wallError =
+          check.detail ||
+          "Prayer wall could not connect. Re-run supabase/prayer-wall.sql and check your API key.";
+      }
+    },
+
+    startWallPoll() {
+      if (this._wallPoll) clearInterval(this._wallPoll);
+      if (!this.wallLive) return;
+      this._wallPoll = setInterval(() => {
+        if (this.tab === "wall" && !this.wallBusy && document.visibilityState === "visible") {
+          void this.refreshWall(true);
+        }
+      }, 12_000);
     },
 
     flash(message: string) {
@@ -1903,17 +2054,17 @@ export default (Alpine: Alpine) => {
       });
     },
 
-    async refreshWall() {
-      this.wallLoading = true;
-      this.wallError = "";
+    async refreshWall(quiet = false) {
+      if (!quiet) this.wallLoading = true;
+      if (!quiet) this.wallError = "";
       try {
         this.wallItems = this.mergeWallUi(await listWallRequests());
       } catch (err) {
         this.wallError =
           err instanceof Error ? err.message : "Could not load the prayer wall.";
-        this.wallItems = [];
+        if (!quiet) this.wallItems = [];
       } finally {
-        this.wallLoading = false;
+        if (!quiet) this.wallLoading = false;
       }
     },
 
@@ -1922,11 +2073,19 @@ export default (Alpine: Alpine) => {
       this.wallBusy = true;
       this.wallError = "";
       try {
+        if (!this.wallLive) await this.verifyWall();
         this.wallItems = this.mergeWallUi(
           await createWallRequest(this.wallName, this.wallBody),
         );
         this.wallBody = "";
-        this.flashWall("Shared");
+        if (isWallLive()) {
+          this.wallLive = true;
+          this.wallLiveDetail = "";
+          this.startWallPoll();
+          this.flashWall("Shared with everyone");
+        } else {
+          this.flashWall("Saved on this device only");
+        }
       } catch (err) {
         this.wallError =
           err instanceof Error ? err.message : "Could not share your request.";
