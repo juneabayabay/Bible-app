@@ -30,11 +30,18 @@
             Install Bible on your phone
           </p>
           <p class="mt-1 text-sm leading-relaxed text-[var(--color-ink-muted)]" x-text="blurb"></p>
+          <p
+            class="mt-1.5 text-xs text-[var(--color-ink-subtle)]"
+            x-show="installHint"
+            x-text="installHint"
+            x-cloak
+          ></p>
           <div class="mt-3 flex flex-wrap gap-2">
             <button
               type="button"
               class="btn-primary !min-h-11 !px-4 text-sm"
               @click="primaryAction()"
+              :disabled="installBusy"
               x-text="primaryLabel"
             ></button>
             <button
@@ -74,35 +81,40 @@
     @click.self="showGuide = false"
     role="dialog"
     aria-modal="true"
-    aria-label="How to install"
+    aria-label="Install steps"
   >
     <div
       class="w-full max-w-md rounded-2xl border border-[var(--color-line)] bg-[var(--color-surface-elevated)] p-5 shadow-xl"
       @click.stop
     >
-      <p class="font-scripture text-xl font-semibold text-[var(--color-ink)]">Add to Home Screen</p>
-      <p class="mt-2 text-sm text-[var(--color-ink-muted)]" x-show="platform === 'ios'" x-cloak>
-        On iPhone or iPad, use Safari:
-      </p>
-      <ol
-        class="mt-3 list-decimal space-y-2 pl-5 text-sm leading-relaxed text-[var(--color-ink)]"
-        x-show="platform === 'ios'"
-        x-cloak
-      >
-        <li>Tap the <strong>Share</strong> button (square with an arrow up).</li>
-        <li>Scroll and tap <strong>Add to Home Screen</strong>.</li>
-        <li>Tap <strong>Add</strong> — Bible opens like an app.</li>
-      </ol>
-      <div x-show="platform !== 'ios'" x-cloak>
-        <p class="mt-2 text-sm text-[var(--color-ink-muted)]">
-          If Install didn’t appear, use your browser menu:
-        </p>
-        <ol class="mt-3 list-decimal space-y-2 pl-5 text-sm leading-relaxed text-[var(--color-ink)]">
-          <li>Open this site in <strong>Chrome</strong>.</li>
-          <li>Tap <strong>⋮</strong> or the install icon in the address bar.</li>
-          <li>Choose <strong>Install app</strong> or <strong>Add to Home screen</strong>.</li>
-        </ol>
-      </div>
+      <template x-if="platform === 'ios'">
+        <div>
+          <p class="font-scripture text-xl font-semibold text-[var(--color-ink)]">
+            Add to Home Screen
+          </p>
+          <p class="mt-2 text-sm text-[var(--color-ink-muted)]">On iPhone or iPad, use Safari:</p>
+          <ol class="mt-3 list-decimal space-y-2 pl-5 text-sm leading-relaxed text-[var(--color-ink)]">
+            <li>Tap the <strong>Share</strong> button (square with an arrow up).</li>
+            <li>Scroll and tap <strong>Add to Home Screen</strong>.</li>
+            <li>Tap <strong>Add</strong> — Bible opens like an app.</li>
+          </ol>
+        </div>
+      </template>
+      <template x-if="platform !== 'ios'">
+        <div>
+          <p class="font-scripture text-xl font-semibold text-[var(--color-ink)]">
+            Install on Android
+          </p>
+          <p class="mt-2 text-sm text-[var(--color-ink-muted)]">
+            If the Install button didn’t open a dialog, do this in <strong>Chrome</strong>:
+          </p>
+          <ol class="mt-3 list-decimal space-y-2 pl-5 text-sm leading-relaxed text-[var(--color-ink)]">
+            <li>Open this site in <strong>Chrome</strong>.</li>
+            <li>Tap <strong>⋮</strong> or the install icon in the address bar.</li>
+            <li>Choose <strong>Install app</strong> or <strong>Add to Home screen</strong>.</li>
+          </ol>
+        </div>
+      </template>
       <button
         type="button"
         class="btn-primary mt-5 !min-h-11 w-full text-sm"

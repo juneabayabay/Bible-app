@@ -220,21 +220,26 @@ export default (Alpine: Alpine) => {
     showGuide: false,
     platform: "other" as InstallPlatform,
     canPrompt: false,
+    installBusy: false,
+    installHint: "",
 
     get blurb() {
       if (this.platform === "ios") {
-        return "Add it to your Home Screen for quick, fullscreen reading.";
+        return "On iPhone, add Bible to your Home Screen in a few taps.";
       }
       if (this.canPrompt) {
-        return "One tap — open Bible like a real app from your home screen.";
+        return "Tap Install — it opens like a real app from your home screen.";
+      }
+      if (this.platform === "android") {
+        return "Tap Install when ready. Best in Chrome on Android.";
       }
       return "Install for a fuller, app-like experience on your device.";
     },
 
     get primaryLabel() {
-      if (this.platform === "ios") return "How to install";
-      if (this.canPrompt) return "Install app";
-      return "How to install";
+      if (this.platform === "ios") return "Show steps";
+      if (this.installBusy) return "Installing…";
+      return "Install this app";
     },
 
     boot() {
@@ -244,18 +249,19 @@ export default (Alpine: Alpine) => {
 
       const onAvailable = () => {
         this.canPrompt = true;
+        this.installHint = "";
         if (shouldShowInstallBanner()) this.open = true;
       };
       const onInstalled = () => {
         this.open = false;
         this.showGuide = false;
         this.canPrompt = false;
+        this.installBusy = false;
       };
 
       window.addEventListener("bible-install-available", onAvailable);
       window.addEventListener("bible-app-installed", onInstalled);
 
-      // Small delay so the page settles before the banner slides up.
       if (this.open) {
         this.open = false;
         window.setTimeout(() => {
@@ -265,8 +271,27 @@ export default (Alpine: Alpine) => {
     },
 
     async primaryAction() {
-      const promptEvent = getDeferredInstallPrompt();
+      // iPhone: Apple blocks one-tap install — steps only.
+      if (this.platform === "ios") {
+        this.showGuide = true;
+        this.installHint = "";
+        return;
+      }
+
+      // Android / desktop: native install dialog when the browser allows it.
+      let promptEvent = getDeferredInstallPrompt();
+      if (!promptEvent && this.platform === "android") {
+        this.installBusy = true;
+        this.installHint = "Preparing install…";
+        // Chrome sometimes fires beforeinstallprompt slightly late.
+        await new Promise((r) => window.setTimeout(r, 500));
+        promptEvent = getDeferredInstallPrompt();
+        this.installBusy = false;
+      }
+
       if (promptEvent) {
+        this.installBusy = true;
+        this.installHint = "";
         try {
           await promptEvent.prompt();
           const choice = await promptEvent.userChoice;
@@ -275,18 +300,27 @@ export default (Alpine: Alpine) => {
           if (choice.outcome === "accepted") {
             this.open = false;
             dismissInstallPrompt();
+          } else {
+            this.installHint = "Install canceled. Tap again anytime.";
           }
         } catch {
+          this.installHint = "Could not open install. Try Chrome, then tap again.";
           this.showGuide = true;
+        } finally {
+          this.installBusy = false;
         }
         return;
       }
+
+      // Prompt not available yet (wrong browser, already offered, etc.)
+      this.installHint = "Install isn’t ready here. Follow the short steps.";
       this.showGuide = true;
     },
 
     notNow() {
       this.open = false;
       this.showGuide = false;
+      this.installHint = "";
       hideInstallForSession();
     },
 
@@ -294,6 +328,7 @@ export default (Alpine: Alpine) => {
       dismissInstallPrompt();
       this.open = false;
       this.showGuide = false;
+      this.installHint = "";
     },
   }));
 
