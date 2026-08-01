@@ -1,0 +1,172 @@
+---
+import Layout from "../../layouts/Layout.astro";
+import SearchBar from "../../components/SearchBar.astro";
+import { resolveVersionId } from "../../lib/bible";
+import { getVersion } from "../../lib/versions";
+import { getVersionHomePaths } from "../../lib/staticPaths";
+import { resolveDailyVerse } from "../../lib/resolveDailyVerse";
+import { buildFillBlankRounds } from "../../lib/verseGame";
+
+export function getStaticPaths() {
+  return getVersionHomePaths();
+}
+
+const version = resolveVersionId(Astro.params.version);
+const meta = getVersion(version);
+const daily = resolveDailyVerse(version);
+const rounds = daily ? buildFillBlankRounds(daily.text) : [];
+const payload = {
+  version,
+  verse: daily
+    ? {
+        text: daily.text,
+        cite: `${daily.book} ${daily.chapter}:${daily.verse}`,
+        url: daily.url,
+      }
+    : null,
+  rounds,
+};
+---
+
+<Layout title={`Verse play · ${meta.shortLabel}`} version={version}>
+  <SearchBar slot="header" version={version} />
+
+  <script type="application/json" id="verse-game-payload" set:html={JSON.stringify(payload)} />
+
+  <div class="page-stack measure" x-data="verseFillGame()" x-init="boot()">
+    <header class="border-b border-[var(--color-line)] pb-5">
+      <p class="text-sm text-[var(--color-ink-muted)]">
+        <a href={`/${version}/`} class="hover:underline" data-astro-prefetch>← Home</a>
+      </p>
+      <p class="eyebrow mt-5">Play</p>
+      <h1 class="font-scripture mt-1.5 text-3xl font-semibold tracking-tight sm:text-4xl">
+        Fill the blank
+      </h1>
+      <p class="mt-2 text-sm leading-relaxed text-[var(--color-ink-muted)] sm:text-base">
+        A short memory round with today’s verse — no scoreboard, just growth.
+      </p>
+    </header>
+
+    <p class="text-sm text-[var(--color-ink-muted)]" x-show="!verse" x-cloak>
+      No verse available for this version today.
+    </p>
+
+    <p class="text-sm text-[var(--color-ink-muted)]" x-show="verse && rounds.length === 0" x-cloak>
+      Couldn’t build a round from today’s verse.
+      <a
+        class="ml-1 text-[var(--color-primary)] hover:underline"
+        :href="verse?.url"
+        data-astro-prefetch
+      >
+        Open chapter →
+      </a>
+    </p>
+
+    <div x-show="verse && rounds.length > 0" x-cloak class="space-y-6">
+      <section x-show="phase === 'study'" class="space-y-4">
+        <p class="text-[0.65rem] font-semibold uppercase tracking-[0.12em] text-[var(--color-ink-subtle)]">
+          Step 1 · Study
+        </p>
+        <blockquote class="font-scripture rounded-xl border border-[var(--color-line)] bg-[var(--color-surface-elevated)] p-5 sm:p-6">
+          <p class="text-lg leading-relaxed text-[var(--color-ink)] sm:text-xl" x-text="verse.text"></p>
+          <p class="mt-3 text-sm text-[var(--color-ink-muted)]" x-text="verse.cite"></p>
+        </blockquote>
+        <p class="text-sm text-[var(--color-ink-muted)]">
+          Read it once, then fill the missing word.
+        </p>
+        <button type="button" class="btn-primary !min-h-10 !px-5 text-sm" @click="startPlay()">
+          I’m ready
+        </button>
+      </section>
+
+      <section x-show="phase === 'play'" class="space-y-5" x-cloak>
+        <div class="flex flex-wrap items-center justify-between gap-2">
+          <p class="text-[0.65rem] font-semibold uppercase tracking-[0.12em] text-[var(--color-ink-subtle)]">
+            Step 2 · Play
+          </p>
+          <p class="text-sm text-[var(--color-ink-muted)]">
+            <span x-text="roundIndex + 1"></span> / <span x-text="rounds.length"></span>
+          </p>
+        </div>
+
+        <div class="font-scripture text-lg leading-relaxed text-[var(--color-ink)] sm:text-xl">
+          <template x-for="(seg, i) in current.segments" :key="i">
+            <span>
+              <span x-show="seg.type === 'text'" x-text="seg.text"></span>
+              <span
+                x-show="seg.type === 'blank'"
+                class="mx-0.5 inline-block min-w-[4.5rem] border-b-2 border-[var(--color-gold)] px-1 text-center font-semibold"
+                :class="picked
+                  ? (correct ? 'text-[var(--color-success)]' : 'text-red-600 dark:text-red-400')
+                  : 'text-[var(--color-ink-subtle)]'"
+                x-text="blankDisplay(seg)"
+              ></span>
+            </span>
+          </template>
+        </div>
+        <p class="text-sm text-[var(--color-ink-muted)]" x-text="verse.cite"></p>
+
+        <div class="flex flex-wrap gap-2">
+          <template x-for="choice in current.choices" :key="choice">
+            <button
+              type="button"
+              class="inline-flex min-h-10 items-center rounded-full border px-4 text-sm font-medium transition disabled:cursor-default"
+              :class="choiceClass(choice)"
+              :disabled="Boolean(picked)"
+              @click="pick(choice)"
+              x-text="choice"
+            ></button>
+          </template>
+        </div>
+
+        <p
+          class="text-sm font-medium"
+          x-show="picked"
+          x-cloak
+          :class="correct ? 'text-[var(--color-success)]' : 'text-[var(--color-ink-muted)]'"
+          x-text="feedback"
+        ></p>
+
+        <button
+          type="button"
+          class="btn-primary !min-h-10 !px-5 text-sm"
+          x-show="picked"
+          x-cloak
+          @click="next()"
+          x-text="roundIndex + 1 < rounds.length ? 'Next' : 'Finish'"
+        ></button>
+      </section>
+
+      <section x-show="phase === 'done'" class="space-y-4" x-cloak>
+        <p class="text-[0.65rem] font-semibold uppercase tracking-[0.12em] text-[var(--color-gold)]">
+          Verse locked in
+        </p>
+        <h2 class="font-scripture text-2xl font-semibold text-[var(--color-ink)]">
+          Well done
+        </h2>
+        <p class="text-sm leading-relaxed text-[var(--color-ink-muted)]">
+          You spent a quiet minute with today’s verse. That counts toward Grow for today.
+        </p>
+        <blockquote class="font-scripture border-l-2 border-[var(--color-gold)] pl-4">
+          <p class="text-base leading-relaxed text-[var(--color-ink)]" x-text="verse.text"></p>
+          <p class="mt-2 text-sm text-[var(--color-ink-muted)]" x-text="verse.cite"></p>
+        </blockquote>
+        <div class="flex flex-wrap gap-2">
+          <a class="btn-primary !min-h-10 !px-5 text-sm" :href="verse.url" data-astro-prefetch>
+            Read in chapter
+          </a>
+          <a
+            class="btn-secondary !min-h-10 !px-5 text-sm"
+            href={`/${version}/`}
+            data-astro-prefetch
+          >
+            Home
+          </a>
+          <button type="button" class="btn-secondary !min-h-10 !px-5 text-sm" @click="replay()">
+            Play again
+          </button>
+        </div>
+      </section>
+    </div>
+  </div>
+</Layout>

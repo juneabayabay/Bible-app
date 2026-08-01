@@ -60,6 +60,11 @@ import {
   saveReminderPrefs,
   syncReminderSchedule,
 } from "./lib/reminders";
+import {
+  isVerseGameDoneToday,
+  markVerseGameDoneToday,
+  type FillBlankRound,
+} from "./lib/verseGame";
 
 type SearchDoc = {
   id: string;
@@ -438,6 +443,101 @@ export default (Alpine: Alpine) => {
       this.weekChallenges = week.challenges;
       this.weekComplete = week.completeDays;
       this.chaptersRead = loadProgress().chaptersRead.length;
+    },
+  }));
+
+  Alpine.data("verseFillGame", () => ({
+    version: "web",
+    verse: null as { text: string; cite: string; url: string } | null,
+    rounds: [] as FillBlankRound[],
+    phase: "study" as "study" | "play" | "done",
+    roundIndex: 0,
+    picked: "" as string,
+    correct: false,
+    feedback: "",
+    alreadyDone: false,
+
+    get current(): FillBlankRound {
+      return this.rounds[this.roundIndex] ?? {
+        id: 0,
+        segments: [],
+        choices: [],
+        answer: "",
+      };
+    },
+
+    boot() {
+      try {
+        const el = document.getElementById("verse-game-payload");
+        if (el?.textContent) {
+          const data = JSON.parse(el.textContent) as {
+            version: string;
+            verse: { text: string; cite: string; url: string } | null;
+            rounds: FillBlankRound[];
+          };
+          this.version = data.version;
+          this.verse = data.verse;
+          this.rounds = data.rounds ?? [];
+        }
+      } catch {
+        this.rounds = [];
+      }
+      this.alreadyDone = isVerseGameDoneToday();
+      this.phase = "study";
+    },
+
+    startPlay() {
+      this.phase = "play";
+      this.roundIndex = 0;
+      this.picked = "";
+      this.correct = false;
+      this.feedback = "";
+    },
+
+    blankDisplay(seg: { type: string; text: string; answer?: string }) {
+      if (seg.type !== "blank") return seg.text;
+      if (!this.picked) return "____";
+      return this.correct ? this.current.answer : this.picked;
+    },
+
+    choiceClass(choice: string) {
+      if (!this.picked) {
+        return "border-[var(--color-line)] text-[var(--color-ink)] hover:border-[var(--color-gold)] hover:bg-[var(--color-highlight)]/50";
+      }
+      if (choice === this.current.answer) {
+        return "border-[var(--color-gold)] bg-[var(--color-highlight)] text-[var(--color-ink)]";
+      }
+      if (choice === this.picked && !this.correct) {
+        return "border-red-400/60 text-[var(--color-ink-muted)] opacity-70";
+      }
+      return "border-[var(--color-line)] text-[var(--color-ink-subtle)] opacity-50";
+    },
+
+    pick(choice: string) {
+      if (this.picked) return;
+      this.picked = choice;
+      this.correct = choice.toLowerCase() === this.current.answer.toLowerCase();
+      this.feedback = this.correct
+        ? "Yes — verse locked in."
+        : `Close — the word is “${this.current.answer}.”`;
+    },
+
+    next() {
+      if (this.roundIndex + 1 < this.rounds.length) {
+        this.roundIndex += 1;
+        this.picked = "";
+        this.correct = false;
+        this.feedback = "";
+        return;
+      }
+      markVerseGameDoneToday();
+      markGrow();
+      this.alreadyDone = true;
+      this.phase = "done";
+    },
+
+    replay() {
+      this.startPlay();
     },
   }));
 

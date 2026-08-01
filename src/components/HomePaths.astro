@@ -14,9 +14,14 @@ const links = [
     hint: "Public wall & private journal",
   },
   {
+    href: `/${version}/play`,
+    label: "Play",
+    hint: "Fill the blank · today’s verse",
+  },
+  {
     href: `/${version}/devotionals`,
     label: "Grow",
-    hint: "Devotionals & prayer",
+    hint: "Devotionals & themes",
   },
   {
     href: `/${version}/plans`,
@@ -53,7 +58,7 @@ const links = [
     </p>
   </header>
 
-  <ul class="mt-7 grid gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
+  <ul class="mt-7 grid gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-3">
     {
       links.map((link) => (
         <li>
