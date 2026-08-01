@@ -13,7 +13,7 @@ export function getStaticPaths() {
 
 const version = resolveVersionId(Astro.params.version);
 const meta = getVersion(version);
-const verses = resolveGameVerses(version, 12).map((v) => ({
+const verses = resolveGameVerses(version, 50).map((v) => ({
   text: v.text,
   cite: `${v.book} ${v.chapter}:${v.verse}`,
   url: v.url,
@@ -21,6 +21,7 @@ const verses = resolveGameVerses(version, 12).map((v) => ({
 const rounds = [
   ...buildFillBlankRounds(verses, "easy"),
   ...buildFillBlankRounds(verses, "medium"),
+  ...buildFillBlankRounds(verses, "hard"),
 ].map((r, id) => ({ ...r, id }));
 const payload = { version, rounds, seconds: 60 };
 ---

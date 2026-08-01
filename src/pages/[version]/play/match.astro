@@ -13,12 +13,12 @@ export function getStaticPaths() {
 
 const version = resolveVersionId(Astro.params.version);
 const meta = getVersion(version);
-const verses = resolveGameVerses(version, 10).map((v) => ({
+const verses = resolveGameVerses(version, 50).map((v) => ({
   text: v.text,
   cite: `${v.book} ${v.chapter}:${v.verse}`,
   url: v.url,
 }));
-const rounds = buildMatchRounds(verses, 5);
+const rounds = buildMatchRounds(verses, 50);
 const payload = { version, rounds };
 ---
 
@@ -42,8 +42,13 @@ const payload = { version, rounds };
 
     <div x-show="phase === 'play'" class="space-y-5">
       <div class="flex justify-between text-sm text-[var(--color-ink-muted)]">
-        <span><span x-text="roundIndex + 1"></span> / <span x-text="rounds.length"></span></span>
-        <span class="text-[var(--color-gold)]" x-show="streak > 1" x-cloak>Streak ×<span x-text="streak"></span></span>
+        <span>Snap the cite</span>
+        <span>
+          <span x-text="score"></span> true
+          <span class="text-[var(--color-gold)]" x-show="streak > 1" x-cloak>
+            · streak ×<span x-text="streak"></span>
+          </span>
+        </span>
       </div>
 
       <blockquote class="rounded-2xl border border-[var(--color-line)] bg-[var(--color-highlight)]/30 p-5">
@@ -71,7 +76,7 @@ const payload = { version, rounds };
 
     <div x-show="phase === 'done'" x-cloak class="space-y-4">
       <h2 class="font-scripture text-2xl font-semibold">Snaps complete</h2>
-      <p class="text-sm text-[var(--color-ink-muted)]"><span x-text="score"></span> / <span x-text="rounds.length"></span> true cites. Grow counted.</p>
+      <p class="text-sm text-[var(--color-ink-muted)]"><span x-text="score"></span> true cites. Grow counted.</p>
       <div class="flex flex-wrap gap-2">
         <button type="button" class="btn-primary !min-h-10 !px-5 text-sm" @click="restart()">Again</button>
         <a class="btn-secondary !min-h-10 !px-5 text-sm" href={`/${version}/play`}>All games</a>

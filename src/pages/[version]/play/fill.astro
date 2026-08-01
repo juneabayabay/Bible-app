@@ -41,7 +41,7 @@ const payload = {
         Fill the blank
       </h1>
       <p class="mt-2 text-sm leading-relaxed text-[var(--color-ink-muted)] sm:text-base">
-        Each blank is a different verse — choose your level and grow.
+        Choose your level and grow — one verse at a time.
       </p>
     </header>
 
@@ -83,7 +83,6 @@ const payload = {
         <div class="flex flex-wrap items-center justify-between gap-2">
           <p class="text-[0.65rem] font-semibold uppercase tracking-[0.12em] text-[var(--color-ink-subtle)]">
             Study · <span x-text="difficultyLabel"></span>
-            · verse <span x-text="roundIndex + 1"></span>/<span x-text="rounds.length"></span>
           </p>
           <p class="text-sm text-[var(--color-gold)]" x-show="studySecondsLeft > 0" x-cloak>
             Hides in <span x-text="studySecondsLeft"></span>s
@@ -110,8 +109,7 @@ const payload = {
             Play · <span x-text="difficultyLabel"></span>
           </p>
           <p class="text-sm text-[var(--color-ink-muted)]">
-            <span x-text="roundIndex + 1"></span> / <span x-text="rounds.length"></span>
-            · <span x-text="score"></span> correct
+            <span x-text="score"></span> correct
           </p>
         </div>
 
@@ -177,18 +175,9 @@ const payload = {
         </h2>
         <p class="text-sm leading-relaxed text-[var(--color-ink-muted)]">
           <span x-text="difficultyLabel"></span>:
-          <span x-text="score"></span> / <span x-text="totalBlanks"></span> first-try correct
-          across <span x-text="rounds.length"></span> different verses.
+          <span x-text="score"></span> first-try correct.
           Counts toward Grow for today.
         </p>
-        <ul class="space-y-3">
-          <template x-for="r in rounds" :key="r.id">
-            <li class="border-l-2 border-[var(--color-line)] pl-3">
-              <p class="font-scripture text-sm leading-relaxed text-[var(--color-ink)]" x-text="r.fullText"></p>
-              <p class="mt-1 text-xs text-[var(--color-ink-muted)]" x-text="r.cite"></p>
-            </li>
-          </template>
-        </ul>
         <div class="flex flex-wrap gap-2">
           <button type="button" class="btn-primary !min-h-10 !px-5 text-sm" @click="replay()">
             Play again

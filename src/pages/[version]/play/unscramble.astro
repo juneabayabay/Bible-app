@@ -96,7 +96,7 @@ const payload = { version, easy, hard };
 
     <div x-show="phase === 'done'" x-cloak class="space-y-4">
       <h2 class="font-scripture text-2xl font-semibold">River settled</h2>
-      <p class="text-sm text-[var(--color-ink-muted)]"><span x-text="score"></span> / <span x-text="rounds.length"></span> verses rebuilt. Grow step counted.</p>
+      <p class="text-sm text-[var(--color-ink-muted)]"><span x-text="score"></span> verses rebuilt. Grow step counted.</p>
       <div class="flex flex-wrap gap-2">
         <button type="button" class="btn-primary !min-h-10 !px-5 text-sm" @click="phase = 'choose'">Play again</button>
         <a class="btn-secondary !min-h-10 !px-5 text-sm" href={`/${version}/play`}>All games</a>

@@ -501,9 +501,9 @@ export default (Alpine: Alpine) => {
     get studyHint() {
       const cfg = getDifficultyConfig(this.difficulty);
       if (cfg.studySeconds > 0) {
-        return `Memorize this verse — it hides after ${cfg.studySeconds}s (or tap ready sooner). Next round will be a different verse.`;
+        return `Memorize this verse — it hides after ${cfg.studySeconds}s (or tap ready sooner).`;
       }
-      return "Read this verse, then fill the blank. Each round uses a different verse.";
+      return "Read this verse, then fill the blank.";
     },
 
     get activeAnswer() {
