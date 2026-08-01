@@ -8,7 +8,13 @@ import alpinejs from '@astrojs/alpinejs';
 // https://astro.build/config
 export default defineConfig({
   vite: {
-    plugins: [tailwindcss()]
+    plugins: [tailwindcss()],
+    optimizeDeps: {
+      exclude: ["@huggingface/transformers"],
+    },
+    worker: {
+      format: "es",
+    },
   },
 
   integrations: [alpinejs({ entrypoint: "/src/alpine.ts" })],

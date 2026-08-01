@@ -107,6 +107,12 @@ import {
 } from "./lib/gameRewards";
 import { getDeviceId } from "./lib/deviceId";
 import { isFeedbackLive, submitFeedback } from "./lib/feedback";
+import {
+  chromeSpeechLikelyBroken,
+  startLocalRecording,
+  warmLocalVoice,
+  type LocalVoiceSession,
+} from "./lib/localVoice";
 
 type SearchDoc = {
   id: string;
@@ -2431,6 +2437,8 @@ export default (Alpine: Alpine) => {
     voiceSupported: false,
     voiceHint: "",
     _voiceSeq: 0,
+    _localSession: null as LocalVoiceSession | null,
+    _localBusy: false,
     loadPromise: null as Promise<void> | null,
     worker: null as Worker | null,
     searchSeq: 0,
@@ -2460,7 +2468,11 @@ export default (Alpine: Alpine) => {
           /* ignore */
         }
       }
-      this.voiceSupported = this.getSpeechRecognition() != null;
+      const hasSpeech = this.getSpeechRecognition() != null;
+      const hasMic = typeof navigator !== "undefined" && !!navigator.mediaDevices?.getUserMedia;
+      this.voiceSupported = hasSpeech || hasMic;
+      // Prefetch Whisper in preview shells so the first verse jump is faster.
+      if (chromeSpeechLikelyBroken() && hasMic) warmLocalVoice();
     },
 
     getSpeechRecognition() {
@@ -2484,6 +2496,10 @@ export default (Alpine: Alpine) => {
       const rec = this._recognition;
       this._recognition = null;
       this.listening = false;
+      if (this._localSession) {
+        this._localSession.cancel();
+        this._localSession = null;
+      }
       if (!rec) return;
       try {
         rec.onresult = null;
@@ -2497,45 +2513,49 @@ export default (Alpine: Alpine) => {
     },
 
     toggleVoice() {
+      if (this._localBusy) return;
+      if (this.listening && this._localSession) {
+        void this.finishLocalVoice();
+        return;
+      }
       if (this.listening) {
         this.stopVoice(true);
         this.voiceHint = "Stopped.";
         return;
       }
-      this.startVoice();
+      void this.startVoice();
     },
 
-    startVoice() {
+    async startVoice() {
       if (typeof window !== "undefined" && !window.isSecureContext) {
         this.voiceHint =
           "Mic needs a secure page (https or localhost). Open the site over https.";
         return;
       }
 
-      const SR = this.getSpeechRecognition();
-      if (!SR) {
-        this.voiceSupported = false;
-        this.voiceHint = "Voice isn’t available here. Use Chrome or Safari, then try again.";
+      // Cursor / VS Code preview can’t use Google speech — use on-device Whisper.
+      if (chromeSpeechLikelyBroken() || !this.getSpeechRecognition()) {
+        await this.startLocalVoice();
         return;
       }
 
-      // Tear down any prior session without racing the new listeners.
       this.stopVoice(true);
       this.error = "";
       const seq = ++this._voiceSeq;
       this.voiceHint = "Listening… say a verse, like “John 3 16”";
 
+      const SR = this.getSpeechRecognition()!;
       const recognition = new SR();
-      // Bible book names are usually English even for Tagalog users.
       recognition.lang = "en-US";
       recognition.continuous = false;
-      recognition.interimResults = false;
+      // Interim results → jump as soon as we hear a valid reference (faster).
+      recognition.interimResults = true;
       recognition.maxAlternatives = 5;
 
-      recognition.onresult = (ev: Event) => {
-        if (seq !== this._voiceSeq) return;
+      let handled = false;
+      const collectTranscripts = (ev: Event) => {
         const e = ev as unknown as {
-          results: ArrayLike<ArrayLike<{ transcript: string }>>;
+          results: ArrayLike<ArrayLike<{ transcript: string }> & { isFinal?: boolean }>;
         };
         const transcripts: string[] = [];
         for (let i = 0; i < e.results.length; i++) {
@@ -2545,11 +2565,50 @@ export default (Alpine: Alpine) => {
             if (t && !transcripts.includes(t)) transcripts.push(t);
           }
         }
-        if (!transcripts.length) {
-          this.voiceHint = "Didn’t catch that. Tap the mic and speak again.";
-          return;
+        return transcripts;
+      };
+
+      const tryOpenFromSpeech = (transcripts: string[]) => {
+        if (handled || !transcripts.length) return false;
+        for (const raw of transcripts) {
+          const cleaned = normalizeSpokenReference(raw) || raw;
+          const refHits = this.referenceResult(cleaned);
+          if (refHits?.[0]?.url) {
+            handled = true;
+            this.q = cleaned;
+            this.results = refHits;
+            this.voiceHint = `Opening ${refHits[0].label}…`;
+            try {
+              recognition.stop();
+            } catch {
+              /* ignore */
+            }
+            window.location.assign(refHits[0].url);
+            return true;
+          }
         }
-        void this.applyVoiceTranscript(transcripts);
+        return false;
+      };
+
+      recognition.onresult = (ev: Event) => {
+        if (seq !== this._voiceSeq || handled) return;
+        const transcripts = collectTranscripts(ev);
+        if (tryOpenFromSpeech(transcripts)) return;
+
+        const e = ev as unknown as {
+          results: ArrayLike<{ isFinal?: boolean }>;
+        };
+        const last = e.results[e.results.length - 1];
+        if (last?.isFinal) {
+          if (!transcripts.length) {
+            this.voiceHint = "Didn’t catch that. Tap the mic and speak again.";
+            return;
+          }
+          handled = true;
+          void this.applyVoiceTranscript(transcripts);
+        } else if (transcripts[0]) {
+          this.voiceHint = `Hearing: “${transcripts[0]}”…`;
+        }
       };
 
       recognition.onerror = (ev: Event) => {
@@ -2558,7 +2617,7 @@ export default (Alpine: Alpine) => {
         const code = (ev as unknown as { error?: string }).error || "";
         this._recognition = null;
         this.listening = false;
-        if (code === "aborted") return;
+        if (code === "aborted" || handled) return;
         if (code === "no-speech") {
           this.voiceHint = "No speech heard. Tap the mic and speak clearly.";
           return;
@@ -2567,8 +2626,9 @@ export default (Alpine: Alpine) => {
           this.voiceHint = "Allow microphone access for this site, then tap the mic again.";
           return;
         }
+        // Preview / Chromium shells often report “network” — fall back to local Whisper.
         if (code === "network") {
-          this.voiceHint = "Voice needs internet. Check your connection and try again.";
+          void this.startLocalVoice();
           return;
         }
         this.voiceHint = `Mic error (${code || "unknown"}). You can still type the verse.`;
@@ -2584,20 +2644,86 @@ export default (Alpine: Alpine) => {
       this._recognition = recognition;
       this.listening = true;
 
-      // Browsers often fail if start() runs in the same tick as abort().
       window.setTimeout(() => {
         if (seq !== this._voiceSeq || this._recognition !== recognition) return;
         try {
           recognition.start();
-        } catch (err) {
+        } catch {
           this.listening = false;
           this._recognition = null;
-          const msg = err instanceof Error ? err.message : "";
-          this.voiceHint = msg
-            ? `Could not start mic: ${msg}`
-            : "Could not start the mic. Tap again.";
+          void this.startLocalVoice();
         }
-      }, 60);
+      }, 40);
+    },
+
+    async startLocalVoice() {
+      if (this._localBusy) return;
+      this.stopVoice(true);
+      this.error = "";
+      const seq = ++this._voiceSeq;
+      this.voiceHint = "Starting voice… first time may download a small model";
+      warmLocalVoice();
+
+      try {
+        let session!: LocalVoiceSession;
+        session = await startLocalRecording(
+          () => {
+            if (seq !== this._voiceSeq) return;
+            this.listening = true;
+            this.voiceHint = "Listening… say the verse clearly (auto-opens).";
+          },
+          4000,
+          () => {
+            if (seq !== this._voiceSeq) return;
+            if (this._localSession === session) void this.finishLocalVoice();
+          },
+        );
+        if (seq !== this._voiceSeq) {
+          session.cancel();
+          return;
+        }
+        this._localSession = session;
+        this.listening = true;
+      } catch (err) {
+        this.listening = false;
+        this._localSession = null;
+        const msg = err instanceof Error ? err.message : "";
+        if (/Permission|NotAllowed|denied/i.test(msg)) {
+          this.voiceHint = "Allow microphone access, then tap the mic again.";
+        } else if (/session|MatMul|scale|onnx/i.test(msg)) {
+          this.voiceHint =
+            "Voice engine failed to load. Open this page in Chrome for instant mic search.";
+        } else {
+          this.voiceHint = msg || "Could not start the mic. Try again in Chrome.";
+        }
+      }
+    },
+
+    async finishLocalVoice() {
+      const session = this._localSession;
+      if (!session || this._localBusy) return;
+      this._localBusy = true;
+      this._localSession = null;
+      this.listening = false;
+      this.voiceHint = "Opening verse…";
+      try {
+        const text = await session.stop();
+        if (!text) {
+          this.voiceHint = "Didn’t catch that. Tap the mic and speak again.";
+          return;
+        }
+        await this.applyVoiceTranscript([text]);
+      } catch (err) {
+        const msg = err instanceof Error ? err.message : "";
+        if (/session|MatMul|scale|onnx/i.test(msg)) {
+          this.voiceHint =
+            "Voice engine failed. For instant results, open http://localhost:4321 in Chrome.";
+        } else {
+          this.voiceHint = msg || "Could not understand. Try again.";
+        }
+      } finally {
+        this._localBusy = false;
+      }
     },
 
     async applyVoiceTranscript(transcripts: string[]) {
@@ -2616,7 +2742,6 @@ export default (Alpine: Alpine) => {
         }
       }
 
-      // Fallback: full-text search on best transcript
       this.q = normalizeSpokenReference(tried[0]) || tried[0];
       await this.search();
       const first = this.results[0];
