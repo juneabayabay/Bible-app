@@ -5,6 +5,7 @@ import VersionPicker from "../components/VersionPicker.astro";
 import NavMenu from "../components/NavMenu.astro";
 import SiteFooter from "../components/SiteFooter.astro";
 import { DEFAULT_VERSION, type VersionId } from "../lib/versions";
+import { getOneSignalAppId } from "../lib/reminders";
 
 interface Props {
   title?: string;
@@ -27,6 +28,8 @@ const shell =
   width === "wide"
     ? "mx-auto w-full max-w-6xl px-4 sm:px-6 lg:px-8 xl:max-w-7xl"
     : "mx-auto w-full max-w-3xl px-4 sm:px-6 lg:px-8";
+
+const oneSignalAppId = getOneSignalAppId();
 ---
 
 <!doctype html>
@@ -75,6 +78,27 @@ const shell =
         });
       }
     </script>
+    {
+      oneSignalAppId && (
+        <>
+          <script
+            is:inline
+            src="https://cdn.onesignal.com/sdks/web/v16/OneSignalSDK.page.js"
+            defer></script>
+          <script is:inline define:vars={{ oneSignalAppId }}>
+            window.OneSignalDeferred = window.OneSignalDeferred || [];
+            OneSignalDeferred.push(async function (OneSignal) {
+              await OneSignal.init({
+                appId: oneSignalAppId,
+                notifyButton: { enable: false },
+                promptOptions: { slidedown: { enabled: false } },
+                allowLocalhostAsSecureOrigin: true,
+              });
+            });
+          </script>
+        </>
+      )
+    }
   </head>
   <body class="flex min-h-screen flex-col antialiased transition-colors duration-200">
     <header class="site-header sticky top-0 z-40 border-b border-[var(--color-line)] bg-[var(--color-surface-elevated)]/92 backdrop-blur-md supports-[padding:max(0px)]:pt-[env(safe-area-inset-top)]">

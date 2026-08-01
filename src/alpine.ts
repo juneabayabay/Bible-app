@@ -37,7 +37,6 @@ import {
   isQuizDone,
 } from "./lib/progress";
 import { addPrayer, loadPrayers, removePrayer, type PrayerEntry } from "./lib/prayers";
-import { downloadBackup, importBackupFile } from "./lib/backup";
 import { getDeviceId } from "./lib/deviceId";
 import {
   addWallComment,
@@ -51,6 +50,16 @@ import {
 } from "./lib/prayerWall";
 import { getChallengeForDate } from "./lib/challenges";
 import { getPlan, nextPlanDay } from "./lib/plans";
+import {
+  formatReminderTime,
+  isOneSignalConfigured,
+  loadReminderPrefs,
+  notificationPermission,
+  notificationsSupported,
+  requestNotificationPermission,
+  saveReminderPrefs,
+  syncReminderSchedule,
+} from "./lib/reminders";
 
 type SearchDoc = {
   id: string;
@@ -111,6 +120,16 @@ export default (Alpine: Alpine) => {
       localStorage.setItem(THEME_KEY, mode);
     },
   });
+
+  // Keep daily reminder scheduled when the user returns to the app
+  if (typeof window !== "undefined") {
+    window.addEventListener("load", () => {
+      const prefs = loadReminderPrefs();
+      if (!prefs.enabled) return;
+      if (notificationPermission() !== "granted") return;
+      void navigator.serviceWorker?.ready.then(() => syncReminderSchedule(prefs));
+    });
+  }
 
   window.addEventListener("storage", (e) => {
     if (e.key !== THEME_KEY) return;
@@ -419,6 +438,172 @@ export default (Alpine: Alpine) => {
       this.weekChallenges = week.challenges;
       this.weekComplete = week.completeDays;
       this.chaptersRead = loadProgress().chaptersRead.length;
+    },
+  }));
+
+  Alpine.data("reminderSettings", () => ({
+    enabled: false,
+    timeValue: "07:00",
+    busy: false,
+    status: "",
+    error: "",
+    supportNote: "",
+    _statusTimer: null as ReturnType<typeof setTimeout> | null,
+
+    init() {
+      const prefs = loadReminderPrefs();
+      this.enabled = prefs.enabled;
+      this.timeValue = `${String(prefs.hour).padStart(2, "0")}:${String(prefs.minute).padStart(2, "0")}`;
+      this.supportNote = this.buildSupportNote();
+      if (prefs.enabled) {
+        void this.resync(false);
+      }
+    },
+
+    buildSupportNote() {
+      if (!notificationsSupported()) {
+        return "Notifications are not available in this browser.";
+      }
+      const onesignal = isOneSignalConfigured()
+        ? " OneSignal is connected for broader push support."
+        : "";
+      return `Works best on Chrome, Edge, or an installed app (PWA). Open the app occasionally so the next reminder can be scheduled.${onesignal}`;
+    },
+
+    flash(message: string) {
+      this.status = message;
+      if (this._statusTimer) clearTimeout(this._statusTimer);
+      this._statusTimer = setTimeout(() => {
+        this.status = "";
+      }, 3200);
+    },
+
+    parseTime(): { hour: number; minute: number } {
+      const [h, m] = (this.timeValue || "07:00").split(":").map((x) => Number(x));
+      return {
+        hour: Number.isFinite(h) ? h : 7,
+        minute: Number.isFinite(m) ? m : 0,
+      };
+    },
+
+    async toggle() {
+      this.error = "";
+      if (this.enabled) {
+        await this.enable();
+      } else {
+        await this.disable();
+      }
+    },
+
+    async enable() {
+      this.busy = true;
+      this.error = "";
+      try {
+        if (!notificationsSupported()) {
+          this.enabled = false;
+          this.error = "Notifications are not supported here.";
+          return;
+        }
+        const permission = await requestNotificationPermission();
+        if (permission !== "granted") {
+          this.enabled = false;
+          this.error =
+            permission === "denied"
+              ? "Notifications are blocked. Allow them in browser settings to enable reminders."
+              : "Permission is needed to send a daily reminder.";
+          return;
+        }
+        const { hour, minute } = this.parseTime();
+        const prefs = { enabled: true, hour, minute };
+        saveReminderPrefs(prefs);
+        const result = await syncReminderSchedule(prefs);
+        await this.optInOneSignal();
+        if (!result.ok) {
+          this.error = result.reason;
+          return;
+        }
+        const when = formatReminderTime(hour, minute);
+        if (result.mode === "scheduled") {
+          this.flash(`Reminder set for ${when}.`);
+        } else {
+          this.flash(
+            `Reminder saved for ${when}. We’ll keep it scheduled when you open the app.`,
+          );
+        }
+      } finally {
+        this.busy = false;
+        this.supportNote = this.buildSupportNote();
+      }
+    },
+
+    async disable() {
+      this.busy = true;
+      this.error = "";
+      try {
+        const { hour, minute } = this.parseTime();
+        const prefs = { enabled: false, hour, minute };
+        saveReminderPrefs(prefs);
+        await syncReminderSchedule(prefs);
+        await this.optOutOneSignal();
+        this.flash("Reminders turned off.");
+      } finally {
+        this.busy = false;
+      }
+    },
+
+    async saveTime() {
+      if (!this.enabled) return;
+      this.busy = true;
+      this.error = "";
+      try {
+        const { hour, minute } = this.parseTime();
+        const prefs = { enabled: true, hour, minute };
+        saveReminderPrefs(prefs);
+        const result = await syncReminderSchedule(prefs);
+        if (!result.ok) {
+          this.error = result.reason;
+          return;
+        }
+        this.flash(`Updated — next reminder around ${formatReminderTime(hour, minute)}.`);
+      } finally {
+        this.busy = false;
+      }
+    },
+
+    async resync(showStatus: boolean) {
+      const prefs = loadReminderPrefs();
+      if (!prefs.enabled) return;
+      if (notificationPermission() !== "granted") return;
+      const result = await syncReminderSchedule(prefs);
+      if (showStatus && result.ok) {
+        this.flash(`Next reminder around ${formatReminderTime(prefs.hour, prefs.minute)}.`);
+      }
+    },
+
+    async optInOneSignal() {
+      const w = window as Window & {
+        OneSignal?: { User: { PushSubscription: { optIn: () => Promise<void> } } };
+      };
+      try {
+        if (w.OneSignal?.User?.PushSubscription) {
+          await w.OneSignal.User.PushSubscription.optIn();
+        }
+      } catch {
+        /* optional */
+      }
+    },
+
+    async optOutOneSignal() {
+      const w = window as Window & {
+        OneSignal?: { User: { PushSubscription: { optOut: () => Promise<void> } } };
+      };
+      try {
+        if (w.OneSignal?.User?.PushSubscription) {
+          await w.OneSignal.User.PushSubscription.optOut();
+        }
+      } catch {
+        /* optional */
+      }
     },
   }));
 
@@ -869,15 +1054,13 @@ export default (Alpine: Alpine) => {
   Alpine.data("savedList", () => ({
     items: [] as Array<{
       key: string;
-      label: string;
+      version: string;
+      reference: string;
       url: string;
       highlighted: boolean;
       highlightColor: HighlightColorId | null;
       note: string;
     }>,
-    status: "",
-    importing: false,
-    importMode: "merge" as "merge" | "replace",
 
     init() {
       this.refresh();
@@ -890,10 +1073,10 @@ export default (Alpine: Alpine) => {
           const parsed = parseVerseKey(key);
           if (!parsed) return null;
           const bookLabel = titleCaseSlug(parsed.slug);
-          const label = `${versionLabel(parsed.version)} · ${bookLabel} ${parsed.chapter}:${parsed.verse}`;
           return {
             key,
-            label,
+            version: versionLabel(parsed.version),
+            reference: `${bookLabel} ${parsed.chapter}:${parsed.verse}`,
             url: `/${parsed.version}/chapter/${parsed.slug}/${parsed.chapter}#v${parsed.verse}`,
             highlighted: Boolean(value.highlightColor),
             highlightColor: value.highlightColor,
@@ -901,7 +1084,9 @@ export default (Alpine: Alpine) => {
           };
         })
         .filter((item): item is NonNullable<typeof item> => item !== null)
-        .sort((a, b) => a.label.localeCompare(b.label));
+        .sort((a, b) =>
+          `${a.version} ${a.reference}`.localeCompare(`${b.version} ${b.reference}`),
+        );
     },
 
     remove(key: string) {
@@ -909,40 +1094,6 @@ export default (Alpine: Alpine) => {
       delete map[key];
       saveAnnotations(map);
       this.refresh();
-    },
-
-    exportBackup() {
-      downloadBackup();
-      this.status = "Backup downloaded";
-      window.setTimeout(() => {
-        if (this.status === "Backup downloaded") this.status = "";
-      }, 2500);
-    },
-
-    async onImportFile(event: Event) {
-      const input = event.target as HTMLInputElement;
-      const file = input.files?.[0];
-      input.value = "";
-      if (!file) return;
-
-      if (this.importMode === "replace") {
-        const sure = window.confirm(
-          "Replace all highlights, notes, and prayer journal entries on this device with the backup?",
-        );
-        if (!sure) return;
-      }
-
-      this.importing = true;
-      this.status = "";
-      try {
-        const result = await importBackupFile(file, this.importMode);
-        this.refresh();
-        this.status = `Imported ${result.annotations} saved verses, ${result.prayers} prayers (${this.importMode})`;
-      } catch (err) {
-        this.status = err instanceof Error ? err.message : "Import failed";
-      } finally {
-        this.importing = false;
-      }
     },
   }));
 

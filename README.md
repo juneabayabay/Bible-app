@@ -9,6 +9,13 @@
 
 Without those env vars, the Prayer wall runs in **demo mode** (this device only). The private “With the Lord” journal always stays on-device.
 
+## Daily reminders (optional)
+
+On **Journey**, users can turn on a daily reminder (default **off**).
+
+- Works via the service worker + browser notifications (best on Chrome / Edge / installed PWA).
+- Optional: set `PUBLIC_ONESIGNAL_APP_ID` for OneSignal web push, then restart the app.
+
 ```sh
 npm create astro@latest -- --template minimal
 ```

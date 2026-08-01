@@ -6,6 +6,7 @@ import { getVersion } from "../../lib/versions";
 import { getVersionHomePaths } from "../../lib/staticPaths";
 import { LEVELS, TROPHIES } from "../../lib/journey";
 import { totalDevotionEntries } from "../../lib/devotionals";
+import RemindersCard from "../../components/RemindersCard.astro";
 
 export function getStaticPaths() {
   return getVersionHomePaths();
@@ -96,6 +97,8 @@ const devotionTotal = totalDevotionEntries();
         Chapters visited (all time): <span class="font-medium text-[var(--color-ink-muted)]" x-text="chaptersRead"></span>
       </p>
     </section>
+
+    <RemindersCard />
 
     <!-- Progress to next level -->
     <section aria-labelledby="level-path-heading">

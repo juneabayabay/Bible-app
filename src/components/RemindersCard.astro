@@ -1,0 +1,71 @@
+---
+/**
+ * Optional daily reminder — off by default.
+ * Uses Notification Triggers via the service worker when the browser supports them.
+ */
+---
+
+<section
+  class="ui-card p-5 sm:p-6"
+  aria-labelledby="reminder-heading"
+  x-data="reminderSettings"
+  x-init="init()"
+>
+  <div class="flex flex-wrap items-start justify-between gap-3">
+    <div class="min-w-0 flex-1">
+      <p class="text-[0.65rem] font-semibold uppercase tracking-[0.12em] text-[var(--color-gold)]">
+        Optional
+      </p>
+      <h2 id="reminder-heading" class="font-scripture mt-1 text-xl font-semibold text-[var(--color-ink)] sm:text-2xl">
+        Daily reminder
+      </h2>
+      <p class="mt-1.5 text-sm leading-relaxed text-[var(--color-ink-muted)]">
+        A gentle nudge at the time you choose. Off by default — turn on only if you want it.
+      </p>
+    </div>
+    <label class="inline-flex cursor-pointer items-center gap-2 pt-1">
+      <span class="text-sm text-[var(--color-ink-muted)]" x-text="enabled ? 'On' : 'Off'"></span>
+      <input
+        type="checkbox"
+        class="peer sr-only"
+        x-model="enabled"
+        @change="toggle()"
+        :disabled="busy"
+      />
+      <span
+        class="relative h-7 w-12 rounded-full border border-[var(--color-line)] bg-[var(--color-surface)] transition peer-focus-visible:ring-2 peer-focus-visible:ring-[var(--color-primary)]"
+        :class="enabled ? 'border-[var(--color-gold)] bg-[var(--color-highlight)]' : ''"
+        aria-hidden="true"
+      >
+        <span
+          class="absolute top-0.5 left-0.5 h-5 w-5 rounded-full bg-[var(--color-ink-subtle)] transition"
+          :class="enabled ? 'translate-x-5 bg-[var(--color-gold)]' : ''"
+        ></span>
+      </span>
+    </label>
+  </div>
+
+  <div class="mt-5 space-y-4" x-show="enabled" x-cloak>
+    <label class="block max-w-xs">
+      <span class="text-xs font-semibold uppercase tracking-[0.08em] text-[var(--color-ink-subtle)]">
+        Remind me at
+      </span>
+      <input
+        type="time"
+        class="mt-1.5 w-full rounded-xl border border-[var(--color-line)] bg-[var(--color-surface)] px-3 py-2.5 text-base text-[var(--color-ink)] outline-none ring-[var(--color-primary)] focus:ring-2"
+        x-model="timeValue"
+        @change="saveTime()"
+        :disabled="busy"
+      />
+    </label>
+
+    <p class="text-sm text-[var(--color-ink-muted)]" x-show="status" x-text="status" x-cloak></p>
+    <p class="text-sm text-red-600 dark:text-red-400" x-show="error" x-text="error" x-cloak></p>
+
+    <p class="text-xs leading-relaxed text-[var(--color-ink-subtle)]" x-text="supportNote"></p>
+  </div>
+
+  <p class="mt-4 text-sm text-[var(--color-ink-subtle)]" x-show="!enabled" x-cloak>
+    No notifications will be sent while this is off.
+  </p>
+</section>
