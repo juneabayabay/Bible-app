@@ -1,5 +1,4 @@
 import type { Alpine } from "alpinejs";
-import lunr from "lunr";
 import {
   getAnnotation,
   HIGHLIGHT_COLORS,
@@ -38,6 +37,7 @@ import {
   isQuizDone,
 } from "./lib/progress";
 import { addPrayer, loadPrayers, removePrayer, type PrayerEntry } from "./lib/prayers";
+import { downloadBackup, importBackupFile } from "./lib/backup";
 import { getDeviceId } from "./lib/deviceId";
 import {
   addWallComment,
@@ -59,8 +59,16 @@ type SearchDoc = {
   chapter: number;
   verse: number;
   text: string;
-  version?: string;
 };
+
+type SearchWorkerOut =
+  | { type: "ready" }
+  | { type: "error"; message: string }
+  | {
+      type: "results";
+      id: number;
+      hits: SearchDoc[];
+    };
 
 const THEME_KEY = "bible-theme";
 const VERSION_KEY = "bible-version";
@@ -867,6 +875,9 @@ export default (Alpine: Alpine) => {
       highlightColor: HighlightColorId | null;
       note: string;
     }>,
+    status: "",
+    importing: false,
+    importMode: "merge" as "merge" | "replace",
 
     init() {
       this.refresh();
@@ -898,6 +909,40 @@ export default (Alpine: Alpine) => {
       delete map[key];
       saveAnnotations(map);
       this.refresh();
+    },
+
+    exportBackup() {
+      downloadBackup();
+      this.status = "Backup downloaded";
+      window.setTimeout(() => {
+        if (this.status === "Backup downloaded") this.status = "";
+      }, 2500);
+    },
+
+    async onImportFile(event: Event) {
+      const input = event.target as HTMLInputElement;
+      const file = input.files?.[0];
+      input.value = "";
+      if (!file) return;
+
+      if (this.importMode === "replace") {
+        const sure = window.confirm(
+          "Replace all highlights, notes, and prayer journal entries on this device with the backup?",
+        );
+        if (!sure) return;
+      }
+
+      this.importing = true;
+      this.status = "";
+      try {
+        const result = await importBackupFile(file, this.importMode);
+        this.refresh();
+        this.status = `Imported ${result.annotations} saved verses, ${result.prayers} prayers (${this.importMode})`;
+      } catch (err) {
+        this.status = err instanceof Error ? err.message : "Import failed";
+      } finally {
+        this.importing = false;
+      }
     },
   }));
 
@@ -1103,9 +1148,13 @@ export default (Alpine: Alpine) => {
     ready: false,
     loading: false,
     error: "",
-    index: null as lunr.Index | null,
-    docsById: {} as Record<string, SearchDoc>,
     loadPromise: null as Promise<void> | null,
+    worker: null as Worker | null,
+    searchSeq: 0,
+    pendingSearches: {} as Record<
+      number,
+      { resolve: (hits: SearchDoc[]) => void; reject: (err: Error) => void }
+    >,
 
     init() {
       // /saved is version-agnostic — use the reader's preferred edition
@@ -1120,26 +1169,89 @@ export default (Alpine: Alpine) => {
       }
     },
 
+    referenceResult(query: string) {
+      const ref = parseReference(query);
+      if (!ref) return null;
+
+      const bookName = titleCaseSlug(ref.slug);
+      const hash = ref.verse ? `#v${ref.verse}` : "";
+      const url = `/${this.version}/chapter/${ref.slug}/${ref.chapter}${hash}`;
+
+      if (ref.verse) {
+        return [
+          {
+            id: `ref-${ref.slug}-${ref.chapter}-${ref.verse}`,
+            label: `${bookName} ${ref.chapter}:${ref.verse}`,
+            snippet: "Go to this verse",
+            url,
+          },
+        ];
+      }
+
+      return [
+        {
+          id: `ref-${ref.slug}-${ref.chapter}`,
+          label: `${bookName} ${ref.chapter}`,
+          snippet: "Open this chapter",
+          url,
+        },
+      ];
+    },
+
     ensureLoaded() {
       if (this.ready || this.loadPromise) return this.loadPromise;
       this.loading = true;
+      this.error = "";
       this.loadPromise = (async () => {
         try {
-          const res = await fetch(`/search/${this.version}.json`);
-          if (!res.ok) throw new Error("Could not load search data");
-          const docs = (await res.json()) as SearchDoc[];
-          this.docsById = Object.fromEntries(docs.map((d) => [d.id, d]));
-          this.index = lunr(function () {
-            this.ref("id");
-            this.field("book");
-            this.field("text");
-            for (const doc of docs) {
-              this.add(doc);
+          const worker = new Worker(
+            new URL("./lib/searchWorker.ts", import.meta.url),
+            { type: "module" },
+          );
+          this.worker = worker;
+
+          worker.addEventListener("message", (event: MessageEvent<SearchWorkerOut>) => {
+            const msg = event.data;
+            if (msg.type === "results") {
+              const pending = this.pendingSearches[msg.id];
+              if (pending) {
+                delete this.pendingSearches[msg.id];
+                pending.resolve(msg.hits);
+              }
+            } else if (msg.type === "error") {
+              this.error = msg.message;
+              for (const pending of Object.values(this.pendingSearches)) {
+                pending.reject(new Error(msg.message));
+              }
+              this.pendingSearches = {};
             }
           });
+
+          await new Promise<void>((resolve, reject) => {
+            const onReady = (event: MessageEvent<SearchWorkerOut>) => {
+              if (event.data.type === "ready") {
+                worker.removeEventListener("message", onReady);
+                resolve();
+              } else if (event.data.type === "error") {
+                worker.removeEventListener("message", onReady);
+                reject(new Error(event.data.message));
+              }
+            };
+            worker.addEventListener("message", onReady);
+            worker.addEventListener(
+              "error",
+              () => reject(new Error("Search worker failed to start")),
+              { once: true },
+            );
+            worker.postMessage({ type: "init", version: this.version });
+          });
+
           this.ready = true;
         } catch (e) {
           this.error = e instanceof Error ? e.message : "Search failed to load";
+          this.loadPromise = null;
+          this.worker?.terminate();
+          this.worker = null;
         } finally {
           this.loading = false;
         }
@@ -1147,9 +1259,35 @@ export default (Alpine: Alpine) => {
       return this.loadPromise;
     },
 
-    async onFocus() {
-      await this.ensureLoaded();
-      if (this.q.trim().length >= 2) this.search();
+    queryWorker(query: string) {
+      return new Promise<SearchDoc[]>((resolve, reject) => {
+        if (!this.worker) {
+          reject(new Error("Search is not ready"));
+          return;
+        }
+        const id = ++this.searchSeq;
+        this.pendingSearches[id] = { resolve, reject };
+        this.worker.postMessage({ type: "search", id, query });
+      });
+    },
+
+    onFocus() {
+      // Warm full-text search in the background; reference jumps stay instant
+      if (!this.ready && !this.loadPromise) {
+        const warm = () => {
+          void this.ensureLoaded();
+        };
+        if ("requestIdleCallback" in window) {
+          (
+            window as Window & {
+              requestIdleCallback: (cb: () => void, opts?: { timeout: number }) => void;
+            }
+          ).requestIdleCallback(warm, { timeout: 2000 });
+        } else {
+          window.setTimeout(warm, 400);
+        }
+      }
+      if (this.q.trim().length >= 2) void this.search();
     },
 
     async goFirst() {
@@ -1165,64 +1303,29 @@ export default (Alpine: Alpine) => {
         return;
       }
 
-      await this.ensureLoaded();
-      if (!this.index) {
-        this.results = [];
+      const refHits = this.referenceResult(query);
+      if (refHits) {
+        this.results = refHits;
         return;
       }
 
-      const ref = parseReference(query);
-      if (ref) {
-        const bookName =
-          Object.values(this.docsById).find((d) => d.slug === ref.slug)?.book ??
-          titleCaseSlug(ref.slug);
-        const hash = ref.verse ? `#v${ref.verse}` : "";
-        const url = `/${this.version}/chapter/${ref.slug}/${ref.chapter}${hash}`;
-
-        if (ref.verse) {
-          const doc = Object.values(this.docsById).find(
-            (d) =>
-              d.slug === ref.slug &&
-              d.chapter === ref.chapter &&
-              d.verse === ref.verse,
-          );
-          this.results = [
-            {
-              id: `ref-${ref.slug}-${ref.chapter}-${ref.verse}`,
-              label: `${bookName} ${ref.chapter}:${ref.verse}`,
-              snippet: doc?.text?.slice(0, 120)
-                ? doc.text.slice(0, 120) + (doc.text.length > 120 ? "…" : "")
-                : "Go to this verse",
-              url,
-            },
-          ];
-          return;
-        }
-
-        this.results = [
-          {
-            id: `ref-${ref.slug}-${ref.chapter}`,
-            label: `${bookName} ${ref.chapter}`,
-            snippet: "Open this chapter",
-            url,
-          },
-        ];
+      await this.ensureLoaded();
+      if (!this.worker) {
+        this.results = [];
         return;
       }
 
       try {
-        const hits = this.index.search(query).slice(0, 20);
-        this.results = hits.map((hit) => {
-          const doc = this.docsById[hit.ref];
-          return {
-            id: doc.id,
-            label: `${doc.book} ${doc.chapter}:${doc.verse}`,
-            snippet: doc.text.slice(0, 120) + (doc.text.length > 120 ? "…" : ""),
-            url: `/${this.version}/chapter/${doc.slug}/${doc.chapter}#v${doc.verse}`,
-          };
-        });
+        const hits = await this.queryWorker(query);
+        if (this.q.trim() !== query) return;
+        this.results = hits.map((doc) => ({
+          id: doc.id,
+          label: `${doc.book} ${doc.chapter}:${doc.verse}`,
+          snippet: doc.text.slice(0, 120) + (doc.text.length > 120 ? "…" : ""),
+          url: `/${this.version}/chapter/${doc.slug}/${doc.chapter}#v${doc.verse}`,
+        }));
       } catch {
-        this.results = [];
+        if (this.q.trim() === query) this.results = [];
       }
     },
   }));

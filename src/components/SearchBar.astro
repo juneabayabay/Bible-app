@@ -33,13 +33,15 @@ const { version } = Astro.props;
       enterkeyhint="search"
       class="h-10 w-full rounded-xl border border-[var(--color-line)] bg-[var(--color-surface)]/50 py-2 pr-3 pl-9 text-base text-[var(--color-ink)] outline-none ring-[var(--color-primary)] placeholder:text-[var(--color-ink-subtle)] focus:bg-[var(--color-surface-elevated)] focus:ring-2 dark:bg-[var(--color-surface)]/80"
       x-model="q"
-      @focus="onFocus"
-      @input.debounce.300ms="search"
-      @keydown.enter.prevent="goFirst"
+      @focus="onFocus()"
+      @input.debounce.300ms="search()"
+      @keydown.enter.prevent="goFirst()"
     />
   </div>
 
-  <p class="mt-1 text-xs text-[var(--color-ink-subtle)]" x-show="loading" x-cloak>Loading search…</p>
+  <p class="mt-1 text-xs text-[var(--color-ink-subtle)]" x-show="loading" x-cloak>
+    Preparing full-text search…
+  </p>
   <p class="mt-1 text-xs text-red-600 dark:text-red-400" x-show="error" x-text="error" x-cloak></p>
 
   <ul

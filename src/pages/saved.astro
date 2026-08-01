@@ -14,11 +14,46 @@ import { DEFAULT_VERSION, VERSION_IDS } from "../lib/versions";
         Saved
       </h1>
       <p class="mt-2 text-sm leading-relaxed text-[var(--color-ink-muted)] sm:text-base">
-        Highlights and notes stored in this browser.
+        Highlights and notes stored in this browser. Export a backup before you switch phones.
       </p>
     </header>
 
     <div x-data="savedList">
+      <section class="mb-6 space-y-3 border-b border-[var(--color-line)] pb-6">
+        <div class="flex flex-wrap gap-2">
+          <button type="button" class="btn-secondary" @click="exportBackup()">
+            Export backup
+          </button>
+          <label class="btn-primary cursor-pointer">
+            <span x-text="importing ? 'Importing…' : 'Import backup'"></span>
+            <input
+              type="file"
+              accept="application/json,.json"
+              class="sr-only"
+              :disabled="importing"
+              @change="onImportFile($event)"
+            />
+          </label>
+        </div>
+        <fieldset class="flex flex-wrap gap-4 text-sm text-[var(--color-ink-muted)]">
+          <legend class="sr-only">Import mode</legend>
+          <label class="inline-flex items-center gap-2">
+            <input type="radio" name="import-mode" value="merge" x-model="importMode" />
+            Merge with this device
+          </label>
+          <label class="inline-flex items-center gap-2">
+            <input type="radio" name="import-mode" value="replace" x-model="importMode" />
+            Replace everything
+          </label>
+        </fieldset>
+        <p
+          class="text-sm text-[var(--color-ink-muted)]"
+          x-show="status"
+          x-text="status"
+          x-cloak
+        ></p>
+      </section>
+
       <p class="text-sm text-[var(--color-ink-subtle)]" x-show="items.length === 0" x-cloak>
         Nothing saved yet. Open a chapter, press and hold a verse, then highlight or add a note.
       </p>

@@ -88,6 +88,7 @@ for (const version of versions) {
   const raw = JSON.parse(readFileSync(filePath, "utf8"));
   const books = normalize(raw);
 
+  /** @type {Array<[string, string, number, number, string]>} */
   const docs = [];
   const versionDir = join(biblesDir, version.id);
   mkdirSync(versionDir, { recursive: true });
@@ -103,21 +104,14 @@ for (const version of versions) {
     writeFileSync(join(versionDir, `${book.slug}.json`), JSON.stringify(book));
     for (const chapter of book.chapters) {
       for (const verse of chapter.verses) {
-        docs.push({
-          id: `${book.slug}-${chapter.number}-${verse.number}`,
-          book: book.name,
-          slug: book.slug,
-          chapter: chapter.number,
-          verse: verse.number,
-          text: verse.text,
-          version: version.id,
-        });
+        // Compact rows keep download smaller; id is reconstructed client-side
+        docs.push([book.name, book.slug, chapter.number, verse.number, verse.text]);
       }
     }
   }
 
-  writeFileSync(join(searchDir, `${version.id}.json`), JSON.stringify(docs));
+  writeFileSync(join(searchDir, `${version.id}.json`), JSON.stringify({ v: 2, docs }));
   console.log(
-    `${version.id}: ${books.length} books, ${docs.length} verses (search + public/bibles)`,
+    `${version.id}: ${books.length} books, ${docs.length} verses (compact search + public/bibles)`,
   );
 }
