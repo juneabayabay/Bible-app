@@ -1,11 +1,12 @@
 ---
 import Layout from "../../layouts/Layout.astro";
 import SearchBar from "../../components/SearchBar.astro";
+import MedalRow from "../../components/MedalRow.astro";
+import RemindersCard from "../../components/RemindersCard.astro";
 import { resolveVersionId } from "../../lib/bible";
 import { getVersion } from "../../lib/versions";
 import { getVersionHomePaths } from "../../lib/staticPaths";
 import { CHALLENGE_TROPHIES, STREAK_TROPHIES } from "../../lib/journey";
-import RemindersCard from "../../components/RemindersCard.astro";
 
 export function getStaticPaths() {
   return getVersionHomePaths();
@@ -13,7 +14,6 @@ export function getStaticPaths() {
 
 const version = resolveVersionId(Astro.params.version);
 const meta = getVersion(version);
-const medals = [...CHALLENGE_TROPHIES, ...STREAK_TROPHIES];
 ---
 
 <Layout title={`Journey · ${meta.shortLabel}`} version={version}>
@@ -29,11 +29,10 @@ const medals = [...CHALLENGE_TROPHIES, ...STREAK_TROPHIES];
         Your progress
       </h1>
       <p class="mt-2 text-sm leading-relaxed text-[var(--color-ink-muted)] sm:text-base">
-        Streak, attendance, and medals — earned by showing up and finishing hard tasks.
+        Streak and medals — earned by showing up and finishing hard tasks.
       </p>
     </header>
 
-    <!-- Snapshot -->
     <section aria-labelledby="snapshot-heading" class="space-y-4">
       <h2 id="snapshot-heading" class="sr-only">Snapshot</h2>
 
@@ -71,89 +70,37 @@ const medals = [...CHALLENGE_TROPHIES, ...STREAK_TROPHIES];
       </div>
     </section>
 
-    <!-- Attendance -->
-    <section aria-labelledby="presence-heading">
-      <h2 id="presence-heading" class="font-scripture text-xl font-semibold">
-        Attendance
-      </h2>
-      <p class="mt-1 text-sm text-[var(--color-ink-muted)]">
-        Last 28 days. Darker = more done that day.
-      </p>
-
-      <div class="attendance-wrap mt-4">
-        <div class="attendance-weekdays" aria-hidden="true">
-          <template x-for="day in attendance.slice(0, 7)" :key="'wd-' + day.date">
-            <span class="attendance-weekday" x-text="day.weekday"></span>
-          </template>
-        </div>
-        <div class="attendance-grid" role="img" aria-label="28-day attendance">
-          <template x-for="day in attendance" :key="day.date">
-            <div
-              class="attendance-cell"
-              :data-level="day.level"
-              :title="day.label"
-            ></div>
-          </template>
-        </div>
+    <section aria-labelledby="medals-heading" class="space-y-8">
+      <div>
+        <h2 id="medals-heading" class="font-scripture text-xl font-semibold">
+          Medals
+        </h2>
+        <p class="mt-1 text-sm text-[var(--color-ink-muted)]">
+          Unlocked medals reveal a verse.
+        </p>
       </div>
 
-      <div class="attendance-legend mt-3">
-        <span>Less</span>
-        <span class="attendance-cell" data-level="0"></span>
-        <span class="attendance-cell" data-level="1"></span>
-        <span class="attendance-cell" data-level="2"></span>
-        <span class="attendance-cell" data-level="3"></span>
-        <span class="attendance-cell" data-level="4"></span>
-        <span>More</span>
+      <div>
+        <h3 class="text-xs font-semibold uppercase tracking-[0.12em] text-[var(--color-ink-subtle)]">
+          Play &amp; challenges
+        </h3>
+        <ul class="mt-3 divide-y divide-[var(--color-line)] border-y border-[var(--color-line)]">
+          {CHALLENGE_TROPHIES.map((trophy) => (
+            <MedalRow trophy={trophy} />
+          ))}
+        </ul>
       </div>
-    </section>
 
-    <!-- Medals -->
-    <section aria-labelledby="medals-heading">
-      <h2 id="medals-heading" class="font-scripture text-xl font-semibold">
-        Medals
-      </h2>
-      <p class="mt-1 text-sm text-[var(--color-ink-muted)]">
-        Play, read, and return. Unlocked medals reveal a verse.
-      </p>
-
-      <ul class="mt-5 divide-y divide-[var(--color-line)] border-y border-[var(--color-line)]">
-        {
-          medals.map((trophy) => (
-            <li
-              class="py-4"
-              :class={`trophies.includes('${trophy.id}') ? '' : 'opacity-55'`}
-            >
-              <div class="flex flex-wrap items-baseline justify-between gap-x-3 gap-y-1">
-                <h3 class="font-scripture text-lg font-semibold text-[var(--color-ink)]">
-                  {trophy.title}
-                </h3>
-                <p class="text-xs font-semibold uppercase tracking-wide text-[var(--color-gold)]">
-                  <span
-                    x-text={`trophies.includes('${trophy.id}') ? 'Unlocked' : 'Locked'`}
-                  ></span>
-                </p>
-              </div>
-              <p class="mt-1 text-sm text-[var(--color-ink-muted)]">{trophy.description}</p>
-              <blockquote
-                class="font-scripture mt-3 border-l-2 border-[var(--color-gold)] pl-3 text-[var(--color-ink)]"
-                x-show={`trophies.includes('${trophy.id}')`}
-                x-cloak
-              >
-                <p class="text-sm leading-relaxed sm:text-base">“{trophy.verseText}”</p>
-                <p class="mt-1.5 text-xs text-[var(--color-ink-muted)]">{trophy.verseLabel}</p>
-              </blockquote>
-              <p
-                class="mt-2 text-xs text-[var(--color-ink-subtle)]"
-                x-show={`!trophies.includes('${trophy.id}')`}
-                x-cloak
-              >
-                {trophy.hint}
-              </p>
-            </li>
-          ))
-        }
-      </ul>
+      <div>
+        <h3 class="text-xs font-semibold uppercase tracking-[0.12em] text-[var(--color-ink-subtle)]">
+          Daily streak
+        </h3>
+        <ul class="mt-3 divide-y divide-[var(--color-line)] border-y border-[var(--color-line)]">
+          {STREAK_TROPHIES.map((trophy) => (
+            <MedalRow trophy={trophy} />
+          ))}
+        </ul>
+      </div>
     </section>
 
     <RemindersCard />

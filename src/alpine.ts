@@ -18,14 +18,10 @@ import {
   journeyProgress,
   loadJourney,
   recordAppOpen,
-  CHALLENGE_TROPHIES,
-  STREAK_TROPHIES,
   TROPHIES,
 } from "./lib/journey";
 import {
-  getAttendanceDays,
   getTodayStatus,
-  getWeekStats,
   isChallengeDone,
   loadProgress,
   markChallengeDone,
@@ -38,7 +34,6 @@ import {
   saveReflection,
   setActivePlan,
   isQuizDone,
-  type AttendanceDay,
 } from "./lib/progress";
 import { syncJourneyUnlocks } from "./lib/syncUnlocks";
 import { addPrayer, loadPrayers, removePrayer, type PrayerEntry } from "./lib/prayers";
@@ -95,7 +90,6 @@ import {
 } from "./lib/gamePacks";
 import {
   getRecentCites,
-  loadGameProfile,
   profileSnapshot,
   recordGameRun,
   sessionSeed,
@@ -447,7 +441,7 @@ export default (Alpine: Alpine) => {
     trophyCount: 0,
     trophyTotal: TROPHIES.length,
     trophies: [] as string[],
-    attendance: [] as AttendanceDay[],
+    devotionDone: 0,
 
     refresh() {
       const state = recordAppOpen();
@@ -461,13 +455,12 @@ export default (Alpine: Alpine) => {
       this.progress = prog.ratio;
       this.trophies = unlocked.trophies;
       this.trophyCount = this.trophies.length;
+      this.devotionDone = state.completedDevotions.length;
       this.streakNote =
         state.streak <= 0 ? "Open today to begin." : "Keep coming back each day.";
       this.nextLevelNote = prog.next
         ? `${prog.remaining} more day${prog.remaining === 1 ? "" : "s"} to ${prog.next.name}`
         : "Highest level — stay faithful";
-
-      this.attendance = getAttendanceDays(28);
     },
   }));
 
@@ -737,6 +730,7 @@ export default (Alpine: Alpine) => {
       ...reward,
       newMedals: unlocked.newlyUnlocked.map((t) => ({
         id: t.id,
+        emoji: t.emoji,
         title: t.title,
         description: t.description,
       })),

@@ -75,7 +75,7 @@ export type RewardSnapshot = {
   accuracy: number;
   score: number;
   total: number;
-  newMedals: Array<{ id: string; title: string; description: string }>;
+  newMedals: Array<{ id: string; emoji: string; title: string; description: string }>;
 };
 
 /** Titles earned by wisdom XP — how you play. */

@@ -1,0 +1,45 @@
+---
+import type { Trophy } from "../lib/journey";
+
+interface Props {
+  trophy: Trophy;
+}
+
+const { trophy } = Astro.props;
+---
+
+<li
+  class="flex gap-3 py-4"
+  data-medal={trophy.id}
+  :class={`trophies.includes('${trophy.id}') ? '' : 'opacity-50'`}
+>
+  <span class="mt-0.5 w-8 shrink-0 text-center text-2xl leading-none" aria-hidden="true">
+    {trophy.emoji}
+  </span>
+  <div class="min-w-0 flex-1">
+    <div class="flex flex-wrap items-baseline justify-between gap-x-3 gap-y-0.5">
+      <h3 class="font-scripture text-lg font-semibold text-[var(--color-ink)]">
+        {trophy.title}
+      </h3>
+      <p class="text-xs font-semibold uppercase tracking-wide text-[var(--color-gold)]">
+        <span x-text={`trophies.includes('${trophy.id}') ? 'Unlocked' : 'Locked'`}></span>
+      </p>
+    </div>
+    <p class="mt-0.5 text-sm text-[var(--color-ink-muted)]">{trophy.description}</p>
+    <blockquote
+      class="font-scripture mt-2.5 border-l-2 border-[var(--color-gold)] pl-3 text-[var(--color-ink)]"
+      x-show={`trophies.includes('${trophy.id}')`}
+      x-cloak
+    >
+      <p class="text-sm leading-relaxed">“{trophy.verseText}”</p>
+      <p class="mt-1 text-xs text-[var(--color-ink-muted)]">{trophy.verseLabel}</p>
+    </blockquote>
+    <p
+      class="mt-1.5 text-xs text-[var(--color-ink-subtle)]"
+      x-show={`!trophies.includes('${trophy.id}')`}
+      x-cloak
+    >
+      {trophy.hint}
+    </p>
+  </div>
+</li>

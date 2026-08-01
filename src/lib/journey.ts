@@ -29,6 +29,7 @@ export type TrophyGate = {
 
 export type Trophy = {
   id: string;
+  emoji: string;
   title: string;
   description: string;
   category: "streak" | "challenge";
@@ -69,9 +70,10 @@ export const LEVELS: Level[] = [
 ];
 
 export const TROPHIES: Trophy[] = [
-  // —— Streak medals (attendance) ——
+  // —— Streak medals ——
   {
     id: "first-light",
+    emoji: "🌅",
     title: "First Light",
     description: "Opened Scripture for the first day.",
     category: "streak",
@@ -82,6 +84,7 @@ export const TROPHIES: Trophy[] = [
   },
   {
     id: "rooted",
+    emoji: "🌱",
     title: "Rooted",
     description: "Three days in a row with God.",
     category: "streak",
@@ -92,6 +95,7 @@ export const TROPHIES: Trophy[] = [
   },
   {
     id: "week-of-grace",
+    emoji: "✨",
     title: "Week of Grace",
     description: "Seven faithful days.",
     category: "streak",
@@ -102,6 +106,7 @@ export const TROPHIES: Trophy[] = [
   },
   {
     id: "steadfast",
+    emoji: "🪨",
     title: "Steadfast",
     description: "Fourteen days of returning.",
     category: "streak",
@@ -112,6 +117,7 @@ export const TROPHIES: Trophy[] = [
   },
   {
     id: "faithful-month",
+    emoji: "📅",
     title: "Faithful Month",
     description: "Thirty days with an open heart.",
     category: "streak",
@@ -122,6 +128,7 @@ export const TROPHIES: Trophy[] = [
   },
   {
     id: "deep-roots",
+    emoji: "🌳",
     title: "Deep Roots",
     description: "Sixty days of devotion.",
     category: "streak",
@@ -132,6 +139,7 @@ export const TROPHIES: Trophy[] = [
   },
   {
     id: "hundredfold",
+    emoji: "🌾",
     title: "Hundredfold",
     description: "One hundred days walking with God.",
     category: "streak",
@@ -141,9 +149,10 @@ export const TROPHIES: Trophy[] = [
     verseText: "What was sown on good ground… yields fruit — some a hundred times.",
   },
 
-  // —— Challenge medals (earn by doing hard work) ——
+  // —— Challenge medals ——
   {
     id: "first-play",
+    emoji: "🎮",
     title: "First Fruits",
     description: "Finished your first Scripture game.",
     category: "challenge",
@@ -154,6 +163,7 @@ export const TROPHIES: Trophy[] = [
   },
   {
     id: "verse-worker",
+    emoji: "📖",
     title: "Verse Worker",
     description: "Ten finished game runs.",
     category: "challenge",
@@ -164,6 +174,7 @@ export const TROPHIES: Trophy[] = [
   },
   {
     id: "hard-path",
+    emoji: "⛰️",
     title: "Hard Path",
     description: "Three Hard-mode finishes with strong accuracy.",
     category: "challenge",
@@ -174,6 +185,7 @@ export const TROPHIES: Trophy[] = [
   },
   {
     id: "perfect-offering",
+    emoji: "💯",
     title: "Perfect Offering",
     description: "Two clean runs — full score on a full set.",
     category: "challenge",
@@ -184,6 +196,7 @@ export const TROPHIES: Trophy[] = [
   },
   {
     id: "six-strings",
+    emoji: "🎵",
     title: "Six Strings",
     description: "Tried every live game at least once.",
     category: "challenge",
@@ -194,6 +207,7 @@ export const TROPHIES: Trophy[] = [
   },
   {
     id: "challenge-keeper",
+    emoji: "🎯",
     title: "Challenge Keeper",
     description: "Seven daily challenges completed.",
     category: "challenge",
@@ -204,6 +218,7 @@ export const TROPHIES: Trophy[] = [
   },
   {
     id: "quiz-mind",
+    emoji: "🧠",
     title: "Quiz Mind",
     description: "Five chapter quizzes finished.",
     category: "challenge",
@@ -214,6 +229,7 @@ export const TROPHIES: Trophy[] = [
   },
   {
     id: "devotion-flame",
+    emoji: "🔥",
     title: "Devotion Flame",
     description: "Eight devotionals completed.",
     category: "challenge",
@@ -224,6 +240,7 @@ export const TROPHIES: Trophy[] = [
   },
   {
     id: "full-day",
+    emoji: "✅",
     title: "Full Day",
     description: "Five days with open, read, grow, and challenge all done.",
     category: "challenge",
@@ -234,6 +251,7 @@ export const TROPHIES: Trophy[] = [
   },
   {
     id: "marathon",
+    emoji: "🏅",
     title: "Marathon",
     description: "Fifty game finishes — long obedience.",
     category: "challenge",

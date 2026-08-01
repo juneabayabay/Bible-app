@@ -73,7 +73,10 @@ const { mode = "run" } = Astro.props;
         </p>
         <template x-for="medal in reward.newMedals" :key="medal.id">
           <div>
-            <p class="font-scripture text-lg font-semibold text-[var(--color-ink)]" x-text="medal.title"></p>
+            <p class="font-scripture text-lg font-semibold text-[var(--color-ink)]">
+              <span x-text="medal.emoji"></span>
+              <span x-text="medal.title"></span>
+            </p>
             <p class="text-sm text-[var(--color-ink-muted)]" x-text="medal.description"></p>
           </div>
         </template>
