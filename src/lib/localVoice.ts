@@ -3,19 +3,21 @@
  *
  * Priority:
  * 1) Browser SpeechRecognition (Chrome / Edge / Safari / installed PWA) — fast
- * 2) On-device Whisper tiny.en when Google speech is unavailable
- *    (Cursor preview, some Chromium shells, or SpeechRecognition network errors)
+ * 2) On-device Whisper when Google speech is unavailable (Cursor preview, etc.)
  *
- * Whisper model is cached in the browser after first download, so installed PWAs
- * can keep using the mic offline once warmed.
+ * Whisper is cached after first download so installed PWAs can reuse it offline.
  */
+
+/** Bump when voice logic changes — shown in the mic hint so you can confirm a refresh. */
+export const VOICE_ENGINE = "v3";
 
 type AsrPipeline = (
   input: string | Float32Array,
   options?: Record<string, unknown>,
 ) => Promise<{ text?: string } | { text?: string }[]>;
 
-const MODEL_ID = "Xenova/whisper-tiny.en";
+// Multilingual tiny accepts language/task; *.en throws if those are set in config.
+const MODEL_ID = "Xenova/whisper-tiny";
 
 let asrPromise: Promise<AsrPipeline> | null = null;
 
@@ -23,7 +25,6 @@ let asrPromise: Promise<AsrPipeline> | null = null;
 export function chromeSpeechLikelyBroken(): boolean {
   if (typeof navigator === "undefined") return true;
   const ua = navigator.userAgent;
-  // Cursor / VS Code Simple Browser / Electron — no Google speech service.
   if (/Electron|VSCode|Cursor/i.test(ua)) return true;
   return false;
 }
@@ -48,8 +49,6 @@ async function getAsr(): Promise<AsrPipeline> {
       env.allowLocalModels = false;
       env.useBrowserCache = true;
 
-      // q8 + default ONNX opts can crash (MatMulNBits / missing scale).
-      // "basic" graph opts avoid that; fp32 is the reliable fallback.
       try {
         const asr = await pipeline("automatic-speech-recognition", MODEL_ID, {
           dtype: "q8",
@@ -90,10 +89,6 @@ export type LocalVoiceSession = {
   cancel: () => void;
 };
 
-/**
- * Start mic recording. Call stop() to finish and get a transcript.
- * Auto-stops after maxMs; onAutoStop is called so the UI can transcribe.
- */
 export async function startLocalRecording(
   onReady: () => void,
   maxMs = 4000,
@@ -180,8 +175,19 @@ export async function transcribeBlob(blob: Blob): Promise<string> {
   const asr = await getAsr();
   const url = URL.createObjectURL(blob);
   try {
-    // English-only model — do NOT pass language/task (throws on whisper-*.en).
-    const result = await asr(url);
+    // Multilingual model — language/task are valid here.
+    // Also try a bare call if the first path fails (older cached configs).
+    let result: { text?: string } | { text?: string }[];
+    try {
+      result = await asr(url, { language: "english", task: "transcribe" });
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : String(err);
+      if (/English-only|language|task/i.test(msg)) {
+        result = await asr(url);
+      } else {
+        throw err;
+      }
+    }
     const text = Array.isArray(result) ? result[0]?.text : result?.text;
     return (text || "").trim();
   } finally {
@@ -189,7 +195,6 @@ export async function transcribeBlob(blob: Blob): Promise<string> {
   }
 }
 
-/** Warm the model in the background so the first mic tap is faster. */
 export function warmLocalVoice(): void {
   void getAsr().catch(() => {
     asrPromise = null;

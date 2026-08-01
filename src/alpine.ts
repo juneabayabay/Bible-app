@@ -113,6 +113,7 @@ import {
   hasMicrophone,
   startLocalRecording,
   warmLocalVoice,
+  VOICE_ENGINE,
   type LocalVoiceSession,
 } from "./lib/localVoice";
 
@@ -2545,7 +2546,7 @@ export default (Alpine: Alpine) => {
       this.stopVoice(true);
       this.error = "";
       const seq = ++this._voiceSeq;
-      this.voiceHint = "Listening… say a verse, like “John 3 16”";
+      this.voiceHint = `Listening… say a verse, like “John 3 16” (${VOICE_ENGINE})`;
 
       const SR = this.getSpeechRecognition()!;
       const recognition = new SR();
@@ -2664,7 +2665,7 @@ export default (Alpine: Alpine) => {
       this.stopVoice(true);
       this.error = "";
       const seq = ++this._voiceSeq;
-      this.voiceHint = "Starting voice… first time may download a small model";
+      this.voiceHint = `Starting voice ${VOICE_ENGINE}… first time may download a small model`;
       warmLocalVoice();
 
       try {
