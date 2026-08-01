@@ -129,6 +129,12 @@ type SearchWorkerOut =
 const THEME_KEY = "bible-theme";
 const VERSION_KEY = "bible-version";
 
+type VersionPickerGroup = {
+  languageName: string;
+  langCode: string;
+  versions: Array<{ id: string; shortLabel: string; description: string }>;
+};
+
 function resolveDark(): boolean {
   const saved = localStorage.getItem(THEME_KEY);
   if (saved === "dark") return true;
@@ -269,55 +275,111 @@ export default (Alpine: Alpine) => {
     },
   }));
 
-  Alpine.data("versionPicker", (initial: string) => ({
-    current: initial,
-    open: false,
+  Alpine.data(
+    "versionPicker",
+    (payload: string | { version: string; groups: VersionPickerGroup[] }) => {
+      const data =
+        typeof payload === "string"
+          ? { version: payload, groups: [] as VersionPickerGroup[] }
+          : payload;
 
-    get shortLabel() {
-      return VERSIONS[this.current]?.shortLabel ?? this.current;
+      return {
+        current: data.version,
+        open: false,
+        q: "",
+        groups: data.groups,
+
+        get shortLabel() {
+          return VERSIONS[this.current]?.shortLabel ?? this.current;
+        },
+
+        get badge() {
+          return languageBadge(VERSIONS[this.current]?.language ?? "en");
+        },
+
+        get label() {
+          const meta = VERSIONS[this.current];
+          return meta ? `${meta.languageName} · ${meta.shortLabel}` : this.current;
+        },
+
+        get filtered() {
+          const needle = this.q.trim().toLowerCase();
+          if (!needle) return this.groups;
+
+          return this.groups
+            .map((group) => {
+              const langHit =
+                group.languageName.toLowerCase().includes(needle) ||
+                group.langCode.toLowerCase().includes(needle);
+              if (langHit) return group;
+              const versions = group.versions.filter(
+                (opt) =>
+                  opt.shortLabel.toLowerCase().includes(needle) ||
+                  opt.description.toLowerCase().includes(needle) ||
+                  opt.id.toLowerCase().includes(needle),
+              );
+              return versions.length ? { ...group, versions } : null;
+            })
+            .filter((group): group is VersionPickerGroup => group != null);
+        },
+
+        init() {
+          const path = window.location.pathname.replace(/\/+$/, "") || "/";
+          if (path === "/saved") {
+            try {
+              const saved = localStorage.getItem(VERSION_KEY);
+              if (saved && saved in VERSIONS) this.current = saved;
+            } catch {
+              /* ignore */
+            }
+          }
+        },
+
+        toggle() {
+          if (this.open) {
+            this.close();
+            return;
+          }
+          this.open = true;
+          this.$nextTick(() => {
+            const el = this.$refs.langSearch as HTMLInputElement | undefined;
+            el?.focus();
+            el?.select();
+          });
+        },
+
+        close() {
+          this.open = false;
+          this.q = "";
+        },
+
+        pickFirst() {
+          const first = this.filtered[0]?.versions[0];
+          if (first) this.switchTo(first.id);
+        },
+
+        switchTo(next: string) {
+          this.close();
+          localStorage.setItem(VERSION_KEY, next);
+          const path = window.location.pathname.replace(/\/+$/, "") || "/";
+          const parts = path.split("/").filter(Boolean);
+
+          if (parts.length === 0 || parts[0] === "saved") {
+            window.location.href = `/${next}/`;
+            return;
+          }
+
+          if (parts[0] && parts[0] in VERSIONS) {
+            parts[0] = next;
+            window.location.href = "/" + parts.join("/");
+            return;
+          }
+
+          window.location.href = `/${next}/`;
+        },
+      };
     },
-
-    get badge() {
-      return languageBadge(VERSIONS[this.current]?.language ?? "en");
-    },
-
-    get label() {
-      const meta = VERSIONS[this.current];
-      return meta ? `${meta.languageName} · ${meta.shortLabel}` : this.current;
-    },
-
-    init() {
-      const path = window.location.pathname.replace(/\/+$/, "") || "/";
-      if (path === "/saved") {
-        try {
-          const saved = localStorage.getItem(VERSION_KEY);
-          if (saved && saved in VERSIONS) this.current = saved;
-        } catch {
-          /* ignore */
-        }
-      }
-    },
-
-    switchTo(next: string) {
-      this.open = false;
-      localStorage.setItem(VERSION_KEY, next);
-      const path = window.location.pathname.replace(/\/+$/, "") || "/";
-      const parts = path.split("/").filter(Boolean);
-
-      if (parts.length === 0 || parts[0] === "saved") {
-        window.location.href = `/${next}/`;
-        return;
-      }
-
-      if (parts[0] && parts[0] in VERSIONS) {
-        parts[0] = next;
-        window.location.href = "/" + parts.join("/");
-        return;
-      }
-
-      window.location.href = `/${next}/`;
-    },
-  }));
+  );
 
   Alpine.data("copyVerse", (text: string, label: string) => ({
     copied: false,
@@ -2122,7 +2184,7 @@ export default (Alpine: Alpine) => {
         // Configured in env but DB unreachable — do not pretend it is shared.
         this.wallError =
           check.detail ||
-          "Prayer wall could not connect. Re-run supabase/prayer-wall.sql and check your API key.";
+          "Prayer wall couldn’t connect. Please try again in a moment.";
       }
     },
 

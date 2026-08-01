@@ -95,11 +95,8 @@ const wallLive = isSupabaseConfigured();
         x-show="!wallLive"
         x-cloak
       >
-        <span class="font-semibold">This device only.</span>
-        Requests are not shared yet.
-        <span x-show="wallLiveDetail" x-text="wallLiveDetail"></span>
-        Run <code class="text-xs">supabase/prayer-wall.sql</code> in Supabase, set
-        <code class="text-xs">PUBLIC_SUPABASE_*</code> in <code class="text-xs">.env</code>, then restart the app.
+        <span class="font-semibold">Prayer wall isn’t shared yet.</span>
+        Requests stay on this device for now. You can still write and pray here.
       </p>
 
       <!-- Section 1: Share -->
@@ -163,7 +160,7 @@ const wallLive = isSupabaseConfigured();
               Pray for others
             </h2>
             <p class="mt-1 text-sm text-[var(--color-ink-muted)]">
-              Tap 🙏 ❤️ ✨ to react · 💬 to comment
+              React with Pray, Love, or Amen · open Comments to reply
             </p>
           </div>
           <p
@@ -439,7 +436,7 @@ const wallLive = isSupabaseConfigured();
                 </div>
                 <button
                   type="button"
-                  class="shrink-0 text-xs text-[var(--color-ink-subtle)] transition hover:text-red-600 dark:hover:text-red-400"
+                  class="min-h-11 shrink-0 rounded-lg px-3 text-sm text-[var(--color-ink-subtle)] transition hover:bg-[var(--color-line)]/50 hover:text-red-600 dark:hover:text-red-400"
                   @click="removeJournal(item.id)"
                 >
                   Remove

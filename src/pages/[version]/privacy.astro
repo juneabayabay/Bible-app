@@ -1,0 +1,130 @@
+---
+import Layout from "../../layouts/Layout.astro";
+import SearchBar from "../../components/SearchBar.astro";
+import { resolveVersionId } from "../../lib/bible";
+import { getVersion } from "../../lib/versions";
+import { getVersionHomePaths } from "../../lib/staticPaths";
+import { isSupabaseConfigured } from "../../lib/supabase";
+import { isOneSignalConfigured } from "../../lib/reminders";
+
+export function getStaticPaths() {
+  return getVersionHomePaths();
+}
+
+const version = resolveVersionId(Astro.params.version);
+const meta = getVersion(version);
+const wallLive = isSupabaseConfigured();
+const oneSignalLive = isOneSignalConfigured();
+---
+
+<Layout title={`Privacy · ${meta.shortLabel}`} version={version}>
+  <SearchBar slot="header" version={version} />
+
+  <div class="page-stack measure">
+    <header class="page-header border-b border-[var(--color-line)] pb-5">
+      <p class="text-sm text-[var(--color-ink-muted)]">
+        <a href={`/${version}/`} class="hover:underline" data-astro-prefetch>← Home</a>
+      </p>
+      <p class="eyebrow mt-5">Trust</p>
+      <h1 class="font-scripture mt-1.5 text-3xl font-semibold tracking-tight sm:text-4xl">
+        Privacy
+      </h1>
+      <p class="mt-2 text-sm leading-relaxed text-[var(--color-ink-muted)] sm:text-base">
+        Plain words about what stays on your device and what may leave it when you use optional features.
+      </p>
+    </header>
+
+    <section class="space-y-3" aria-labelledby="on-device-heading">
+      <h2 id="on-device-heading" class="font-scripture text-xl font-semibold">
+        On this device
+      </h2>
+      <p class="text-sm leading-relaxed text-[var(--color-ink-muted)]">
+        These stay in your browser storage unless you clear site data or switch phones without a backup:
+      </p>
+      <ul class="list-disc space-y-1.5 pl-5 text-sm leading-relaxed text-[var(--color-ink-muted)]">
+        <li>Highlights and verse notes</li>
+        <li>Private prayer journal (“With the Lord”)</li>
+        <li>Reading streak, journey medals, and game progress</li>
+        <li>Theme, Bible version, and reminder preferences</li>
+      </ul>
+      <p class="text-sm leading-relaxed text-[var(--color-ink-muted)]">
+        We do not require an account to read Scripture.
+      </p>
+    </section>
+
+    <section class="space-y-3" aria-labelledby="optional-heading">
+      <h2 id="optional-heading" class="font-scripture text-xl font-semibold">
+        Optional features that leave this device
+      </h2>
+      <ul class="list-disc space-y-2 pl-5 text-sm leading-relaxed text-[var(--color-ink-muted)]">
+        <li>
+          <span class="font-medium text-[var(--color-ink)]">Public prayer wall</span>
+          {wallLive ? (
+            <span>
+              — when you share a request, reaction, or comment, that text is stored on our hosted
+              database (Supabase) so others using this app can see it. Avoid phone numbers, addresses,
+              or private details.
+            </span>
+          ) : (
+            <span> — not connected on this deployment; wall posts stay on your device only.</span>
+          )}
+        </li>
+        <li>
+          <span class="font-medium text-[var(--color-ink)]">Feedback</span>
+          — if you send feedback and the inbox is connected, your message is stored so we can improve
+          the app. You may leave your name blank.
+        </li>
+        <li>
+          <span class="font-medium text-[var(--color-ink)]">Reminders</span>
+          — off by default. If you turn them on, your browser (and optionally OneSignal
+          {oneSignalLive ? "" : ", if configured"}) may store a push subscription to deliver the nudge.
+        </li>
+        <li>
+          <span class="font-medium text-[var(--color-ink)]">Voice search</span>
+          — only if you allow the microphone; used to type a search query. We do not keep audio.
+        </li>
+        <li>
+          <span class="font-medium text-[var(--color-ink)]">Fonts</span>
+          — page fonts may load from Google Fonts, which can see a basic network request (IP / referrer).
+        </li>
+      </ul>
+    </section>
+
+    <section class="space-y-3" aria-labelledby="anonymous-heading">
+      <h2 id="anonymous-heading" class="font-scripture text-xl font-semibold">
+        Anonymous device id
+      </h2>
+      <p class="text-sm leading-relaxed text-[var(--color-ink-muted)]">
+        The app keeps a random id in local storage so you can remove your own wall post on this
+        browser. It is not your name or email. It is not strong login security.
+      </p>
+    </section>
+
+    <section class="space-y-3" aria-labelledby="giving-heading">
+      <h2 id="giving-heading" class="font-scripture text-xl font-semibold">
+        Optional giving
+      </h2>
+      <p class="text-sm leading-relaxed text-[var(--color-ink-muted)]">
+        Gifts via GCash or GoTyme are handled by those apps — not by our servers. Giving never unlocks
+        features. See{" "}
+        <a href={`/${version}/support`} class="underline hover:text-[var(--color-ink)]" data-astro-prefetch>
+          Support
+        </a>
+        .
+      </p>
+    </section>
+
+    <section class="space-y-3" aria-labelledby="contact-heading">
+      <h2 id="contact-heading" class="font-scripture text-xl font-semibold">
+        Questions
+      </h2>
+      <p class="text-sm leading-relaxed text-[var(--color-ink-muted)]">
+        Reach us through{" "}
+        <a href={`/${version}/feedback`} class="underline hover:text-[var(--color-ink)]" data-astro-prefetch>
+          Feedback
+        </a>
+        .
+      </p>
+    </section>
+  </div>
+</Layout>

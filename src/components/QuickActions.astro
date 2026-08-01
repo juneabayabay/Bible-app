@@ -36,7 +36,11 @@
         Prayer
       </a>
 
-      <a class="btn-secondary !min-h-11 w-full !px-4 text-sm sm:w-auto" href="/saved">
+      <a
+        class="btn-secondary !min-h-11 w-full !px-4 text-sm sm:w-auto"
+        href="/saved"
+        data-astro-prefetch="tap"
+      >
         <span x-text="savedCount > 0 ? `Saved (${savedCount})` : 'Saved'"></span>
       </a>
     </div>

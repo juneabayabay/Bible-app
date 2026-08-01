@@ -462,9 +462,9 @@ const quiz = getQuiz(bookSlug, chapterNumber);
         <span></span>
       )}
       <a
-        class="hidden text-sm text-[var(--color-ink-muted)] hover:text-[var(--color-ink)] hover:underline sm:inline"
+        class="text-sm text-[var(--color-ink-muted)] hover:text-[var(--color-ink)] hover:underline"
         href={`/${version}/book/${bookSlug}`}
-        data-astro-prefetch
+        data-astro-prefetch="tap"
       >
         All chapters
       </a>

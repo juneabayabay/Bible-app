@@ -20,8 +20,8 @@ const links = [
   },
   {
     href: `/${version}/devotionals`,
-    label: "Grow",
-    hint: "Devotionals & themes",
+    label: "Devotionals",
+    hint: "Themes for the heart",
   },
   {
     href: `/${version}/plans`,
@@ -75,7 +75,7 @@ const links = [
           <a
             href={link.href}
             class="ui-card flex h-full flex-col p-4 sm:p-5"
-            data-astro-prefetch
+            data-astro-prefetch="tap"
           >
             <span class="font-semibold text-[var(--color-ink)]">{link.label}</span>
             <span class="mt-1 text-sm text-[var(--color-ink-muted)]">{link.hint}</span>

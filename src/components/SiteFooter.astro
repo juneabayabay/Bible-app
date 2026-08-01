@@ -19,12 +19,12 @@ const meta = getVersion(version);
       </p>
       <p class="sm:text-right">With gratitude to Angela D.</p>
     </div>
-    <p class="text-[var(--color-ink-subtle)]">
+    <p class="flex flex-wrap gap-x-0 gap-y-1 text-[var(--color-ink-subtle)]">
       <a
         href={`/${version}/feedback`}
         data-nav-version="/feedback"
         class="text-[var(--color-ink-muted)] transition hover:text-[var(--color-ink)] hover:underline"
-        data-astro-prefetch
+        data-astro-prefetch="tap"
       >
         Feedback
       </a>
@@ -33,9 +33,18 @@ const meta = getVersion(version);
         href={`/${version}/support`}
         data-nav-version="/support"
         class="text-[var(--color-ink-muted)] transition hover:text-[var(--color-ink)] hover:underline"
-        data-astro-prefetch
+        data-astro-prefetch="tap"
       >
         Support
+      </a>
+      <span class="mx-1.5 opacity-40">·</span>
+      <a
+        href={`/${version}/privacy`}
+        data-nav-version="/privacy"
+        class="text-[var(--color-ink-muted)] transition hover:text-[var(--color-ink)] hover:underline"
+        data-astro-prefetch="tap"
+      >
+        Privacy
       </a>
     </p>
   </div>

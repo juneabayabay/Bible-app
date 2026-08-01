@@ -12,7 +12,7 @@ const links = [
   { href: `/${version}/#books`, path: "/#books", label: "Books" },
   { href: `/${version}/prayer`, path: "/prayer", label: "Prayer" },
   { href: `/${version}/play`, path: "/play", label: "Play" },
-  { href: `/${version}/devotionals`, path: "/devotionals", label: "Grow" },
+  { href: `/${version}/devotionals`, path: "/devotionals", label: "Devotionals" },
   { href: `/${version}/plans`, path: "/plans", label: "Plans" },
   { href: `/${version}/journey`, path: "/journey", label: "Journey" },
   { href: `/${version}/give`, path: "/give", label: "Give" },
@@ -70,7 +70,7 @@ const links = [
         {...(link.path != null ? { "data-nav-version": link.path } : {})}
         class="block px-3.5 py-2.5 text-sm text-[var(--color-ink)] transition hover:bg-[var(--color-line)]"
         role="menuitem"
-        data-astro-prefetch
+        data-astro-prefetch="tap"
         @click="open = false"
       >
         {link.label}

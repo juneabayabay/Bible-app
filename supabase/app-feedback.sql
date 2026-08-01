@@ -1,5 +1,8 @@
 -- App feedback (optional). Run in Supabase SQL editor if you want shared feedback.
 -- Works with the same PUBLIC_SUPABASE_* keys as the prayer wall.
+--
+-- Anon can INSERT only. Read feedback in the Supabase Table Editor (service role),
+-- not via the public anon key.
 
 create table if not exists app_feedback (
   id uuid primary key default gen_random_uuid(),
@@ -15,14 +18,11 @@ create index if not exists app_feedback_created_at_idx
 alter table app_feedback enable row level security;
 
 grant usage on schema public to anon, authenticated;
-grant select, insert on table app_feedback to anon, authenticated;
+grant insert on table app_feedback to anon, authenticated;
+revoke select on table app_feedback from anon, authenticated;
 
 drop policy if exists "app_feedback_select" on app_feedback;
 drop policy if exists "app_feedback_insert" on app_feedback;
-
--- Anyone can send feedback; reading is open for the app owner via dashboard/SQL.
-create policy "app_feedback_select" on app_feedback
-  for select using (true);
 
 create policy "app_feedback_insert" on app_feedback
   for insert with check (true);

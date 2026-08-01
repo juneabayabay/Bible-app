@@ -11,19 +11,19 @@ const { mode = "run" } = Astro.props;
   mode === "hub" ? (
     <div class="rank-frame space-y-2" :class="rank?.border.frameClass" x-show="rank" x-cloak>
       <p class="text-[0.65rem] font-semibold uppercase tracking-[0.12em] text-[var(--color-gold)]">
-        Your calling
+        Your title
       </p>
       <p class="font-scripture text-2xl font-semibold text-[var(--color-ink)]" x-text="rank.title.name"></p>
       <p class="text-sm leading-relaxed text-[var(--color-ink-muted)]" x-text="rank.title.blurb"></p>
       <p class="text-xs text-[var(--color-ink-subtle)]">
         <span x-text="rank.border.name"></span>
         · <span x-text="rank.tenureLabel"></span>
-        · <span x-text="rank.xp"></span> wisdom
-        · <span x-text="rank.totalRuns"></span> runs
+        · <span x-text="rank.xp"></span> points
+        · <span x-text="rank.totalRuns"></span> games
       </p>
       <p class="text-xs text-[var(--color-ink-muted)]" x-show="rank.next" x-cloak>
         Next title: <span class="text-[var(--color-ink)]" x-text="rank.next.name"></span>
-        · <span x-text="rank.next.minXp"></span> wisdom
+        · <span x-text="rank.next.minXp"></span> points
       </p>
     </div>
   ) : (
@@ -38,8 +38,8 @@ const { mode = "run" } = Astro.props;
           <span class="text-xl text-[var(--color-ink-muted)]" x-text="reward.total"></span>
         </p>
         <p class="mt-1 text-sm text-[var(--color-ink-muted)]">
-          +<span x-text="reward.xpGained"></span> wisdom ·
-          <span x-text="Math.round((reward.accuracy || 0) * 100)"></span>% accurate
+          +<span x-text="reward.xpGained"></span> points ·
+          <span x-text="Math.round((reward.accuracy || 0) * 100)"></span>% correct
         </p>
       </div>
 
@@ -58,13 +58,13 @@ const { mode = "run" } = Astro.props;
       <p class="text-xs text-[var(--color-ink-muted)]">
         <span x-text="reward.border.name"></span>
         · <span x-text="reward.tenureLabel"></span>
-        · <span x-text="reward.xp"></span> wisdom total
+        · <span x-text="reward.xp"></span> points total
       </p>
       <p class="text-sm text-[var(--color-gold)]" x-show="reward.titleChanged" x-cloak>
         New title unlocked
       </p>
       <p class="text-sm text-[var(--color-gold)]" x-show="reward.borderChanged" x-cloak>
-        New border from your days with the Word
+        New border from your days with Scripture
       </p>
 
       <div x-show="reward.newMedals?.length" x-cloak class="space-y-2 border-t border-[var(--color-line)] pt-3">

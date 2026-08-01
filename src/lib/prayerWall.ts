@@ -132,10 +132,14 @@ function assemble(
         displayName: r.displayName,
         body: r.body,
         createdAt: r.createdAt,
-        deviceId: r.deviceId,
+        // Only expose own device id in the UI layer (others stay empty).
+        deviceId: r.deviceId === deviceId ? r.deviceId : "",
         reactionCounts: counts,
         myReactions,
-        comments: requestComments,
+        comments: requestComments.map((c) => ({
+          ...c,
+          deviceId: c.deviceId === deviceId ? c.deviceId : "",
+        })),
         commentsOpen: false,
         commentDraft: "",
         commentName: "",
@@ -276,7 +280,10 @@ export async function toggleReaction(
     .maybeSingle();
 
   if (existing?.id) {
-    const { error } = await sb.from("prayer_reactions").delete().eq("id", existing.id);
+    const { error } = await sb.rpc("delete_own_prayer_reaction", {
+      p_id: existing.id,
+      p_device_id: deviceId,
+    });
     if (error) throw error;
   } else {
     const { error } = await sb.from("prayer_reactions").insert({
@@ -340,11 +347,10 @@ export async function removeOwnRequest(requestId: string): Promise<WallRequest[]
   }
 
   const sb = getSupabase()!;
-  const { error } = await sb
-    .from("prayer_requests")
-    .delete()
-    .eq("id", requestId)
-    .eq("device_id", deviceId);
+  const { error } = await sb.rpc("delete_own_prayer_request", {
+    p_id: requestId,
+    p_device_id: deviceId,
+  });
   if (error) throw error;
   return listRemote();
 }

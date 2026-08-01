@@ -14,7 +14,15 @@ function trimEnv(value: string | undefined): string {
 
 /** Google Form (or similar). Empty = feedback CTA hidden / “coming soon”. */
 export function getFeedbackFormUrl(): string {
-  return trimEnv(import.meta.env.PUBLIC_FEEDBACK_FORM_URL as string | undefined);
+  const raw = trimEnv(import.meta.env.PUBLIC_FEEDBACK_FORM_URL as string | undefined);
+  if (!raw) return "";
+  try {
+    const url = new URL(raw);
+    if (url.protocol !== "https:" && url.protocol !== "http:") return "";
+    return url.href;
+  } catch {
+    return "";
+  }
 }
 
 export function hasFeedbackForm(): boolean {

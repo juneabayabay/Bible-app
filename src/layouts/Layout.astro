@@ -39,7 +39,7 @@ const oneSignalAppId = getOneSignalAppId();
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
     <meta name="color-scheme" content="light dark" />
-    <meta name="astro-prefetch" content="hover" />
+    <meta name="astro-prefetch" content="tap" />
     <meta
       name="description"
       content="Draw near to God every day. Read Scripture, highlight verses, and keep notes—peacefully, on this device."
@@ -103,7 +103,7 @@ const oneSignalAppId = getOneSignalAppId();
       )
     }
   </head>
-  <body class="flex min-h-screen flex-col antialiased transition-colors duration-200">
+  <body class="flex min-h-dvh min-h-screen flex-col antialiased transition-colors duration-200">
     <header class="site-header sticky top-0 z-40 border-b border-[var(--color-line)] bg-[var(--color-surface-elevated)]/92 backdrop-blur-md supports-[padding:max(0px)]:pt-[env(safe-area-inset-top)]">
       <div class:list={[shell, "py-2 sm:py-2.5"]}>
         <div class="flex flex-wrap items-center gap-x-2 gap-y-2 sm:flex-nowrap sm:gap-x-3">

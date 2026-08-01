@@ -152,10 +152,21 @@ self.addEventListener("message", (event) => {
   }
 });
 
+function safeAppUrl(candidate) {
+  try {
+    const base = self.location.origin;
+    const url = new URL(candidate || "/", base);
+    if (url.origin !== base) return "/";
+    return url.pathname + url.search + url.hash;
+  } catch (_) {
+    return "/";
+  }
+}
+
 self.addEventListener("notificationclick", (event) => {
   event.notification.close();
   const data = event.notification.data || {};
-  const target = data.url || "/";
+  const target = safeAppUrl(data.url || "/");
 
   event.waitUntil(
     (async () => {
@@ -165,7 +176,7 @@ self.addEventListener("notificationclick", (event) => {
             at: nextOccurrence(data.hour, data.minute),
             title: data.title,
             body: data.body,
-            url: data.url,
+            url: target,
             hour: data.hour,
             minute: data.minute,
           });
@@ -200,7 +211,7 @@ self.addEventListener("push", (event) => {
       const payload = event.data.json();
       title = payload.title || title;
       body = payload.body || body;
-      url = payload.url || url;
+      url = safeAppUrl(payload.url || url);
     }
   } catch (_) {
     try {
