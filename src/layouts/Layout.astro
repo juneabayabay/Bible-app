@@ -4,6 +4,7 @@ import ThemeToggle from "../components/ThemeToggle.astro";
 import VersionPicker from "../components/VersionPicker.astro";
 import NavMenu from "../components/NavMenu.astro";
 import SiteFooter from "../components/SiteFooter.astro";
+import InstallAppBanner from "../components/InstallAppBanner.astro";
 import { DEFAULT_VERSION, type VersionId } from "../lib/versions";
 import { getOneSignalAppId } from "../lib/reminders";
 
@@ -47,6 +48,8 @@ const oneSignalAppId = getOneSignalAppId();
     <meta name="theme-color" content="#1e3a5f" />
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+    <meta name="apple-mobile-web-app-title" content="Bible" />
+    <meta name="mobile-web-app-capable" content="yes" />
     <link rel="manifest" href="/manifest.webmanifest" />
     <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
     <link rel="apple-touch-icon" href="/icons/icon.svg" />
@@ -130,6 +133,7 @@ const oneSignalAppId = getOneSignalAppId();
       <slot />
       {showFooter && <SiteFooter version={version} />}
     </main>
+    <InstallAppBanner />
   </body>
 </html>
 

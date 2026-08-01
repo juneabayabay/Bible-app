@@ -37,7 +37,16 @@ import {
 } from "./lib/progress";
 import { syncJourneyUnlocks } from "./lib/syncUnlocks";
 import { addPrayer, loadPrayers, removePrayer, type PrayerEntry } from "./lib/prayers";
-import { getDeviceId } from "./lib/deviceId";
+import {
+  bindInstallPromptCapture,
+  clearDeferredInstallPrompt,
+  detectInstallPlatform,
+  dismissInstallPrompt,
+  getDeferredInstallPrompt,
+  hideInstallForSession,
+  shouldShowInstallBanner,
+  type InstallPlatform,
+} from "./lib/installApp";
 import {
   addWallComment,
   checkWallLive,
@@ -137,6 +146,8 @@ function titleCaseSlug(slug: string) {
 }
 
 export default (Alpine: Alpine) => {
+  bindInstallPromptCapture();
+
   Alpine.store("theme", {
     dark: false,
 
@@ -173,6 +184,88 @@ export default (Alpine: Alpine) => {
     document.documentElement.classList.toggle("dark", dark);
     (Alpine.store("theme") as { dark: boolean }).dark = dark;
   });
+
+  Alpine.data("installAppBanner", () => ({
+    open: false,
+    showGuide: false,
+    platform: "other" as InstallPlatform,
+    canPrompt: false,
+
+    get blurb() {
+      if (this.platform === "ios") {
+        return "Add it to your Home Screen for quick, fullscreen reading.";
+      }
+      if (this.canPrompt) {
+        return "One tap — open Bible like a real app from your home screen.";
+      }
+      return "Install for a fuller, app-like experience on your device.";
+    },
+
+    get primaryLabel() {
+      if (this.platform === "ios") return "How to install";
+      if (this.canPrompt) return "Install app";
+      return "How to install";
+    },
+
+    boot() {
+      this.platform = detectInstallPlatform();
+      this.canPrompt = Boolean(getDeferredInstallPrompt());
+      this.open = shouldShowInstallBanner();
+
+      const onAvailable = () => {
+        this.canPrompt = true;
+        if (shouldShowInstallBanner()) this.open = true;
+      };
+      const onInstalled = () => {
+        this.open = false;
+        this.showGuide = false;
+        this.canPrompt = false;
+      };
+
+      window.addEventListener("bible-install-available", onAvailable);
+      window.addEventListener("bible-app-installed", onInstalled);
+
+      // Small delay so the page settles before the banner slides up.
+      if (this.open) {
+        this.open = false;
+        window.setTimeout(() => {
+          if (shouldShowInstallBanner()) this.open = true;
+        }, 900);
+      }
+    },
+
+    async primaryAction() {
+      const promptEvent = getDeferredInstallPrompt();
+      if (promptEvent) {
+        try {
+          await promptEvent.prompt();
+          const choice = await promptEvent.userChoice;
+          clearDeferredInstallPrompt();
+          this.canPrompt = false;
+          if (choice.outcome === "accepted") {
+            this.open = false;
+            dismissInstallPrompt();
+          }
+        } catch {
+          this.showGuide = true;
+        }
+        return;
+      }
+      this.showGuide = true;
+    },
+
+    notNow() {
+      this.open = false;
+      this.showGuide = false;
+      hideInstallForSession();
+    },
+
+    neverShow() {
+      dismissInstallPrompt();
+      this.open = false;
+      this.showGuide = false;
+    },
+  }));
 
   Alpine.data("versionPicker", (initial: string) => ({
     current: initial,
