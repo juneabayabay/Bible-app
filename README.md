@@ -1,5 +1,14 @@
 # Astro Starter Kit: Minimal
 
+## Prayer wall (shared)
+
+1. Create a free [Supabase](https://supabase.com) project.
+2. Run `supabase/prayer-wall.sql` in the SQL editor.
+3. Copy `.env.example` → `.env` and set `PUBLIC_SUPABASE_URL` + `PUBLIC_SUPABASE_ANON_KEY`.
+4. Restart `astro dev`.
+
+Without those env vars, the Prayer wall runs in **demo mode** (this device only). The private “With the Lord” journal always stays on-device.
+
 ```sh
 npm create astro@latest -- --template minimal
 ```

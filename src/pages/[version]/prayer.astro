@@ -171,7 +171,6 @@ const wallLive = isSupabaseConfigured();
                   : 'border-[var(--color-line)] text-[var(--color-ink-muted)] hover:border-[var(--color-gold)]'"
                 @click="react(item.id, 'prayed')"
               >
-                <span aria-hidden="true">🙏</span>
                 Prayed
                 <span x-text="item.reactionCounts.prayed || ''"></span>
               </button>
@@ -183,7 +182,6 @@ const wallLive = isSupabaseConfigured();
                   : 'border-[var(--color-line)] text-[var(--color-ink-muted)] hover:border-[var(--color-gold)]'"
                 @click="react(item.id, 'heart')"
               >
-                <span aria-hidden="true">♥</span>
                 With you
                 <span x-text="item.reactionCounts.heart || ''"></span>
               </button>

@@ -961,11 +961,24 @@ export default (Alpine: Alpine) => {
       return item.myReactions.includes(type);
     },
 
+    mergeWallUi(next: WallRequest[]) {
+      const prev = new Map(this.wallItems.map((item) => [item.id, item]));
+      return next.map((item) => {
+        const old = prev.get(item.id);
+        return {
+          ...item,
+          commentsOpen: old?.commentsOpen ?? false,
+          commentDraft: "",
+          commentName: old?.commentName ?? "",
+        };
+      });
+    },
+
     async refreshWall() {
       this.wallLoading = true;
       this.wallError = "";
       try {
-        this.wallItems = await listWallRequests();
+        this.wallItems = this.mergeWallUi(await listWallRequests());
       } catch (err) {
         this.wallError =
           err instanceof Error ? err.message : "Could not load the prayer wall.";
@@ -980,7 +993,9 @@ export default (Alpine: Alpine) => {
       this.wallBusy = true;
       this.wallError = "";
       try {
-        this.wallItems = await createWallRequest(this.wallName, this.wallBody);
+        this.wallItems = this.mergeWallUi(
+          await createWallRequest(this.wallName, this.wallBody),
+        );
         this.wallBody = "";
         this.flashWall("Shared");
       } catch (err) {
@@ -993,7 +1008,7 @@ export default (Alpine: Alpine) => {
 
     async react(requestId: string, type: ReactionType) {
       try {
-        this.wallItems = await toggleReaction(requestId, type);
+        this.wallItems = this.mergeWallUi(await toggleReaction(requestId, type));
       } catch (err) {
         this.wallError =
           err instanceof Error ? err.message : "Could not save reaction.";
@@ -1005,10 +1020,8 @@ export default (Alpine: Alpine) => {
       if (!draft) return;
       try {
         const openId = item.id;
-        this.wallItems = await addWallComment(
-          item.id,
-          item.commentName ?? "",
-          draft,
+        this.wallItems = this.mergeWallUi(
+          await addWallComment(item.id, item.commentName ?? "", draft),
         );
         const next = this.wallItems.find((r) => r.id === openId);
         if (next) next.commentsOpen = true;
@@ -1020,7 +1033,7 @@ export default (Alpine: Alpine) => {
 
     async removeRequest(id: string) {
       try {
-        this.wallItems = await removeOwnRequest(id);
+        this.wallItems = this.mergeWallUi(await removeOwnRequest(id));
       } catch (err) {
         this.wallError =
           err instanceof Error ? err.message : "Could not remove request.";
