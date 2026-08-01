@@ -210,6 +210,67 @@ const BOOK_ALIASES: Record<string, string> = {
   revelation: "revelation",
   rev: "revelation",
   re: "revelation",
+  // Tagalog / common spoken names (for voice search)
+  juan: "john",
+  "1 juan": "1-john",
+  "1juan": "1-john",
+  "2 juan": "2-john",
+  "2juan": "2-john",
+  "3 juan": "3-john",
+  "3juan": "3-john",
+  mateo: "matthew",
+  marcos: "mark",
+  lucas: "luke",
+  roma: "romans",
+  romanos: "romans",
+  "mga gawa": "acts",
+  gawa: "acts",
+  apostol: "acts",
+  "mga awit": "psalms",
+  awit: "psalms",
+  "mga kawikaan": "proverbs",
+  kawikaan: "proverbs",
+  pmb: "proverbs",
+  henesis: "genesis",
+  exodo: "exodus",
+  isaias: "isaiah",
+  jeremias: "jeremiah",
+  ezekiel: "ezekiel",
+  daniel: "daniel",
+  oseas: "hosea",
+  joel: "joel",
+  amos: "amos",
+  jonas: "jonah",
+  mikas: "micah",
+  nahum: "nahum",
+  habacuc: "habakkuk",
+  sofonia: "zephaniah",
+  ageo: "haggai",
+  zacarias: "zechariah",
+  malakias: "malachi",
+  corinto: "1-corinthians",
+  "1 corinto": "1-corinthians",
+  "1corinto": "1-corinthians",
+  "2 corinto": "2-corinthians",
+  "2corinto": "2-corinthians",
+  galacia: "galatians",
+  efeso: "ephesians",
+  filipos: "philippians",
+  colosas: "colossians",
+  "1 tesalonica": "1-thessalonians",
+  "2 tesalonica": "2-thessalonians",
+  "1 timoteo": "1-timothy",
+  "2 timoteo": "2-timothy",
+  tito: "titus",
+  filemon: "philemon",
+  hebreo: "hebrews",
+  hebreos: "hebrews",
+  santiago: "james",
+  "1 pedro": "1-peter",
+  "2 pedro": "2-peter",
+  judas: "jude",
+  apocalipsis: "revelation",
+  pahayag: "revelation",
 };
 
 export type ParsedReference = {
@@ -218,16 +279,29 @@ export type ParsedReference = {
   verse?: number;
 };
 
+/** Clean spoken transcripts before parsing (e.g. “John chapter 3 verse 16”). */
+export function normalizeSpokenReference(query: string): string {
+  return query
+    .toLowerCase()
+    .replace(/[?!]/g, " ")
+    .replace(/\b(chapter|kapitulo|kabanata)\b/g, " ")
+    .replace(/\b(verse|talata|bersikulo)\b/g, " ")
+    .replace(/\b(book of|libro ng|sa)\b/g, " ")
+    .replace(/,/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
 /**
- * Parse strings like "John 3:16", "Ps 23", "1 Cor 13:4".
+ * Parse strings like "John 3:16", "Ps 23", "1 Cor 13:4", or spoken "John 3 16".
  * Returns null if the query does not look like a reference.
  */
 export function parseReference(query: string): ParsedReference | null {
-  const q = query.trim().toLowerCase().replace(/\s+/g, " ");
+  const q = normalizeSpokenReference(query);
   if (!q) return null;
 
   const match = q.match(
-    /^((?:\d\s*)?[a-z][a-z\s]*?)\s+(\d+)(?:\s*[:.]\s*(\d+))?$/i,
+    /^((?:\d\s*)?[a-z][a-z\s]*?)\s+(\d+)(?:\s*[:.]\s*(\d+)|\s+(\d+))?$/i,
   );
   if (!match) return null;
 
@@ -241,7 +315,8 @@ export function parseReference(query: string): ParsedReference | null {
   if (!slug) return null;
 
   const chapter = Number(match[2]);
-  const verse = match[3] ? Number(match[3]) : undefined;
+  const verseRaw = match[3] ?? match[4];
+  const verse = verseRaw ? Number(verseRaw) : undefined;
   if (!Number.isFinite(chapter) || chapter < 1) return null;
   if (verse !== undefined && (!Number.isFinite(verse) || verse < 1)) return null;
 

@@ -54,24 +54,23 @@ const showGotymeQr = existsSync(join(publicRoot, "images", "support", "gotyme-qr
       <p class="mt-2 text-sm leading-relaxed text-[var(--color-ink-muted)] sm:text-base">
         What’s working? What’s hard? A few honest words help us grow this quietly, for people who open Scripture here.
       </p>
-      {
-        showFeedback ? (
-          <p class="mt-5">
+      <p class="mt-5 flex flex-wrap gap-3">
+        <a class="btn-primary" href={`/${version}/feedback`} data-astro-prefetch>
+          Send feedback
+        </a>
+        {
+          showFeedback ? (
             <a
-              class="btn-primary"
+              class="btn-secondary"
               href={feedbackUrl}
               target="_blank"
               rel="noopener noreferrer"
             >
-              Send a note
+              External form
             </a>
-          </p>
-        ) : (
-          <p class="mt-5 text-sm text-[var(--color-ink-subtle)]">
-            Feedback link coming soon.
-          </p>
-        )
-      }
+          ) : null
+        }
+      </p>
     </section>
 
     <section id="give" aria-labelledby="give-heading" class="scroll-mt-24">

@@ -12,7 +12,7 @@ import {
 } from "./lib/annotations";
 import { DEFAULT_VERSION, VERSIONS, languageBadge, type VersionId } from "./lib/versions";
 import { loadLastRead, loadStreak, saveLastRead } from "./lib/reading";
-import { parseReference } from "./lib/parseReference";
+import { parseReference, normalizeSpokenReference } from "./lib/parseReference";
 import {
   completeDevotion,
   journeyProgress,
@@ -105,6 +105,8 @@ import {
   type GameId,
   type RewardSnapshot,
 } from "./lib/gameRewards";
+import { getDeviceId } from "./lib/deviceId";
+import { isFeedbackLive, submitFeedback } from "./lib/feedback";
 
 type SearchDoc = {
   id: string;
@@ -2298,6 +2300,46 @@ export default (Alpine: Alpine) => {
     },
   }));
 
+  Alpine.data("feedbackForm", () => ({
+    live: false,
+    name: "",
+    message: "",
+    busy: false,
+    status: "",
+    error: "",
+    _timer: null as ReturnType<typeof setTimeout> | null,
+
+    boot() {
+      this.live = isFeedbackLive();
+    },
+
+    destroy() {
+      if (this._timer) clearTimeout(this._timer);
+    },
+
+    async submit() {
+      if (this.busy) return;
+      this.busy = true;
+      this.error = "";
+      this.status = "";
+      try {
+        const result = await submitFeedback(this.name, this.message, getDeviceId());
+        this.message = "";
+        this.status = result.remote
+          ? "Thank you — feedback sent."
+          : "Thank you — saved on this device.";
+        if (this._timer) clearTimeout(this._timer);
+        this._timer = setTimeout(() => {
+          this.status = "";
+        }, 2800);
+      } catch (err) {
+        this.error = err instanceof Error ? err.message : "Could not send feedback.";
+      } finally {
+        this.busy = false;
+      }
+    },
+  }));
+
   Alpine.data("bibleSearch", (version: string = DEFAULT_VERSION) => ({
     version,
     q: "",
@@ -2310,6 +2352,9 @@ export default (Alpine: Alpine) => {
     ready: false,
     loading: false,
     error: "",
+    listening: false,
+    voiceSupported: false,
+    voiceHint: "",
     loadPromise: null as Promise<void> | null,
     worker: null as Worker | null,
     searchSeq: 0,
@@ -2317,9 +2362,19 @@ export default (Alpine: Alpine) => {
       number,
       { resolve: (hits: SearchDoc[]) => void; reject: (err: Error) => void }
     >,
+    _recognition: null as null | {
+      lang: string;
+      continuous: boolean;
+      interimResults: boolean;
+      start: () => void;
+      stop: () => void;
+      abort: () => void;
+      onresult: ((ev: Event) => void) | null;
+      onerror: ((ev: Event) => void) | null;
+      onend: (() => void) | null;
+    },
 
     init() {
-      // /saved is version-agnostic — use the reader's preferred edition
       const path = window.location.pathname.replace(/\/+$/, "") || "/";
       if (path === "/saved") {
         try {
@@ -2329,6 +2384,150 @@ export default (Alpine: Alpine) => {
           /* ignore */
         }
       }
+      const SR =
+        (window as unknown as { SpeechRecognition?: new () => unknown }).SpeechRecognition ||
+        (window as unknown as { webkitSpeechRecognition?: new () => unknown })
+          .webkitSpeechRecognition;
+      this.voiceSupported = Boolean(SR);
+    },
+
+    destroy() {
+      this.stopVoice(true);
+      if (this.worker) {
+        this.worker.terminate();
+        this.worker = null;
+      }
+    },
+
+    stopVoice(abort = false) {
+      const rec = this._recognition;
+      if (rec) {
+        try {
+          if (abort) rec.abort();
+          else rec.stop();
+        } catch {
+          /* ignore */
+        }
+      }
+      this._recognition = null;
+      this.listening = false;
+    },
+
+    toggleVoice() {
+      if (this.listening) {
+        this.stopVoice();
+        this.voiceHint = "";
+        return;
+      }
+      this.startVoice();
+    },
+
+    startVoice() {
+      if (!this.voiceSupported) {
+        this.voiceHint = "Voice isn’t available here. Try Chrome or Safari.";
+        this.error = "";
+        return;
+      }
+
+      type SRCtor = new () => {
+        lang: string;
+        continuous: boolean;
+        interimResults: boolean;
+        maxAlternatives?: number;
+        start: () => void;
+        stop: () => void;
+        abort: () => void;
+        onresult: ((ev: Event) => void) | null;
+        onerror: ((ev: Event) => void) | null;
+        onend: (() => void) | null;
+      };
+
+      const SR =
+        (window as unknown as { SpeechRecognition?: SRCtor }).SpeechRecognition ||
+        (window as unknown as { webkitSpeechRecognition?: SRCtor }).webkitSpeechRecognition;
+      if (!SR) {
+        this.voiceSupported = false;
+        this.voiceHint = "Voice isn’t available here.";
+        return;
+      }
+
+      this.stopVoice(true);
+      this.error = "";
+      this.voiceHint = "Listening… say a verse, like John 3 16";
+
+      const recognition = new SR();
+      recognition.lang =
+        (typeof navigator !== "undefined" && navigator.language) || "en-PH";
+      recognition.continuous = false;
+      recognition.interimResults = false;
+      if ("maxAlternatives" in recognition) recognition.maxAlternatives = 3;
+
+      recognition.onresult = (ev: Event) => {
+        const e = ev as unknown as {
+          results: ArrayLike<{ 0: { transcript: string }; isFinal?: boolean }>;
+        };
+        const first = e.results?.[0]?.[0]?.transcript?.trim() ?? "";
+        if (!first) {
+          this.voiceHint = "Didn’t catch that. Tap the mic and try again.";
+          return;
+        }
+        void this.applyVoiceTranscript(first);
+      };
+
+      recognition.onerror = (ev: Event) => {
+        const code = (ev as unknown as { error?: string }).error || "";
+        this.listening = false;
+        this._recognition = null;
+        if (code === "aborted" || code === "no-speech") {
+          this.voiceHint =
+            code === "no-speech"
+              ? "No speech heard. Tap the mic and speak clearly."
+              : "";
+          return;
+        }
+        if (code === "not-allowed") {
+          this.voiceHint = "Microphone blocked. Allow mic access, then try again.";
+          return;
+        }
+        this.voiceHint = "Voice search failed. You can still type a verse.";
+      };
+
+      recognition.onend = () => {
+        this.listening = false;
+        this._recognition = null;
+      };
+
+      this._recognition = recognition;
+      this.listening = true;
+      try {
+        recognition.start();
+      } catch {
+        this.listening = false;
+        this._recognition = null;
+        this.voiceHint = "Could not start the mic. Try again.";
+      }
+    },
+
+    async applyVoiceTranscript(raw: string) {
+      const cleaned = normalizeSpokenReference(raw) || raw.trim();
+      this.q = cleaned;
+      this.voiceHint = `Heard: “${cleaned}”`;
+
+      const refHits = this.referenceResult(cleaned);
+      if (refHits?.[0]?.url) {
+        this.results = refHits;
+        window.location.href = refHits[0].url;
+        return;
+      }
+
+      await this.search();
+      const first = this.results[0];
+      if (first?.url) {
+        window.location.href = first.url;
+        return;
+      }
+
+      this.voiceHint = `Heard “${cleaned}” — no verse found. Try “John 3 16”.`;
     },
 
     referenceResult(query: string) {

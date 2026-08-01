@@ -1,0 +1,87 @@
+---
+import Layout from "../../layouts/Layout.astro";
+import SearchBar from "../../components/SearchBar.astro";
+import { resolveVersionId } from "../../lib/bible";
+import { getVersion } from "../../lib/versions";
+import { getVersionHomePaths } from "../../lib/staticPaths";
+
+export function getStaticPaths() {
+  return getVersionHomePaths();
+}
+
+const version = resolveVersionId(Astro.params.version);
+const meta = getVersion(version);
+---
+
+<Layout title={`Feedback · ${meta.shortLabel}`} version={version}>
+  <SearchBar slot="header" version={version} />
+
+  <div class="page-stack measure" x-data="feedbackForm()" x-init="boot()">
+    <header class="border-b border-[var(--color-line)] pb-5">
+      <p class="text-sm text-[var(--color-ink-muted)]">
+        <a href={`/${version}/`} class="hover:underline" data-astro-prefetch>← Home</a>
+      </p>
+      <p class="eyebrow mt-5">Improve</p>
+      <h1 class="font-scripture mt-1.5 text-3xl font-semibold tracking-tight sm:text-4xl">
+        Feedback
+      </h1>
+      <p class="mt-2 text-sm leading-relaxed text-[var(--color-ink-muted)] sm:text-base">
+        Tell us what helps — or what is hard. Your notes make this Bible app kinder to use,
+        especially for elders and everyday readers.
+      </p>
+    </header>
+
+    <p
+      class="rounded-xl border border-[var(--color-line)] bg-[var(--color-surface-elevated)] px-3.5 py-2.5 text-sm text-[var(--color-ink-muted)]"
+      x-show="live"
+      x-cloak
+    >
+      Feedback is sent to the shared inbox when you submit.
+    </p>
+    <p
+      class="rounded-xl border border-[var(--color-gold)]/40 bg-[var(--color-highlight)]/30 px-3.5 py-2.5 text-sm text-[var(--color-ink)]"
+      x-show="!live"
+      x-cloak
+    >
+      Saved on this device for now. Connect Supabase and run
+      <code class="text-xs">supabase/app-feedback.sql</code> to collect feedback centrally.
+    </p>
+
+    <form class="space-y-4" @submit.prevent="submit()">
+      <label class="block">
+        <span class="text-xs font-semibold uppercase tracking-[0.08em] text-[var(--color-ink-subtle)]">
+          Your name <span class="font-normal normal-case tracking-normal">(optional)</span>
+        </span>
+        <input
+          type="text"
+          class="mt-1.5 w-full min-h-11 rounded-xl border border-[var(--color-line)] bg-[var(--color-surface-elevated)] px-3.5 py-2.5 text-base text-[var(--color-ink)] outline-none ring-[var(--color-primary)] placeholder:text-[var(--color-ink-subtle)] focus:ring-2 sm:text-sm"
+          placeholder="Name or leave blank"
+          x-model="name"
+          maxlength="40"
+        />
+      </label>
+
+      <label class="block">
+        <span class="text-xs font-semibold uppercase tracking-[0.08em] text-[var(--color-ink-subtle)]">
+          Your feedback
+        </span>
+        <textarea
+          class="mt-1.5 w-full rounded-xl border border-[var(--color-line)] bg-[var(--color-surface-elevated)] px-3.5 py-3 text-base leading-relaxed text-[var(--color-ink)] outline-none ring-[var(--color-primary)] placeholder:text-[var(--color-ink-subtle)] focus:ring-2 sm:text-sm"
+          rows="5"
+          placeholder="What should we improve? What felt confusing or helpful?"
+          x-model="message"
+          maxlength="1000"
+          required
+        ></textarea>
+      </label>
+
+      <div class="flex flex-wrap items-center gap-3">
+        <button type="submit" class="btn-primary !min-h-11 !px-5 text-sm" :disabled="busy">
+          Send feedback
+        </button>
+        <p class="text-sm text-[var(--color-gold)]" x-show="status" x-text="status" x-cloak></p>
+      </div>
+      <p class="text-sm text-red-600 dark:text-red-400" x-show="error" x-text="error" x-cloak></p>
+    </form>
+  </div>
+</Layout>

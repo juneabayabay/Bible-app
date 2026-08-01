@@ -13,32 +13,65 @@ const { version } = Astro.props;
   x-data={`bibleSearch('${version}')`}
 >
   <label class="sr-only" for="bible-search">Search verses</label>
-  <div class="relative">
-    <svg
-      class="pointer-events-none absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 text-[var(--color-ink-subtle)]"
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      stroke-width="2"
-      aria-hidden="true"
+  <div class="relative flex items-center gap-1.5">
+    <div class="relative min-w-0 flex-1">
+      <svg
+        class="pointer-events-none absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 text-[var(--color-ink-subtle)]"
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        stroke-width="2"
+        aria-hidden="true"
+      >
+        <circle cx="11" cy="11" r="7"></circle>
+        <path d="M20 20l-3-3"></path>
+      </svg>
+      <input
+        id="bible-search"
+        type="search"
+        placeholder="Search or John 3:16"
+        autocomplete="off"
+        enterkeyhint="search"
+        class="h-11 w-full rounded-xl border border-[var(--color-line)] bg-[var(--color-surface)]/50 py-2 pr-3 pl-9 text-base text-[var(--color-ink)] outline-none ring-[var(--color-primary)] placeholder:text-[var(--color-ink-subtle)] focus:bg-[var(--color-surface-elevated)] focus:ring-2 dark:bg-[var(--color-surface)]/80 sm:h-10"
+        x-model="q"
+        @focus="onFocus()"
+        @input.debounce.300ms="search()"
+        @keydown.enter.prevent="goFirst()"
+      />
+    </div>
+
+    <button
+      type="button"
+      class="inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-xl border border-[var(--color-line)] bg-[var(--color-surface-elevated)] text-[var(--color-ink)] transition hover:bg-[var(--color-line)]/50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-primary)] sm:h-10 sm:w-10"
+      :class="listening && 'border-[var(--color-primary)] bg-[var(--color-primary)]/15 text-[var(--color-primary)]'"
+      :aria-pressed="listening.toString()"
+      :aria-label="listening ? 'Stop listening' : 'Speak a verse reference'"
+      title="Speak a verse"
+      @click="toggleVoice()"
     >
-      <circle cx="11" cy="11" r="7"></circle>
-      <path d="M20 20l-3-3"></path>
-    </svg>
-    <input
-      id="bible-search"
-      type="search"
-      placeholder="Search or John 3:16"
-      autocomplete="off"
-      enterkeyhint="search"
-      class="h-10 w-full rounded-xl border border-[var(--color-line)] bg-[var(--color-surface)]/50 py-2 pr-3 pl-9 text-base text-[var(--color-ink)] outline-none ring-[var(--color-primary)] placeholder:text-[var(--color-ink-subtle)] focus:bg-[var(--color-surface-elevated)] focus:ring-2 dark:bg-[var(--color-surface)]/80"
-      x-model="q"
-      @focus="onFocus()"
-      @input.debounce.300ms="search()"
-      @keydown.enter.prevent="goFirst()"
-    />
+      <svg
+        class="h-5 w-5"
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        stroke-width="1.75"
+        stroke-linecap="round"
+        stroke-linejoin="round"
+        aria-hidden="true"
+      >
+        <path d="M12 3a3 3 0 0 0-3 3v6a3 3 0 0 0 6 0V6a3 3 0 0 0-3-3z"></path>
+        <path d="M19 11a7 7 0 0 1-14 0"></path>
+        <path d="M12 19v2"></path>
+      </svg>
+    </button>
   </div>
 
+  <p
+    class="mt-1.5 text-sm text-[var(--color-ink-muted)]"
+    x-show="voiceHint"
+    x-text="voiceHint"
+    x-cloak
+  ></p>
   <p class="mt-1 text-xs text-[var(--color-ink-subtle)]" x-show="loading" x-cloak>
     Preparing full-text search…
   </p>
