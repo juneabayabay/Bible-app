@@ -61,8 +61,15 @@ import {
   syncReminderSchedule,
 } from "./lib/reminders";
 import {
+  buildFillBlankRounds,
+  DIFFICULTIES,
+  getDifficultyConfig,
   isVerseGameDoneToday,
+  loadSavedDifficulty,
   markVerseGameDoneToday,
+  saveDifficulty,
+  type Difficulty,
+  type DifficultyConfig,
   type FillBlankRound,
 } from "./lib/verseGame";
 
@@ -449,21 +456,60 @@ export default (Alpine: Alpine) => {
   Alpine.data("verseFillGame", () => ({
     version: "web",
     verse: null as { text: string; cite: string; url: string } | null,
+    difficulties: DIFFICULTIES as DifficultyConfig[],
+    difficulty: "medium" as Difficulty,
     rounds: [] as FillBlankRound[],
-    phase: "study" as "study" | "play" | "done",
+    phase: "choose" as "choose" | "study" | "play" | "done",
     roundIndex: 0,
-    picked: "" as string,
-    correct: false,
+    activeBlank: 0,
+    filled: {} as Record<number, string>,
     feedback: "",
+    lastCorrect: false,
+    score: 0,
+    totalBlanks: 0,
     alreadyDone: false,
+    studySecondsLeft: 0,
+    firstLetterHint: false,
+    _studyTimer: null as ReturnType<typeof setInterval> | null,
 
     get current(): FillBlankRound {
       return this.rounds[this.roundIndex] ?? {
         id: 0,
         segments: [],
+        answers: [],
         choices: [],
-        answer: "",
       };
+    },
+
+    get difficultyLabel() {
+      return getDifficultyConfig(this.difficulty).label;
+    },
+
+    get studyHint() {
+      const cfg = getDifficultyConfig(this.difficulty);
+      if (cfg.studySeconds > 0) {
+        return `Hard mode: memorize quickly — the verse hides after ${cfg.studySeconds} seconds (or tap ready sooner).`;
+      }
+      return "Read it once, then fill the missing word(s).";
+    },
+
+    get activeAnswer() {
+      return this.current.answers[this.activeBlank] ?? "";
+    },
+
+    get roundComplete() {
+      return this.current.answers.every((_, i) => Boolean(this.filled[i]));
+    },
+
+    get availableChoices() {
+      const locked = new Set<string>();
+      this.current.answers.forEach((answer, i) => {
+        const filled = this.filled[i];
+        if (filled && filled.toLowerCase() === answer.toLowerCase() && i !== this.activeBlank) {
+          locked.add(answer.toLowerCase());
+        }
+      });
+      return this.current.choices.filter((c) => !locked.has(c.toLowerCase()));
     },
 
     boot() {
@@ -473,61 +519,153 @@ export default (Alpine: Alpine) => {
           const data = JSON.parse(el.textContent) as {
             version: string;
             verse: { text: string; cite: string; url: string } | null;
-            rounds: FillBlankRound[];
+            difficulties: DifficultyConfig[];
           };
           this.version = data.version;
           this.verse = data.verse;
-          this.rounds = data.rounds ?? [];
+          this.difficulties = data.difficulties?.length
+            ? data.difficulties
+            : DIFFICULTIES;
         }
       } catch {
-        this.rounds = [];
+        this.verse = null;
       }
+      this.difficulty = loadSavedDifficulty();
       this.alreadyDone = isVerseGameDoneToday();
+      this.phase = "choose";
+    },
+
+    selectDifficulty(id: Difficulty) {
+      this.difficulty = id;
+      saveDifficulty(id);
+    },
+
+    clearStudyTimer() {
+      if (this._studyTimer) {
+        clearInterval(this._studyTimer);
+        this._studyTimer = null;
+      }
+      this.studySecondsLeft = 0;
+    },
+
+    begin() {
+      if (!this.verse?.text) return;
+      this.rounds = buildFillBlankRounds(this.verse.text, this.difficulty);
+      if (!this.rounds.length) {
+        this.phase = "choose";
+        return;
+      }
+      this.score = 0;
+      this.totalBlanks = this.rounds.reduce((n, r) => n + r.answers.length, 0);
+      const cfg = getDifficultyConfig(this.difficulty);
+      this.firstLetterHint = cfg.firstLetterHint;
+      this.clearStudyTimer();
       this.phase = "study";
+      if (cfg.studySeconds > 0) {
+        this.studySecondsLeft = cfg.studySeconds;
+        this._studyTimer = setInterval(() => {
+          this.studySecondsLeft -= 1;
+          if (this.studySecondsLeft <= 0) {
+            this.clearStudyTimer();
+            this.startPlay();
+          }
+        }, 1000);
+      }
+    },
+
+    backToChoose() {
+      this.clearStudyTimer();
+      this.phase = "choose";
+      this.feedback = "";
+      this.filled = {};
     },
 
     startPlay() {
+      this.clearStudyTimer();
       this.phase = "play";
       this.roundIndex = 0;
-      this.picked = "";
-      this.correct = false;
-      this.feedback = "";
+      this.resetRoundState();
     },
 
-    blankDisplay(seg: { type: string; text: string; answer?: string }) {
+    resetRoundState() {
+      this.activeBlank = 0;
+      this.filled = {};
+      this.feedback = "";
+      this.lastCorrect = false;
+    },
+
+    blankDisplay(seg: { type: string; text: string; answer?: string; blankId?: number }) {
       if (seg.type !== "blank") return seg.text;
-      if (!this.picked) return "____";
-      return this.correct ? this.current.answer : this.picked;
+      const id = seg.blankId ?? 0;
+      if (this.filled[id]) return this.filled[id];
+      if (this.firstLetterHint && id === this.activeBlank && this.activeAnswer) {
+        return `${this.activeAnswer[0]}___`;
+      }
+      return "____";
+    },
+
+    blankClass(seg: { type: string; blankId?: number }) {
+      const id = seg.blankId ?? 0;
+      if (this.filled[id]) {
+        const ok =
+          this.filled[id].toLowerCase() ===
+          (this.current.answers[id] ?? "").toLowerCase();
+        return ok
+          ? "border-[var(--color-gold)] text-[var(--color-success)]"
+          : "border-red-400/70 text-red-600 dark:text-red-400";
+      }
+      if (id === this.activeBlank) {
+        return "border-[var(--color-gold)] text-[var(--color-ink-subtle)]";
+      }
+      return "border-[var(--color-line)] text-[var(--color-ink-subtle)]";
     },
 
     choiceClass(choice: string) {
-      if (!this.picked) {
+      const filledVals = Object.values(this.filled);
+      if (!this.feedback && !filledVals.length) {
         return "border-[var(--color-line)] text-[var(--color-ink)] hover:border-[var(--color-gold)] hover:bg-[var(--color-highlight)]/50";
       }
-      if (choice === this.current.answer) {
-        return "border-[var(--color-gold)] bg-[var(--color-highlight)] text-[var(--color-ink)]";
+      const answer = this.activeAnswer;
+      if (this.filled[this.activeBlank]) {
+        if (choice.toLowerCase() === answer.toLowerCase()) {
+          return "border-[var(--color-gold)] bg-[var(--color-highlight)] text-[var(--color-ink)]";
+        }
+        if (
+          choice === this.filled[this.activeBlank] &&
+          choice.toLowerCase() !== answer.toLowerCase()
+        ) {
+          return "border-red-400/60 text-[var(--color-ink-muted)] opacity-70";
+        }
       }
-      if (choice === this.picked && !this.correct) {
-        return "border-red-400/60 text-[var(--color-ink-muted)] opacity-70";
-      }
-      return "border-[var(--color-line)] text-[var(--color-ink-subtle)] opacity-50";
+      return "border-[var(--color-line)] text-[var(--color-ink)] hover:border-[var(--color-gold)] hover:bg-[var(--color-highlight)]/50";
     },
 
     pick(choice: string) {
-      if (this.picked) return;
-      this.picked = choice;
-      this.correct = choice.toLowerCase() === this.current.answer.toLowerCase();
-      this.feedback = this.correct
-        ? "Yes — verse locked in."
-        : `Close — the word is “${this.current.answer}.”`;
+      if (this.filled[this.activeBlank]) return;
+      const blank = this.activeBlank;
+      const answer = this.current.answers[blank] ?? "";
+      const ok = choice.toLowerCase() === answer.toLowerCase();
+      this.lastCorrect = ok;
+      if (ok) {
+        this.filled = { ...this.filled, [blank]: choice };
+        this.score += 1;
+        this.feedback =
+          blank + 1 < this.current.answers.length
+            ? "Yes — next blank."
+            : "Yes — locked in.";
+      } else {
+        this.filled = { ...this.filled, [blank]: answer };
+        this.feedback = `Not quite — it’s “${answer}.”`;
+      }
+      if (blank + 1 < this.current.answers.length) {
+        this.activeBlank = blank + 1;
+      }
     },
 
     next() {
       if (this.roundIndex + 1 < this.rounds.length) {
         this.roundIndex += 1;
-        this.picked = "";
-        this.correct = false;
-        this.feedback = "";
+        this.resetRoundState();
         return;
       }
       markVerseGameDoneToday();
@@ -537,7 +675,7 @@ export default (Alpine: Alpine) => {
     },
 
     replay() {
-      this.startPlay();
+      this.begin();
     },
   }));
 
