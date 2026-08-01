@@ -1,11 +1,11 @@
 ---
-import Layout from "../../layouts/Layout.astro";
-import SearchBar from "../../components/SearchBar.astro";
-import { resolveVersionId } from "../../lib/bible";
-import { getVersion } from "../../lib/versions";
-import { getVersionHomePaths } from "../../lib/staticPaths";
-import { resolveGameVerses } from "../../lib/resolveDailyVerse";
-import { DIFFICULTIES, maxGameVerseCount } from "../../lib/verseGame";
+import Layout from "../../../layouts/Layout.astro";
+import SearchBar from "../../../components/SearchBar.astro";
+import { resolveVersionId } from "../../../lib/bible";
+import { getVersion } from "../../../lib/versions";
+import { getVersionHomePaths } from "../../../lib/staticPaths";
+import { resolveGameVerses } from "../../../lib/resolveDailyVerse";
+import { DIFFICULTIES, maxGameVerseCount } from "../../../lib/verseGame";
 
 export function getStaticPaths() {
   return getVersionHomePaths();
@@ -26,7 +26,7 @@ const payload = {
 };
 ---
 
-<Layout title={`Verse play · ${meta.shortLabel}`} version={version}>
+<Layout title={`Fill the blank · ${meta.shortLabel}`} version={version}>
   <SearchBar slot="header" version={version} />
 
   <script type="application/json" id="verse-game-payload" set:html={JSON.stringify(payload)} />
@@ -34,7 +34,7 @@ const payload = {
   <div class="page-stack measure" x-data="verseFillGame()" x-init="boot()">
     <header class="border-b border-[var(--color-line)] pb-5">
       <p class="text-sm text-[var(--color-ink-muted)]">
-        <a href={`/${version}/`} class="hover:underline" data-astro-prefetch>← Home</a>
+        <a href={`/${version}/play`} class="hover:underline" data-astro-prefetch>← Games</a>
       </p>
       <p class="eyebrow mt-5">Play</p>
       <h1 class="font-scripture mt-1.5 text-3xl font-semibold tracking-tight sm:text-4xl">
@@ -198,10 +198,10 @@ const payload = {
           </button>
           <a
             class="btn-secondary !min-h-10 !px-5 text-sm"
-            href={`/${version}/`}
+            href={`/${version}/play`}
             data-astro-prefetch
           >
-            Home
+            All games
           </a>
         </div>
       </section>

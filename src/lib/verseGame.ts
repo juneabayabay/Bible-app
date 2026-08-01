@@ -40,8 +40,8 @@ export const DIFFICULTIES: DifficultyConfig[] = [
   {
     id: "easy",
     label: "Easy",
-    blurb: "3 different verses · 3 choices · first-letter hint",
-    rounds: 3,
+    blurb: "Gentler blanks · first-letter hint",
+    rounds: 20,
     blanksPerRound: 1,
     choiceCount: 3,
     minWordLen: 4,
@@ -51,8 +51,8 @@ export const DIFFICULTIES: DifficultyConfig[] = [
   {
     id: "medium",
     label: "Medium",
-    blurb: "4 different verses · 4 close choices · no hint",
-    rounds: 4,
+    blurb: "Closer choices · no hint",
+    rounds: 35,
     blanksPerRound: 1,
     choiceCount: 4,
     minWordLen: 4,
@@ -62,8 +62,8 @@ export const DIFFICULTIES: DifficultyConfig[] = [
   {
     id: "hard",
     label: "Hard",
-    blurb: "5 different verses · 5 tricky choices · brief study each",
-    rounds: 5,
+    blurb: "Tricky choices · brief study each",
+    rounds: 50,
     blanksPerRound: 1,
     choiceCount: 5,
     minWordLen: 3,
@@ -76,9 +76,9 @@ export function getDifficultyConfig(id: Difficulty): DifficultyConfig {
   return DIFFICULTIES.find((d) => d.id === id) ?? DIFFICULTIES[1];
 }
 
-/** Max verses to pre-resolve for the hardest level. */
+/** Prefer a deep pool so games can draw many unique verses. */
 export function maxGameVerseCount(): number {
-  return Math.max(...DIFFICULTIES.map((d) => d.rounds));
+  return 50;
 }
 
 const STOP = new Set(

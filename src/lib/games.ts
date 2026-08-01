@@ -7,6 +7,8 @@ export type GameCard = {
   status: GameStatus;
   /** Path under /{version}/play/ when live */
   slug?: string;
+  /** Short tag shown on the list */
+  vibe?: string;
 };
 
 /** Play hub list — add new games here as you build them. */
@@ -14,39 +16,50 @@ export const GAMES: GameCard[] = [
   {
     id: "fill",
     title: "Fill the blank",
-    blurb: "Different verses each round. Easy, medium, or hard.",
+    blurb: "Lock in missing words. Easy, medium, or hard.",
     status: "live",
     slug: "fill",
+    vibe: "Memory",
   },
   {
     id: "unscramble",
-    title: "Verse unscramble",
-    blurb: "Put the words back in order — short memory race.",
-    status: "soon",
+    title: "Word river",
+    blurb: "Tap words in the right current — rebuild the verse before it drifts.",
+    status: "live",
+    slug: "unscramble",
+    vibe: "Order",
   },
   {
     id: "match",
-    title: "Reference match",
-    blurb: "Match the verse text to its book and chapter.",
-    status: "soon",
+    title: "Cite snap",
+    blurb: "A verse flashes. Snap the true reference — near-misses from the same book.",
+    status: "live",
+    slug: "match",
+    vibe: "Focus",
   },
   {
     id: "next",
-    title: "What comes next?",
-    blurb: "See the first half — pick the ending.",
-    status: "soon",
+    title: "Finish the line",
+    blurb: "Half the verse is given. Which ending keeps the Word true?",
+    status: "live",
+    slug: "next",
+    vibe: "Echo",
   },
   {
     id: "theme",
-    title: "Theme sort",
-    blurb: "Hope, peace, or love — which theme fits the verse?",
-    status: "soon",
+    title: "Heart compass",
+    blurb: "Read the verse. Point the compass: hope, peace, love, faith, or courage.",
+    status: "live",
+    slug: "theme",
+    vibe: "Discern",
   },
   {
     id: "speed",
-    title: "One-minute sprint",
-    blurb: "As many correct fills as you can before time’s up.",
-    status: "soon",
+    title: "Breath sprint",
+    blurb: "Sixty seconds. Fill blanks as verses shift — calm speed, not chaos.",
+    status: "live",
+    slug: "speed",
+    vibe: "Tempo",
   },
 ];
 

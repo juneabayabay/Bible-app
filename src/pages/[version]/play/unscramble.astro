@@ -1,0 +1,106 @@
+---
+import Layout from "../../../layouts/Layout.astro";
+import SearchBar from "../../../components/SearchBar.astro";
+import { resolveVersionId } from "../../../lib/bible";
+import { getVersion } from "../../../lib/versions";
+import { getVersionHomePaths } from "../../../lib/staticPaths";
+import { resolveGameVerses } from "../../../lib/resolveDailyVerse";
+import { buildUnscrambleRounds } from "../../../lib/gamePacks";
+
+export function getStaticPaths() {
+  return getVersionHomePaths();
+}
+
+const version = resolveVersionId(Astro.params.version);
+const meta = getVersion(version);
+const verses = resolveGameVerses(version, 50).map((v) => ({
+  text: v.text,
+  cite: `${v.book} ${v.chapter}:${v.verse}`,
+  url: v.url,
+}));
+const easy = buildUnscrambleRounds(verses, 40, false);
+const hard = buildUnscrambleRounds(verses, 50, true);
+const payload = { version, easy, hard };
+---
+
+<Layout title={`Word river · ${meta.shortLabel}`} version={version}>
+  <SearchBar slot="header" version={version} />
+  <script type="application/json" id="unscramble-payload" set:html={JSON.stringify(payload)} />
+
+  <div class="page-stack measure" x-data="wordRiverGame()" x-init="boot()">
+    <header class="border-b border-[var(--color-line)] pb-5">
+      <p class="text-sm text-[var(--color-ink-muted)]">
+        <a href={`/${version}/play`} class="hover:underline" data-astro-prefetch>← Games</a>
+      </p>
+      <p class="eyebrow mt-5">Order</p>
+      <h1 class="font-scripture mt-1.5 text-3xl font-semibold tracking-tight sm:text-4xl">
+        Word river
+      </h1>
+      <p class="mt-2 text-sm text-[var(--color-ink-muted)]">
+        Tap words downstream in the true order. Wrong current? Pull one back.
+      </p>
+    </header>
+
+    <div x-show="phase === 'choose'" class="space-y-3">
+      <button type="button" class="ui-card w-full p-4 text-left" @click="start(false)">
+        <p class="font-semibold text-[var(--color-ink)]">Calm current</p>
+        <p class="mt-1 text-sm text-[var(--color-ink-muted)]">Normal casing · steadier flow</p>
+      </button>
+      <button type="button" class="ui-card w-full p-4 text-left" @click="start(true)">
+        <p class="font-semibold text-[var(--color-ink)]">Deep water</p>
+        <p class="mt-1 text-sm text-[var(--color-ink-muted)]">Lowercase · longer lines</p>
+      </button>
+    </div>
+
+    <div x-show="phase === 'play'" x-cloak class="space-y-5">
+      <div class="flex justify-between text-sm text-[var(--color-ink-muted)]">
+        <span>Keep the current</span>
+        <span><span x-text="score"></span> clear</span>
+      </div>
+
+      <div class="min-h-[4.5rem] rounded-xl border border-dashed border-[var(--color-gold)]/50 bg-[var(--color-surface-elevated)] p-3">
+        <p class="text-[0.65rem] uppercase tracking-wide text-[var(--color-ink-subtle)]">Your line</p>
+        <div class="mt-2 flex min-h-[2.5rem] flex-wrap gap-1.5">
+          <template x-for="(w, i) in built" :key="i + w">
+            <button
+              type="button"
+              class="rounded-lg border border-[var(--color-line)] bg-[var(--color-surface)] px-2.5 py-1.5 text-sm text-[var(--color-ink)]"
+              @click="popBuilt(i)"
+              x-text="w"
+            ></button>
+          </template>
+          <span class="self-center text-sm text-[var(--color-ink-subtle)]" x-show="built.length === 0">Tap words below…</span>
+        </div>
+      </div>
+
+      <div class="flex flex-wrap gap-1.5">
+        <template x-for="(chip, i) in bank" :key="i + chip.word + chip.used">
+          <button
+            type="button"
+            class="rounded-full border px-3 py-1.5 text-sm transition"
+            :class="chip.used
+              ? 'border-transparent text-[var(--color-ink-subtle)] opacity-30'
+              : 'border-[var(--color-line)] text-[var(--color-ink)] hover:border-[var(--color-gold)]'"
+            :disabled="chip.used || locked"
+            @click="pushWord(i)"
+            x-text="chip.word"
+          ></button>
+        </template>
+      </div>
+
+      <p class="text-sm" x-show="feedback" x-cloak :class="ok ? 'text-[var(--color-success)]' : 'text-[var(--color-ink-muted)]'" x-text="feedback"></p>
+      <p class="text-xs text-[var(--color-ink-subtle)]" x-text="current.cite"></p>
+
+      <button type="button" class="btn-primary !min-h-10 !px-5 text-sm" x-show="locked" x-cloak @click="next()" x-text="roundIndex + 1 < rounds.length ? 'Next verse' : 'Finish'"></button>
+    </div>
+
+    <div x-show="phase === 'done'" x-cloak class="space-y-4">
+      <h2 class="font-scripture text-2xl font-semibold">River settled</h2>
+      <p class="text-sm text-[var(--color-ink-muted)]"><span x-text="score"></span> / <span x-text="rounds.length"></span> verses rebuilt. Grow step counted.</p>
+      <div class="flex flex-wrap gap-2">
+        <button type="button" class="btn-primary !min-h-10 !px-5 text-sm" @click="phase = 'choose'">Play again</button>
+        <a class="btn-secondary !min-h-10 !px-5 text-sm" href={`/${version}/play`}>All games</a>
+      </div>
+    </div>
+  </div>
+</Layout>

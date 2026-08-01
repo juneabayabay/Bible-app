@@ -73,6 +73,15 @@ import {
   type FillBlankRound,
   type GameVerse,
 } from "./lib/verseGame";
+import {
+  markAnyGameDone,
+  THEME_LABELS,
+  type MatchRound,
+  type NextRound,
+  type ThemeId,
+  type ThemeRound,
+  type UnscrambleRound,
+} from "./lib/gamePacks";
 
 type SearchDoc = {
   id: string;
@@ -683,6 +692,471 @@ export default (Alpine: Alpine) => {
 
     replay() {
       this.begin();
+    },
+  }));
+
+  function finishGameGrow() {
+    markAnyGameDone();
+    markVerseGameDoneToday();
+    markGrow();
+  }
+
+  Alpine.data("wordRiverGame", () => ({
+    phase: "choose" as "choose" | "play" | "done",
+    rounds: [] as UnscrambleRound[],
+    easy: [] as UnscrambleRound[],
+    hard: [] as UnscrambleRound[],
+    roundIndex: 0,
+    bank: [] as Array<{ word: string; used: boolean }>,
+    built: [] as string[],
+    locked: false,
+    ok: false,
+    feedback: "",
+    score: 0,
+
+    get current(): UnscrambleRound {
+      return this.rounds[this.roundIndex] ?? {
+        id: 0,
+        cite: "",
+        url: "",
+        fullText: "",
+        answer: [],
+        bank: [],
+        hard: false,
+      };
+    },
+
+    boot() {
+      try {
+        const el = document.getElementById("unscramble-payload");
+        if (el?.textContent) {
+          const data = JSON.parse(el.textContent) as {
+            easy: UnscrambleRound[];
+            hard: UnscrambleRound[];
+          };
+          this.easy = data.easy ?? [];
+          this.hard = data.hard ?? [];
+        }
+      } catch {
+        this.easy = [];
+        this.hard = [];
+      }
+    },
+
+    start(hardMode: boolean) {
+      this.rounds = hardMode ? this.hard : this.easy;
+      if (!this.rounds.length) return;
+      this.roundIndex = 0;
+      this.score = 0;
+      this.loadRound();
+      this.phase = "play";
+    },
+
+    loadRound() {
+      this.built = [];
+      this.locked = false;
+      this.ok = false;
+      this.feedback = "";
+      this.bank = this.current.bank.map((word) => ({ word, used: false }));
+    },
+
+    pushWord(i: number) {
+      if (this.locked || this.bank[i]?.used) return;
+      this.bank[i].used = true;
+      this.built.push(this.bank[i].word);
+      this.checkLine();
+    },
+
+    popBuilt(i: number) {
+      if (this.locked) return;
+      const word = this.built[i];
+      this.built.splice(i, 1);
+      const chip = this.bank.find((c) => c.word === word && c.used);
+      if (chip) chip.used = false;
+      this.feedback = "";
+    },
+
+    checkLine() {
+      if (this.built.length !== this.current.answer.length) return;
+      const ok =
+        this.built.join(" ").toLowerCase() ===
+        this.current.answer.join(" ").toLowerCase();
+      this.locked = true;
+      this.ok = ok;
+      if (ok) {
+        this.score += 1;
+        this.feedback = "Current true — verse rebuilt.";
+      } else {
+        this.feedback = `Drifted. True line: “${this.current.answer.join(" ")}”`;
+        this.built = [...this.current.answer];
+      }
+    },
+
+    next() {
+      if (this.roundIndex + 1 < this.rounds.length) {
+        this.roundIndex += 1;
+        this.loadRound();
+        return;
+      }
+      finishGameGrow();
+      this.phase = "done";
+    },
+  }));
+
+  Alpine.data("citeSnapGame", () => ({
+    phase: "play" as "play" | "done",
+    rounds: [] as MatchRound[],
+    roundIndex: 0,
+    locked: false,
+    ok: false,
+    feedback: "",
+    score: 0,
+    streak: 0,
+    picked: "",
+
+    get current(): MatchRound {
+      return this.rounds[this.roundIndex] ?? {
+        id: 0,
+        snippet: "",
+        cite: "",
+        url: "",
+        fullText: "",
+        choices: [],
+      };
+    },
+
+    boot() {
+      try {
+        const el = document.getElementById("match-payload");
+        if (el?.textContent) {
+          const data = JSON.parse(el.textContent) as { rounds: MatchRound[] };
+          this.rounds = data.rounds ?? [];
+        }
+      } catch {
+        this.rounds = [];
+      }
+    },
+
+    choiceClass(c: string) {
+      if (!this.locked) {
+        return "border-[var(--color-line)] text-[var(--color-ink)] hover:border-[var(--color-gold)]";
+      }
+      if (c === this.current.cite) {
+        return "border-[var(--color-gold)] bg-[var(--color-highlight)] text-[var(--color-ink)]";
+      }
+      if (c === this.picked && !this.ok) {
+        return "border-red-400/50 text-[var(--color-ink-muted)] opacity-70";
+      }
+      return "border-[var(--color-line)] text-[var(--color-ink-subtle)] opacity-50";
+    },
+
+    pick(c: string) {
+      if (this.locked) return;
+      this.picked = c;
+      this.locked = true;
+      this.ok = c === this.current.cite;
+      if (this.ok) {
+        this.score += 1;
+        this.streak += 1;
+        this.feedback = this.streak > 1 ? `Snap · streak ${this.streak}` : "Snap — true cite.";
+      } else {
+        this.streak = 0;
+        this.feedback = `Near miss. True cite: ${this.current.cite}`;
+      }
+    },
+
+    next() {
+      if (this.roundIndex + 1 < this.rounds.length) {
+        this.roundIndex += 1;
+        this.locked = false;
+        this.feedback = "";
+        this.picked = "";
+        return;
+      }
+      finishGameGrow();
+      this.phase = "done";
+    },
+
+    restart() {
+      this.roundIndex = 0;
+      this.score = 0;
+      this.streak = 0;
+      this.locked = false;
+      this.feedback = "";
+      this.picked = "";
+      this.phase = "play";
+    },
+  }));
+
+  Alpine.data("finishLineGame", () => ({
+    phase: "play" as "play" | "done",
+    rounds: [] as NextRound[],
+    roundIndex: 0,
+    locked: false,
+    ok: false,
+    feedback: "",
+    score: 0,
+    picked: "",
+
+    get current(): NextRound {
+      return this.rounds[this.roundIndex] ?? {
+        id: 0,
+        lead: "",
+        cite: "",
+        url: "",
+        fullText: "",
+        answer: "",
+        choices: [],
+      };
+    },
+
+    boot() {
+      try {
+        const el = document.getElementById("next-payload");
+        if (el?.textContent) {
+          const data = JSON.parse(el.textContent) as { rounds: NextRound[] };
+          this.rounds = data.rounds ?? [];
+        }
+      } catch {
+        this.rounds = [];
+      }
+    },
+
+    choiceClass(c: string) {
+      if (!this.locked) {
+        return "border-[var(--color-line)] text-[var(--color-ink)] hover:border-[var(--color-gold)]";
+      }
+      if (c === this.current.answer) {
+        return "border-[var(--color-gold)] bg-[var(--color-highlight)] text-[var(--color-ink)]";
+      }
+      if (c === this.picked && !this.ok) {
+        return "border-red-400/50 opacity-70";
+      }
+      return "border-[var(--color-line)] opacity-50";
+    },
+
+    pick(c: string) {
+      if (this.locked) return;
+      this.picked = c;
+      this.locked = true;
+      this.ok = c === this.current.answer;
+      if (this.ok) {
+        this.score += 1;
+        this.feedback = "Echo holds — ending true.";
+      } else {
+        this.feedback = "That ending drifts. See the gold line.";
+      }
+    },
+
+    next() {
+      if (this.roundIndex + 1 < this.rounds.length) {
+        this.roundIndex += 1;
+        this.locked = false;
+        this.feedback = "";
+        this.picked = "";
+        return;
+      }
+      finishGameGrow();
+      this.phase = "done";
+    },
+
+    restart() {
+      this.roundIndex = 0;
+      this.score = 0;
+      this.locked = false;
+      this.feedback = "";
+      this.picked = "";
+      this.phase = "play";
+    },
+  }));
+
+  Alpine.data("heartCompassGame", () => ({
+    phase: "play" as "play" | "done",
+    rounds: [] as ThemeRound[],
+    labels: THEME_LABELS as Record<ThemeId, string>,
+    roundIndex: 0,
+    locked: false,
+    ok: false,
+    feedback: "",
+    score: 0,
+    picked: "" as ThemeId | "",
+
+    get current(): ThemeRound {
+      return this.rounds[this.roundIndex] ?? {
+        id: 0,
+        cite: "",
+        url: "",
+        fullText: "",
+        theme: "hope",
+        choices: [],
+      };
+    },
+
+    boot() {
+      try {
+        const el = document.getElementById("theme-payload");
+        if (el?.textContent) {
+          const data = JSON.parse(el.textContent) as {
+            rounds: ThemeRound[];
+            labels: Record<ThemeId, string>;
+          };
+          this.rounds = data.rounds ?? [];
+          if (data.labels) this.labels = data.labels;
+        }
+      } catch {
+        this.rounds = [];
+      }
+      if (!this.rounds.length) this.phase = "done";
+    },
+
+    themeClass(t: ThemeId) {
+      if (!this.locked) {
+        return "border-[var(--color-line)] text-[var(--color-ink)] hover:border-[var(--color-gold)]";
+      }
+      if (t === this.current.theme) {
+        return "border-[var(--color-gold)] bg-[var(--color-highlight)] text-[var(--color-ink)]";
+      }
+      if (t === this.picked && !this.ok) {
+        return "border-red-400/50 opacity-70";
+      }
+      return "border-[var(--color-line)] opacity-45";
+    },
+
+    pick(t: ThemeId) {
+      if (this.locked) return;
+      this.picked = t;
+      this.locked = true;
+      this.ok = t === this.current.theme;
+      if (this.ok) {
+        this.score += 1;
+        this.feedback = `True north: ${this.labels[t]}.`;
+      } else {
+        this.feedback = `Closer to ${this.labels[this.current.theme]}.`;
+      }
+    },
+
+    next() {
+      if (this.roundIndex + 1 < this.rounds.length) {
+        this.roundIndex += 1;
+        this.locked = false;
+        this.feedback = "";
+        this.picked = "";
+        return;
+      }
+      finishGameGrow();
+      this.phase = "done";
+    },
+
+    restart() {
+      this.roundIndex = 0;
+      this.score = 0;
+      this.locked = false;
+      this.feedback = "";
+      this.picked = "";
+      this.phase = "play";
+    },
+  }));
+
+  Alpine.data("breathSprintGame", () => ({
+    phase: "ready" as "ready" | "play" | "done",
+    rounds: [] as FillBlankRound[],
+    roundIndex: 0,
+    totalTime: 60,
+    timeLeft: 60,
+    score: 0,
+    streak: 0,
+    bestStreak: 0,
+    filled: "",
+    _timer: null as ReturnType<typeof setInterval> | null,
+
+    get current(): FillBlankRound {
+      return this.rounds[this.roundIndex] ?? {
+        id: 0,
+        cite: "",
+        url: "",
+        fullText: "",
+        segments: [],
+        answers: [],
+        choices: [],
+      };
+    },
+
+    boot() {
+      try {
+        const el = document.getElementById("sprint-payload");
+        if (el?.textContent) {
+          const data = JSON.parse(el.textContent) as {
+            rounds: FillBlankRound[];
+            seconds: number;
+          };
+          this.rounds = data.rounds ?? [];
+          this.totalTime = data.seconds ?? 60;
+          this.timeLeft = this.totalTime;
+        }
+      } catch {
+        this.rounds = [];
+      }
+    },
+
+    clearTimer() {
+      if (this._timer) {
+        clearInterval(this._timer);
+        this._timer = null;
+      }
+    },
+
+    start() {
+      if (!this.rounds.length) return;
+      this.clearTimer();
+      this.roundIndex = 0;
+      this.score = 0;
+      this.streak = 0;
+      this.bestStreak = 0;
+      this.filled = "";
+      this.timeLeft = this.totalTime;
+      this.phase = "play";
+      this._timer = setInterval(() => {
+        this.timeLeft -= 1;
+        if (this.timeLeft <= 0) {
+          this.endRun();
+        }
+      }, 1000);
+    },
+
+    pick(c: string) {
+      if (this.phase !== "play") return;
+      const answer = this.current.answers[0] ?? "";
+      const ok = c.toLowerCase() === answer.toLowerCase();
+      this.filled = ok ? c : answer;
+      if (ok) {
+        this.score += 1;
+        this.streak += 1;
+        this.bestStreak = Math.max(this.bestStreak, this.streak);
+        if (this.streak > 0 && this.streak % 3 === 0) {
+          this.timeLeft = Math.min(this.totalTime, this.timeLeft + 2);
+        }
+      } else {
+        this.streak = 0;
+      }
+      window.setTimeout(() => this.advance(), ok ? 280 : 520);
+    },
+
+    advance() {
+      if (this.phase !== "play") return;
+      this.filled = "";
+      if (this.roundIndex + 1 < this.rounds.length) {
+        this.roundIndex += 1;
+      } else {
+        // Loop pool if still time
+        this.roundIndex = 0;
+      }
+    },
+
+    endRun() {
+      this.clearTimer();
+      this.timeLeft = 0;
+      finishGameGrow();
+      this.phase = "done";
     },
   }));
 

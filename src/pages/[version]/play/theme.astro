@@ -1,0 +1,82 @@
+---
+import Layout from "../../../layouts/Layout.astro";
+import SearchBar from "../../../components/SearchBar.astro";
+import { resolveVersionId } from "../../../lib/bible";
+import { getVersion } from "../../../lib/versions";
+import { getVersionHomePaths } from "../../../lib/staticPaths";
+import { resolveGameVerses } from "../../../lib/resolveDailyVerse";
+import { buildThemeRounds, THEME_LABELS } from "../../../lib/gamePacks";
+
+export function getStaticPaths() {
+  return getVersionHomePaths();
+}
+
+const version = resolveVersionId(Astro.params.version);
+const meta = getVersion(version);
+const verses = resolveGameVerses(version, 20).map((v) => ({
+  text: v.text,
+  cite: `${v.book} ${v.chapter}:${v.verse}`,
+  url: v.url,
+}));
+const rounds = buildThemeRounds(verses, 6);
+const payload = { version, rounds, labels: THEME_LABELS };
+---
+
+<Layout title={`Heart compass · ${meta.shortLabel}`} version={version}>
+  <SearchBar slot="header" version={version} />
+  <script type="application/json" id="theme-payload" set:html={JSON.stringify(payload)} />
+
+  <div class="page-stack measure" x-data="heartCompassGame()" x-init="boot()">
+    <header class="border-b border-[var(--color-line)] pb-5">
+      <p class="text-sm text-[var(--color-ink-muted)]">
+        <a href={`/${version}/play`} class="hover:underline" data-astro-prefetch>← Games</a>
+      </p>
+      <p class="eyebrow mt-5">Discern</p>
+      <h1 class="font-scripture mt-1.5 text-3xl font-semibold tracking-tight sm:text-4xl">
+        Heart compass
+      </h1>
+      <p class="mt-2 text-sm text-[var(--color-ink-muted)]">
+        Not trivia — listen for the heart of the verse, then point the compass.
+      </p>
+    </header>
+
+    <p class="text-sm text-[var(--color-ink-muted)]" x-show="rounds.length === 0" x-cloak>
+      Not enough themed verses in this version yet. Try another game.
+    </p>
+
+    <div x-show="phase === 'play' && rounds.length" class="space-y-5" x-cloak>
+      <p class="text-sm text-[var(--color-ink-muted)]">
+        <span x-text="roundIndex + 1"></span> / <span x-text="rounds.length"></span>
+        · <span x-text="score"></span> true north
+      </p>
+
+      <blockquote class="font-scripture rounded-xl border border-[var(--color-line)] p-5 text-lg leading-relaxed text-[var(--color-ink)]" x-text="current.fullText"></blockquote>
+      <p class="text-xs text-[var(--color-ink-subtle)]" x-text="current.cite"></p>
+
+      <div class="grid grid-cols-2 gap-2 sm:grid-cols-3">
+        <template x-for="t in current.choices" :key="t">
+          <button
+            type="button"
+            class="rounded-full border px-3 py-3 text-sm font-semibold transition"
+            :class="themeClass(t)"
+            :disabled="locked"
+            @click="pick(t)"
+            x-text="labels[t]"
+          ></button>
+        </template>
+      </div>
+
+      <p class="text-sm" x-show="feedback" x-cloak :class="ok ? 'text-[var(--color-success)]' : 'text-[var(--color-ink-muted)]'" x-text="feedback"></p>
+      <button type="button" class="btn-primary !min-h-10 !px-5 text-sm" x-show="locked" x-cloak @click="next()" x-text="roundIndex + 1 < rounds.length ? 'Next bearing' : 'Finish'"></button>
+    </div>
+
+    <div x-show="phase === 'done'" x-cloak class="space-y-4">
+      <h2 class="font-scripture text-2xl font-semibold">Compass set</h2>
+      <p class="text-sm text-[var(--color-ink-muted)]"><span x-text="score"></span> / <span x-text="rounds.length"></span> true. Grow counted.</p>
+      <div class="flex flex-wrap gap-2">
+        <button type="button" class="btn-primary !min-h-10 !px-5 text-sm" @click="restart()">Again</button>
+        <a class="btn-secondary !min-h-10 !px-5 text-sm" href={`/${version}/play`}>All games</a>
+      </div>
+    </div>
+  </div>
+</Layout>

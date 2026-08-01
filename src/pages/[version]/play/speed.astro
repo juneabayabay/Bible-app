@@ -1,0 +1,109 @@
+---
+import Layout from "../../../layouts/Layout.astro";
+import SearchBar from "../../../components/SearchBar.astro";
+import { resolveVersionId } from "../../../lib/bible";
+import { getVersion } from "../../../lib/versions";
+import { getVersionHomePaths } from "../../../lib/staticPaths";
+import { resolveGameVerses } from "../../../lib/resolveDailyVerse";
+import { buildFillBlankRounds } from "../../../lib/verseGame";
+
+export function getStaticPaths() {
+  return getVersionHomePaths();
+}
+
+const version = resolveVersionId(Astro.params.version);
+const meta = getVersion(version);
+const verses = resolveGameVerses(version, 12).map((v) => ({
+  text: v.text,
+  cite: `${v.book} ${v.chapter}:${v.verse}`,
+  url: v.url,
+}));
+const rounds = [
+  ...buildFillBlankRounds(verses, "easy"),
+  ...buildFillBlankRounds(verses, "medium"),
+].map((r, id) => ({ ...r, id }));
+const payload = { version, rounds, seconds: 60 };
+---
+
+<Layout title={`Breath sprint · ${meta.shortLabel}`} version={version}>
+  <SearchBar slot="header" version={version} />
+  <script type="application/json" id="sprint-payload" set:html={JSON.stringify(payload)} />
+
+  <div class="page-stack measure" x-data="breathSprintGame()" x-init="boot()">
+    <header class="border-b border-[var(--color-line)] pb-5">
+      <p class="text-sm text-[var(--color-ink-muted)]">
+        <a href={`/${version}/play`} class="hover:underline" data-astro-prefetch>← Games</a>
+      </p>
+      <p class="eyebrow mt-5">Tempo</p>
+      <h1 class="font-scripture mt-1.5 text-3xl font-semibold tracking-tight sm:text-4xl">
+        Breath sprint
+      </h1>
+      <p class="mt-2 text-sm text-[var(--color-ink-muted)]">
+        One minute. Steady fills across shifting verses — pressure without noise.
+      </p>
+    </header>
+
+    <div x-show="phase === 'ready'" class="space-y-4">
+      <p class="text-sm text-[var(--color-ink-muted)]">
+        Correct answers add time-bonus breaths. Misses don’t end the run — they just cost the streak.
+      </p>
+      <button type="button" class="btn-primary !min-h-11 !px-6 text-sm" @click="start()">
+        Begin 60s
+      </button>
+    </div>
+
+    <div x-show="phase === 'play'" x-cloak class="space-y-5">
+      <div class="flex items-end justify-between gap-3">
+        <div>
+          <p class="text-[0.65rem] uppercase tracking-wide text-[var(--color-ink-subtle)]">Breath left</p>
+          <p class="font-scripture text-3xl font-semibold text-[var(--color-ink)]" x-text="timeLeft + 's'"></p>
+        </div>
+        <div class="text-right text-sm text-[var(--color-ink-muted)]">
+          <p><span x-text="score"></span> locked</p>
+          <p x-show="streak > 1" x-cloak class="text-[var(--color-gold)]">Streak ×<span x-text="streak"></span></p>
+        </div>
+      </div>
+      <div class="h-1.5 overflow-hidden rounded-full bg-[var(--color-line)]">
+        <div class="h-full rounded-full bg-[var(--color-gold)] transition-all duration-1000 linear" :style="`width: ${(timeLeft / totalTime) * 100}%`"></div>
+      </div>
+
+      <div class="font-scripture text-lg leading-relaxed text-[var(--color-ink)]">
+        <template x-for="(seg, i) in current.segments" :key="i">
+          <span>
+            <span x-show="seg.type === 'text'" x-text="seg.text"></span>
+            <span
+              x-show="seg.type === 'blank'"
+              class="mx-0.5 inline-block min-w-[4rem] border-b-2 border-[var(--color-gold)] px-1 text-center font-semibold"
+              x-text="filled || '____'"
+            ></span>
+          </span>
+        </template>
+      </div>
+      <p class="text-xs text-[var(--color-ink-subtle)]" x-text="current.cite"></p>
+
+      <div class="flex flex-wrap gap-2">
+        <template x-for="c in current.choices" :key="c">
+          <button
+            type="button"
+            class="rounded-full border border-[var(--color-line)] px-3 py-2 text-sm text-[var(--color-ink)] transition hover:border-[var(--color-gold)]"
+            @click="pick(c)"
+            x-text="c"
+          ></button>
+        </template>
+      </div>
+    </div>
+
+    <div x-show="phase === 'done'" x-cloak class="space-y-4">
+      <h2 class="font-scripture text-2xl font-semibold">Breath complete</h2>
+      <p class="text-sm text-[var(--color-ink-muted)]">
+        <span x-text="score"></span> verses locked in sixty seconds
+        <span x-show="bestStreak > 1" x-cloak>· best streak <span x-text="bestStreak"></span></span>.
+        Grow counted.
+      </p>
+      <div class="flex flex-wrap gap-2">
+        <button type="button" class="btn-primary !min-h-10 !px-5 text-sm" @click="phase = 'ready'">Try again</button>
+        <a class="btn-secondary !min-h-10 !px-5 text-sm" href={`/${version}/play`}>All games</a>
+      </div>
+    </div>
+  </div>
+</Layout>
