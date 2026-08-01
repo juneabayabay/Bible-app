@@ -39,7 +39,7 @@ const { mode = "run" } = Astro.props;
         </p>
         <p class="mt-1 text-sm text-[var(--color-ink-muted)]">
           +<span x-text="reward.xpGained"></span> wisdom ·
-          <span x-text="Math.round(reward.accuracy * 100)"></span>% accurate
+          <span x-text="Math.round((reward.accuracy || 0) * 100)"></span>% accurate
         </p>
       </div>
 

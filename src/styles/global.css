@@ -124,7 +124,9 @@ html.dark body {
 .page-stack {
   display: flex;
   flex-direction: column;
-  gap: 2.5rem;
+  gap: 2rem;
+  min-width: 0;
+  width: 100%;
 }
 
 @media (min-width: 640px) {
@@ -141,12 +143,14 @@ html.dark body {
   width: 100%;
   max-width: 42rem;
   margin-inline: auto;
+  min-width: 0;
 }
 
 .measure-wide {
   width: 100%;
   max-width: 56rem;
   margin-inline: auto;
+  min-width: 0;
 }
 
 .section-rule {
@@ -513,6 +517,20 @@ button.ui-card:hover {
 
 .hero-btn-secondary:hover {
   background: rgb(255 255 255 / 0.94);
+}
+
+/* Prevent iOS zoom on focus; keep tap targets comfortable */
+@media (max-width: 639px) {
+  input:not([type="checkbox"]):not([type="radio"]),
+  textarea,
+  select {
+    font-size: 16px;
+  }
+}
+
+.break-words {
+  overflow-wrap: anywhere;
+  word-break: break-word;
 }
 
 /* Game rank / tenure frames */

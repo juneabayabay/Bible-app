@@ -7,6 +7,7 @@ import { getVersion } from "../../../lib/versions";
 import { getVersionHomePaths } from "../../../lib/staticPaths";
 import { resolveGameVerses } from "../../../lib/resolveDailyVerse";
 import { maxGameVerseCount } from "../../../lib/verseGame";
+import { jsonForScript } from "../../../lib/jsonPayload";
 
 export function getStaticPaths() {
   return getVersionHomePaths();
@@ -24,7 +25,7 @@ const payload = { version, verses };
 
 <Layout title={`Word river · ${meta.shortLabel}`} version={version}>
   <SearchBar slot="header" version={version} />
-  <script type="application/json" id="unscramble-payload" set:html={JSON.stringify(payload)} />
+  <script type="application/json" id="unscramble-payload" set:html={jsonForScript(payload)} />
 
   <div class="page-stack measure" x-data="wordRiverGame()" x-init="boot()">
     <header class="border-b border-[var(--color-line)] pb-5">
@@ -40,12 +41,16 @@ const payload = { version, verses };
       </p>
     </header>
 
-    <div x-show="phase === 'choose'" class="space-y-3">
-      <button type="button" class="ui-card w-full p-4 text-left" @click="start(false)">
+    <p class="text-sm text-[var(--color-ink-muted)]" x-show="!verses.length" x-cloak>
+      No verses available for this version. Try another game.
+    </p>
+
+    <div x-show="phase === 'choose' && verses.length" class="space-y-3" x-cloak>
+      <button type="button" class="ui-card w-full min-h-11 p-4 text-left" @click="start(false)">
         <p class="font-semibold text-[var(--color-ink)]">Calm current</p>
         <p class="mt-1 text-sm text-[var(--color-ink-muted)]">Normal casing · steadier flow</p>
       </button>
-      <button type="button" class="ui-card w-full p-4 text-left" @click="start(true)">
+      <button type="button" class="ui-card w-full min-h-11 p-4 text-left" @click="start(true)">
         <p class="font-semibold text-[var(--color-ink)]">Deep water</p>
         <p class="mt-1 text-sm text-[var(--color-ink-muted)]">Lowercase · longer lines</p>
       </button>
@@ -59,11 +64,11 @@ const payload = { version, verses };
 
       <div class="min-h-[4.5rem] rounded-xl border border-dashed border-[var(--color-gold)]/50 bg-[var(--color-surface-elevated)] p-3">
         <p class="text-[0.65rem] uppercase tracking-wide text-[var(--color-ink-subtle)]">Your line</p>
-        <div class="mt-2 flex min-h-[2.5rem] flex-wrap gap-1.5">
+        <div class="mt-2 flex min-h-[2.75rem] flex-wrap gap-1.5">
           <template x-for="(w, i) in built" :key="i + w">
             <button
               type="button"
-              class="rounded-lg border border-[var(--color-line)] bg-[var(--color-surface)] px-2.5 py-1.5 text-sm text-[var(--color-ink)]"
+              class="min-h-11 rounded-lg border border-[var(--color-line)] bg-[var(--color-surface)] px-3 py-2 text-sm text-[var(--color-ink)]"
               @click="popBuilt(i)"
               x-text="w"
             ></button>
@@ -72,11 +77,11 @@ const payload = { version, verses };
         </div>
       </div>
 
-      <div class="flex flex-wrap gap-1.5">
+      <div class="flex flex-wrap gap-2">
         <template x-for="(chip, i) in bank" :key="i + chip.word + chip.used">
           <button
             type="button"
-            class="rounded-full border px-3 py-1.5 text-sm transition"
+            class="min-h-11 rounded-full border px-3.5 py-2 text-sm transition"
             :class="chip.used
               ? 'border-transparent text-[var(--color-ink-subtle)] opacity-30'
               : 'border-[var(--color-line)] text-[var(--color-ink)] hover:border-[var(--color-gold)]'"
@@ -89,9 +94,9 @@ const payload = { version, verses };
 
       <p class="text-sm" x-show="feedback" x-cloak :class="ok ? 'text-[var(--color-success)]' : 'text-[var(--color-ink-muted)]'" x-text="feedback"></p>
       <p class="text-xs text-[var(--color-ink-subtle)]" x-text="current.cite"></p>
-      <p class="font-scripture text-sm leading-relaxed text-[var(--color-ink-muted)]" x-show="locked" x-cloak x-text="current.fullText"></p>
+      <p class="font-scripture text-sm leading-relaxed break-words text-[var(--color-ink-muted)]" x-show="locked" x-cloak x-text="current.fullText"></p>
 
-      <button type="button" class="btn-primary !min-h-10 !px-5 text-sm" x-show="locked" x-cloak @click="next()" x-text="roundIndex + 1 < rounds.length ? 'Next verse' : 'Finish'"></button>
+      <button type="button" class="btn-primary !min-h-11 !px-5 text-sm" x-show="locked" x-cloak @click="next()" x-text="roundIndex + 1 < rounds.length ? 'Next verse' : 'Finish'"></button>
     </div>
 
     <div x-show="phase === 'done'" x-cloak class="space-y-4">
@@ -99,8 +104,8 @@ const payload = { version, verses };
       <p class="text-sm text-[var(--color-ink-muted)]"><span x-text="score"></span> verses rebuilt. Grow step counted.</p>
       <GameRewardPanel />
       <div class="flex flex-wrap gap-2">
-        <button type="button" class="btn-primary !min-h-10 !px-5 text-sm" @click="phase = 'choose'">Play again</button>
-        <a class="btn-secondary !min-h-10 !px-5 text-sm" href={`/${version}/play`}>All games</a>
+        <button type="button" class="btn-primary !min-h-11 !px-5 text-sm" @click="phase = 'choose'">Play again</button>
+        <a class="btn-secondary !min-h-11 !px-5 text-sm" href={`/${version}/play`}>All games</a>
       </div>
     </div>
   </div>

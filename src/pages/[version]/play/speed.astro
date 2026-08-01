@@ -7,6 +7,7 @@ import { getVersion } from "../../../lib/versions";
 import { getVersionHomePaths } from "../../../lib/staticPaths";
 import { resolveGameVerses } from "../../../lib/resolveDailyVerse";
 import { maxGameVerseCount } from "../../../lib/verseGame";
+import { jsonForScript } from "../../../lib/jsonPayload";
 
 export function getStaticPaths() {
   return getVersionHomePaths();
@@ -24,7 +25,7 @@ const payload = { version, verses, seconds: 60 };
 
 <Layout title={`Breath sprint · ${meta.shortLabel}`} version={version}>
   <SearchBar slot="header" version={version} />
-  <script type="application/json" id="sprint-payload" set:html={JSON.stringify(payload)} />
+  <script type="application/json" id="sprint-payload" set:html={jsonForScript(payload)} />
 
   <div class="page-stack measure" x-data="breathSprintGame()" x-init="boot()">
     <header class="border-b border-[var(--color-line)] pb-5">
@@ -40,7 +41,11 @@ const payload = { version, verses, seconds: 60 };
       </p>
     </header>
 
-    <div x-show="phase === 'ready'" class="space-y-4">
+    <p class="text-sm text-[var(--color-ink-muted)]" x-show="!verses.length" x-cloak>
+      No verses available for this version. Try another game.
+    </p>
+
+    <div x-show="phase === 'ready' && verses.length" class="space-y-4" x-cloak>
       <p class="text-sm text-[var(--color-ink-muted)]">
         Correct answers add time-bonus breaths. Misses don’t end the run — they just cost the streak.
       </p>
@@ -64,7 +69,7 @@ const payload = { version, verses, seconds: 60 };
         <div class="h-full rounded-full bg-[var(--color-gold)] transition-all duration-1000 linear" :style="`width: ${(timeLeft / totalTime) * 100}%`"></div>
       </div>
 
-      <div class="font-scripture text-lg leading-relaxed text-[var(--color-ink)]">
+      <div class="font-scripture text-base leading-relaxed break-words text-[var(--color-ink)] sm:text-lg">
         <template x-for="(seg, i) in current.segments" :key="i">
           <span>
             <span x-show="seg.type === 'text'" x-text="seg.text"></span>
@@ -82,7 +87,7 @@ const payload = { version, verses, seconds: 60 };
         <template x-for="c in current.choices" :key="c">
           <button
             type="button"
-            class="rounded-full border border-[var(--color-line)] px-3 py-2 text-sm text-[var(--color-ink)] transition hover:border-[var(--color-gold)]"
+            class="min-h-11 rounded-full border border-[var(--color-line)] px-3.5 py-2 text-sm text-[var(--color-ink)] transition hover:border-[var(--color-gold)]"
             @click="pick(c)"
             x-text="c"
           ></button>
@@ -99,8 +104,8 @@ const payload = { version, verses, seconds: 60 };
       </p>
       <GameRewardPanel />
       <div class="flex flex-wrap gap-2">
-        <button type="button" class="btn-primary !min-h-10 !px-5 text-sm" @click="phase = 'ready'">Try again</button>
-        <a class="btn-secondary !min-h-10 !px-5 text-sm" href={`/${version}/play`}>All games</a>
+        <button type="button" class="btn-primary !min-h-11 !px-5 text-sm" @click="phase = 'ready'">Try again</button>
+        <a class="btn-secondary !min-h-11 !px-5 text-sm" href={`/${version}/play`}>All games</a>
       </div>
     </div>
   </div>

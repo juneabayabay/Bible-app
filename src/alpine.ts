@@ -704,6 +704,10 @@ export default (Alpine: Alpine) => {
     replay() {
       this.begin();
     },
+
+    destroy() {
+      this.clearStudyTimer();
+    },
   }));
 
   function finishGameGrow() {
@@ -789,7 +793,10 @@ export default (Alpine: Alpine) => {
         hardMode,
         { seed: sessionSeed(hardMode ? 3 : 2), avoidCites: getRecentCites() },
       );
-      if (!this.rounds.length) return;
+      if (!this.rounds.length) {
+        this.phase = "choose";
+        return;
+      }
       this.roundIndex = 0;
       this.score = 0;
       this.loadRound();
@@ -1058,7 +1065,7 @@ export default (Alpine: Alpine) => {
   }));
 
   Alpine.data("heartCompassGame", () => ({
-    phase: "play" as "play" | "done",
+    phase: "play" as "play" | "done" | "empty",
     verses: [] as GameVerse[],
     rounds: [] as ThemeRound[],
     labels: THEME_LABELS as Record<ThemeId, string>,
@@ -1103,7 +1110,7 @@ export default (Alpine: Alpine) => {
         this.verses = [];
       }
       this.rebuild();
-      if (!this.rounds.length) this.phase = "done";
+      this.phase = this.rounds.length ? "play" : "empty";
     },
 
     themeClass(t: ThemeId) {
@@ -1157,7 +1164,7 @@ export default (Alpine: Alpine) => {
       this.locked = false;
       this.feedback = "";
       this.picked = "";
-      this.phase = this.rounds.length ? "play" : "done";
+      this.phase = this.rounds.length ? "play" : "empty";
     },
   }));
 
@@ -1276,6 +1283,10 @@ export default (Alpine: Alpine) => {
         bestStreak: this.bestStreak,
       });
       this.phase = "done";
+    },
+
+    destroy() {
+      this.clearTimer();
     },
   }));
 
@@ -1946,6 +1957,7 @@ export default (Alpine: Alpine) => {
     wallStatus: "" as string,
     wallLoading: false,
     wallBusy: false,
+    wallReactBusy: false,
     wallError: "" as string,
     deviceId: "",
     items: [] as PrayerEntry[],
@@ -1971,11 +1983,22 @@ export default (Alpine: Alpine) => {
       const hash = window.location.hash.replace(/^#/, "").toLowerCase();
       if (hash === "journal") this.tab = "journal";
       else if (hash === "wall") this.tab = "wall";
+      // Optimistic: env present → show live until probe says otherwise (avoids flicker).
+      this.wallLive = isWallLive();
       this.deviceId = getDeviceId();
       this.items = loadPrayers();
       await this.verifyWall();
       await this.refreshWall();
       this.startWallPoll();
+    },
+
+    destroy() {
+      if (this._wallPoll) {
+        clearInterval(this._wallPoll);
+        this._wallPoll = null;
+      }
+      if (this._statusTimer) clearTimeout(this._statusTimer);
+      if (this._wallStatusTimer) clearTimeout(this._wallStatusTimer);
     },
 
     async verifyWall() {
@@ -2042,7 +2065,7 @@ export default (Alpine: Alpine) => {
         return {
           ...item,
           commentsOpen: old?.commentsOpen ?? false,
-          commentDraft: "",
+          commentDraft: old?.commentDraft ?? "",
           commentName: old?.commentName ?? "",
         };
       });
@@ -2072,6 +2095,7 @@ export default (Alpine: Alpine) => {
           await createWallRequest(this.wallName, this.wallBody),
         );
         this.wallBody = "";
+        this.wallBody = "";
         if (isWallLive()) {
           this.wallLive = true;
           this.wallLiveDetail = "";
@@ -2089,11 +2113,15 @@ export default (Alpine: Alpine) => {
     },
 
     async react(requestId: string, type: ReactionType) {
+      if (this.wallReactBusy) return;
+      this.wallReactBusy = true;
       try {
         this.wallItems = this.mergeWallUi(await toggleReaction(requestId, type));
       } catch (err) {
         this.wallError =
           err instanceof Error ? err.message : "Could not save reaction.";
+      } finally {
+        this.wallReactBusy = false;
       }
     },
 

@@ -7,6 +7,7 @@ import { getVersion } from "../../../lib/versions";
 import { getVersionHomePaths } from "../../../lib/staticPaths";
 import { resolveGameVerses } from "../../../lib/resolveDailyVerse";
 import { maxGameVerseCount } from "../../../lib/verseGame";
+import { jsonForScript } from "../../../lib/jsonPayload";
 
 export function getStaticPaths() {
   return getVersionHomePaths();
@@ -24,7 +25,7 @@ const payload = { version, verses };
 
 <Layout title={`Finish the line · ${meta.shortLabel}`} version={version}>
   <SearchBar slot="header" version={version} />
-  <script type="application/json" id="next-payload" set:html={JSON.stringify(payload)} />
+  <script type="application/json" id="next-payload" set:html={jsonForScript(payload)} />
 
   <div class="page-stack measure" x-data="finishLineGame()" x-init="boot()">
     <header class="border-b border-[var(--color-line)] pb-5">
@@ -40,32 +41,36 @@ const payload = { version, verses };
       </p>
     </header>
 
-    <div x-show="phase === 'play'" class="space-y-5">
+    <p class="text-sm text-[var(--color-ink-muted)]" x-show="!rounds.length" x-cloak>
+      No verses available for this version. Try another game.
+    </p>
+
+    <div x-show="phase === 'play' && rounds.length" class="space-y-5" x-cloak>
       <p class="text-sm text-[var(--color-ink-muted)]">
         Keep the echo · <span x-text="score"></span> true
       </p>
 
-      <p class="font-scripture text-2xl leading-relaxed text-[var(--color-ink)]" x-text="current.lead"></p>
+      <p class="font-scripture text-xl leading-relaxed break-words text-[var(--color-ink)] sm:text-2xl" x-text="current.lead"></p>
       <p class="text-xs text-[var(--color-ink-subtle)]" x-text="current.cite"></p>
 
       <div class="space-y-2">
         <template x-for="(c, i) in current.choices" :key="i">
           <button
             type="button"
-            class="w-full rounded-xl border px-4 py-3 text-left text-sm leading-relaxed transition"
+            class="w-full min-h-11 rounded-xl border px-4 py-3 text-left text-sm leading-relaxed transition"
             :class="choiceClass(c)"
             :disabled="locked"
             @click="pick(c)"
           >
             <span class="text-[var(--color-ink-subtle)]" x-text="String.fromCharCode(65 + i) + ' · '"></span>
-            <span x-text="c"></span>
+            <span class="break-words" x-text="c"></span>
           </button>
         </template>
       </div>
 
       <p class="text-sm" x-show="feedback" x-cloak :class="ok ? 'text-[var(--color-success)]' : 'text-[var(--color-ink-muted)]'" x-text="feedback"></p>
-      <p class="font-scripture text-sm leading-relaxed text-[var(--color-ink-muted)]" x-show="locked" x-cloak x-text="current.fullText"></p>
-      <button type="button" class="btn-primary !min-h-10 !px-5 text-sm" x-show="locked" x-cloak @click="next()" x-text="roundIndex + 1 < rounds.length ? 'Next line' : 'Finish'"></button>
+      <p class="font-scripture text-sm leading-relaxed break-words text-[var(--color-ink-muted)]" x-show="locked" x-cloak x-text="current.fullText"></p>
+      <button type="button" class="btn-primary !min-h-11 !px-5 text-sm" x-show="locked" x-cloak @click="next()" x-text="roundIndex + 1 < rounds.length ? 'Next line' : 'Finish'"></button>
     </div>
 
     <div x-show="phase === 'done'" x-cloak class="space-y-4">
@@ -73,8 +78,8 @@ const payload = { version, verses };
       <p class="text-sm text-[var(--color-ink-muted)]"><span x-text="score"></span> endings true. Grow counted.</p>
       <GameRewardPanel />
       <div class="flex flex-wrap gap-2">
-        <button type="button" class="btn-primary !min-h-10 !px-5 text-sm" @click="restart()">Again</button>
-        <a class="btn-secondary !min-h-10 !px-5 text-sm" href={`/${version}/play`}>All games</a>
+        <button type="button" class="btn-primary !min-h-11 !px-5 text-sm" @click="restart()">Again</button>
+        <a class="btn-secondary !min-h-11 !px-5 text-sm" href={`/${version}/play`}>All games</a>
       </div>
     </div>
   </div>

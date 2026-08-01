@@ -7,6 +7,7 @@ import { getVersion } from "../../../lib/versions";
 import { getVersionHomePaths } from "../../../lib/staticPaths";
 import { resolveGameVerses } from "../../../lib/resolveDailyVerse";
 import { DIFFICULTIES, maxGameVerseCount } from "../../../lib/verseGame";
+import { jsonForScript } from "../../../lib/jsonPayload";
 
 export function getStaticPaths() {
   return getVersionHomePaths();
@@ -30,7 +31,7 @@ const payload = {
 <Layout title={`Fill the blank · ${meta.shortLabel}`} version={version}>
   <SearchBar slot="header" version={version} />
 
-  <script type="application/json" id="verse-game-payload" set:html={JSON.stringify(payload)} />
+  <script type="application/json" id="verse-game-payload" set:html={jsonForScript(payload)} />
 
   <div class="page-stack measure" x-data="verseFillGame()" x-init="boot()">
     <header class="border-b border-[var(--color-line)] pb-5">

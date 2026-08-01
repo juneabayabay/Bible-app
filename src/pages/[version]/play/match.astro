@@ -7,6 +7,7 @@ import { getVersion } from "../../../lib/versions";
 import { getVersionHomePaths } from "../../../lib/staticPaths";
 import { resolveGameVerses } from "../../../lib/resolveDailyVerse";
 import { maxGameVerseCount } from "../../../lib/verseGame";
+import { jsonForScript } from "../../../lib/jsonPayload";
 
 export function getStaticPaths() {
   return getVersionHomePaths();
@@ -24,7 +25,7 @@ const payload = { version, verses };
 
 <Layout title={`Cite snap · ${meta.shortLabel}`} version={version}>
   <SearchBar slot="header" version={version} />
-  <script type="application/json" id="match-payload" set:html={JSON.stringify(payload)} />
+  <script type="application/json" id="match-payload" set:html={jsonForScript(payload)} />
 
   <div class="page-stack measure" x-data="citeSnapGame()" x-init="boot()">
     <header class="border-b border-[var(--color-line)] pb-5">
@@ -40,10 +41,14 @@ const payload = { version, verses };
       </p>
     </header>
 
-    <div x-show="phase === 'play'" class="space-y-5">
-      <div class="flex justify-between text-sm text-[var(--color-ink-muted)]">
+    <p class="text-sm text-[var(--color-ink-muted)]" x-show="!rounds.length" x-cloak>
+      No verses available for this version. Try another game.
+    </p>
+
+    <div x-show="phase === 'play' && rounds.length" class="space-y-5" x-cloak>
+      <div class="flex justify-between gap-3 text-sm text-[var(--color-ink-muted)]">
         <span>Snap the cite</span>
-        <span>
+        <span class="text-right">
           <span x-text="score"></span> true
           <span class="text-[var(--color-gold)]" x-show="streak > 1" x-cloak>
             · streak ×<span x-text="streak"></span>
@@ -51,15 +56,15 @@ const payload = { version, verses };
         </span>
       </div>
 
-      <blockquote class="rounded-2xl border border-[var(--color-line)] bg-[var(--color-highlight)]/30 p-5">
-        <p class="font-scripture text-xl leading-relaxed text-[var(--color-ink)]" x-text="current.snippet"></p>
+      <blockquote class="rounded-2xl border border-[var(--color-line)] bg-[var(--color-highlight)]/30 p-4 sm:p-5">
+        <p class="font-scripture text-lg leading-relaxed break-words text-[var(--color-ink)] sm:text-xl" x-text="current.snippet"></p>
       </blockquote>
 
       <div class="grid gap-2 sm:grid-cols-2">
         <template x-for="c in current.choices" :key="c">
           <button
             type="button"
-            class="rounded-xl border px-4 py-3 text-left text-sm font-medium transition"
+            class="min-h-11 rounded-xl border px-4 py-3 text-left text-sm font-medium transition"
             :class="choiceClass(c)"
             :disabled="locked"
             @click="pick(c)"
@@ -69,9 +74,9 @@ const payload = { version, verses };
       </div>
 
       <p class="text-sm" x-show="feedback" x-cloak :class="ok ? 'text-[var(--color-success)]' : 'text-[var(--color-ink-muted)]'" x-text="feedback"></p>
-      <p class="font-scripture text-sm text-[var(--color-ink-muted)]" x-show="locked" x-cloak x-text="current.fullText"></p>
+      <p class="font-scripture text-sm break-words text-[var(--color-ink-muted)]" x-show="locked" x-cloak x-text="current.fullText"></p>
 
-      <button type="button" class="btn-primary !min-h-10 !px-5 text-sm" x-show="locked" x-cloak @click="next()" x-text="roundIndex + 1 < rounds.length ? 'Next snap' : 'Finish'"></button>
+      <button type="button" class="btn-primary !min-h-11 !px-5 text-sm" x-show="locked" x-cloak @click="next()" x-text="roundIndex + 1 < rounds.length ? 'Next snap' : 'Finish'"></button>
     </div>
 
     <div x-show="phase === 'done'" x-cloak class="space-y-4">
@@ -79,8 +84,8 @@ const payload = { version, verses };
       <p class="text-sm text-[var(--color-ink-muted)]"><span x-text="score"></span> true cites. Grow counted.</p>
       <GameRewardPanel />
       <div class="flex flex-wrap gap-2">
-        <button type="button" class="btn-primary !min-h-10 !px-5 text-sm" @click="restart()">Again</button>
-        <a class="btn-secondary !min-h-10 !px-5 text-sm" href={`/${version}/play`}>All games</a>
+        <button type="button" class="btn-primary !min-h-11 !px-5 text-sm" @click="restart()">Again</button>
+        <a class="btn-secondary !min-h-11 !px-5 text-sm" href={`/${version}/play`}>All games</a>
       </div>
     </div>
   </div>
