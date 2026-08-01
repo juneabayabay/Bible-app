@@ -44,7 +44,10 @@ import {
   dismissInstallPrompt,
   getDeferredInstallPrompt,
   hideInstallForSession,
+  isLikelyInAppBrowser,
+  openInChromeAndroid,
   shouldShowInstallBanner,
+  waitForDeferredInstallPrompt,
   type InstallPlatform,
 } from "./lib/installApp";
 import {
@@ -220,18 +223,23 @@ export default (Alpine: Alpine) => {
     showGuide: false,
     platform: "other" as InstallPlatform,
     canPrompt: false,
+    inAppBrowser: false,
     installBusy: false,
     installHint: "",
+    showHelpLink: false,
 
     get blurb() {
       if (this.platform === "ios") {
         return "On iPhone, add Bible to your Home Screen in a few taps.";
       }
+      if (this.inAppBrowser) {
+        return "Open in Chrome first — then Install adds it to your home screen.";
+      }
       if (this.canPrompt) {
-        return "Tap Install — it opens like a real app from your home screen.";
+        return "Tap Install — Chrome installs it to your home screen right away.";
       }
       if (this.platform === "android") {
-        return "Tap Install when ready. Best in Chrome on Android.";
+        return "Tap Install for a one-tap install in Chrome.";
       }
       return "Install for a fuller, app-like experience on your device.";
     },
@@ -239,17 +247,20 @@ export default (Alpine: Alpine) => {
     get primaryLabel() {
       if (this.platform === "ios") return "Show steps";
       if (this.installBusy) return "Installing…";
+      if (this.inAppBrowser && !this.canPrompt) return "Open in Chrome";
       return "Install this app";
     },
 
     boot() {
       this.platform = detectInstallPlatform();
+      this.inAppBrowser = isLikelyInAppBrowser();
       this.canPrompt = Boolean(getDeferredInstallPrompt());
       this.open = shouldShowInstallBanner();
 
       const onAvailable = () => {
         this.canPrompt = true;
         this.installHint = "";
+        this.showHelpLink = false;
         if (shouldShowInstallBanner()) this.open = true;
       };
       const onInstalled = () => {
@@ -257,6 +268,7 @@ export default (Alpine: Alpine) => {
         this.showGuide = false;
         this.canPrompt = false;
         this.installBusy = false;
+        this.showHelpLink = false;
       };
 
       window.addEventListener("bible-install-available", onAvailable);
@@ -270,50 +282,73 @@ export default (Alpine: Alpine) => {
       }
     },
 
+    async runNativeInstall() {
+      const promptEvent = getDeferredInstallPrompt();
+      if (!promptEvent) return false;
+      this.installBusy = true;
+      this.installHint = "";
+      this.showHelpLink = false;
+      this.showGuide = false;
+      try {
+        await promptEvent.prompt();
+        const choice = await promptEvent.userChoice;
+        clearDeferredInstallPrompt();
+        this.canPrompt = false;
+        if (choice.outcome === "accepted") {
+          this.open = false;
+          dismissInstallPrompt();
+        } else {
+          this.installHint = "Install canceled. Tap Install again anytime.";
+        }
+        return true;
+      } catch {
+        this.installHint = "Couldn’t start install. Open this site in Chrome and tap Install.";
+        this.showHelpLink = true;
+        return true;
+      } finally {
+        this.installBusy = false;
+      }
+    },
+
     async primaryAction() {
       // iPhone: Apple blocks one-tap install — steps only.
       if (this.platform === "ios") {
         this.showGuide = true;
         this.installHint = "";
+        this.showHelpLink = false;
         return;
       }
 
-      // Android / desktop: native install dialog when the browser allows it.
-      let promptEvent = getDeferredInstallPrompt();
-      if (!promptEvent && this.platform === "android") {
-        this.installBusy = true;
-        this.installHint = "Preparing install…";
-        // Chrome sometimes fires beforeinstallprompt slightly late.
-        await new Promise((r) => window.setTimeout(r, 500));
-        promptEvent = getDeferredInstallPrompt();
-        this.installBusy = false;
-      }
+      // Prefer native install dialog — never open the steps sheet first.
+      if (await this.runNativeInstall()) return;
 
-      if (promptEvent) {
-        this.installBusy = true;
-        this.installHint = "";
-        try {
-          await promptEvent.prompt();
-          const choice = await promptEvent.userChoice;
-          clearDeferredInstallPrompt();
-          this.canPrompt = false;
-          if (choice.outcome === "accepted") {
-            this.open = false;
-            dismissInstallPrompt();
-          } else {
-            this.installHint = "Install canceled. Tap again anytime.";
-          }
-        } catch {
-          this.installHint = "Could not open install. Try Chrome, then tap again.";
-          this.showGuide = true;
-        } finally {
-          this.installBusy = false;
-        }
+      this.installBusy = true;
+      this.installHint = "Starting install…";
+      this.showGuide = false;
+      await waitForDeferredInstallPrompt(this.platform === "android" ? 3000 : 1500);
+      this.canPrompt = Boolean(getDeferredInstallPrompt());
+      this.installBusy = false;
+
+      if (await this.runNativeInstall()) return;
+
+      // Stuck in Facebook/etc. — jump to Chrome (no steps modal).
+      if (this.platform === "android" && (this.inAppBrowser || isLikelyInAppBrowser())) {
+        this.installHint = "Opening Chrome…";
+        openInChromeAndroid();
+        this.showHelpLink = true;
         return;
       }
 
-      // Prompt not available yet (wrong browser, already offered, etc.)
-      this.installHint = "Install isn’t ready here. Follow the short steps.";
+      // Still no prompt: soft hint only — steps stay hidden unless they ask.
+      this.installHint =
+        this.platform === "android"
+          ? "Open this page in Chrome, then tap Install again."
+          : "Install isn’t available in this browser yet. Try Chrome or Edge.";
+      this.showHelpLink = true;
+      this.showGuide = false;
+    },
+
+    openHelp() {
       this.showGuide = true;
     },
 
@@ -321,6 +356,7 @@ export default (Alpine: Alpine) => {
       this.open = false;
       this.showGuide = false;
       this.installHint = "";
+      this.showHelpLink = false;
       hideInstallForSession();
     },
 
@@ -329,6 +365,7 @@ export default (Alpine: Alpine) => {
       this.open = false;
       this.showGuide = false;
       this.installHint = "";
+      this.showHelpLink = false;
     },
   }));
 

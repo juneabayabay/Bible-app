@@ -3,7 +3,7 @@ const SESSION_HIDE_KEY = "bible-install-session-hide";
 
 export type InstallPlatform = "ios" | "android" | "desktop" | "other";
 
-type BeforeInstallPromptEvent = Event & {
+export type BeforeInstallPromptEvent = Event & {
   prompt: () => Promise<void>;
   userChoice: Promise<{ outcome: "accepted" | "dismissed" }>;
 };
@@ -31,6 +31,34 @@ export function detectInstallPlatform(): InstallPlatform {
   if (/Android/i.test(ua)) return "android";
   if (/Windows|Macintosh|Linux/i.test(ua) && !/Mobile/i.test(ua)) return "desktop";
   return "other";
+}
+
+/** Facebook, Instagram, etc. — no native PWA install prompt. */
+export function isLikelyInAppBrowser(): boolean {
+  if (typeof window === "undefined") return false;
+  const ua = window.navigator.userAgent || "";
+  if (/FBAN|FBAV|FB_IAB|Instagram|Line\/|Twitter|WhatsApp|Snapchat|TikTok|Bytedance|MicroMessenger/i.test(ua)) {
+    return true;
+  }
+  // Android WebView
+  if (/Android/i.test(ua) && (/; wv\)/.test(ua) || /\bwv\b/.test(ua))) return true;
+  return false;
+}
+
+/** Open the same page in Chrome on Android when stuck in an in-app browser. */
+export function openInChromeAndroid(url = typeof location !== "undefined" ? location.href : ""): boolean {
+  if (typeof window === "undefined" || !url) return false;
+  try {
+    const u = new URL(url);
+    const intent =
+      `intent://${u.host}${u.pathname}${u.search}${u.hash}` +
+      `#Intent;scheme=https;package=com.android.chrome;` +
+      `S.browser_fallback_url=${encodeURIComponent(url)};end`;
+    window.location.href = intent;
+    return true;
+  } catch {
+    return false;
+  }
 }
 
 export function isInstallDismissed(): boolean {
@@ -71,6 +99,27 @@ export function getDeferredInstallPrompt(): BeforeInstallPromptEvent | null {
 
 export function clearDeferredInstallPrompt() {
   deferredPrompt = null;
+}
+
+/** Wait until Chrome fires beforeinstallprompt (or timeout). */
+export function waitForDeferredInstallPrompt(timeoutMs = 2800): Promise<BeforeInstallPromptEvent | null> {
+  const existing = getDeferredInstallPrompt();
+  if (existing) return Promise.resolve(existing);
+  if (typeof window === "undefined") return Promise.resolve(null);
+
+  return new Promise((resolve) => {
+    let settled = false;
+    const finish = () => {
+      if (settled) return;
+      settled = true;
+      window.removeEventListener("bible-install-available", onAvail);
+      window.clearTimeout(timer);
+      resolve(getDeferredInstallPrompt());
+    };
+    const onAvail = () => finish();
+    const timer = window.setTimeout(finish, timeoutMs);
+    window.addEventListener("bible-install-available", onAvail);
+  });
 }
 
 /** Call once at app boot so Chrome’s install event is not lost. */

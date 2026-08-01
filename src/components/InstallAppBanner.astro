@@ -19,12 +19,14 @@
       aria-label="Install Bible app"
     >
       <div class="flex gap-3 p-4 sm:p-5">
-        <div
-          class="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-[var(--color-primary)] text-lg font-semibold text-[var(--color-on-primary)]"
+        <img
+          src="/icons/icon-192.png"
+          alt=""
+          width="44"
+          height="44"
+          class="h-11 w-11 shrink-0 rounded-xl object-cover"
           aria-hidden="true"
-        >
-          B
-        </div>
+        />
         <div class="min-w-0 flex-1">
           <p class="font-scripture text-lg font-semibold text-[var(--color-ink)]">
             Install Bible on your phone
@@ -52,6 +54,15 @@
               Not now
             </button>
           </div>
+          <button
+            type="button"
+            class="mt-2 min-h-10 text-left text-xs text-[var(--color-ink-subtle)] underline-offset-2 hover:underline"
+            x-show="showHelpLink"
+            x-cloak
+            @click="openHelp()"
+          >
+            Need help?
+          </button>
           <button
             type="button"
             class="mt-2 min-h-10 text-left text-xs text-[var(--color-ink-subtle)] underline-offset-2 hover:underline"
@@ -103,15 +114,15 @@
       <template x-if="platform !== 'ios'">
         <div>
           <p class="font-scripture text-xl font-semibold text-[var(--color-ink)]">
-            Install on Android
+            Install in Chrome
           </p>
           <p class="mt-2 text-sm text-[var(--color-ink-muted)]">
-            If the Install button didn’t open a dialog, do this in <strong>Chrome</strong>:
+            One-tap Install works in <strong>Chrome</strong>. If nothing opened:
           </p>
           <ol class="mt-3 list-decimal space-y-2 pl-5 text-sm leading-relaxed text-[var(--color-ink)]">
-            <li>Open this site in <strong>Chrome</strong>.</li>
-            <li>Tap <strong>⋮</strong> or the install icon in the address bar.</li>
-            <li>Choose <strong>Install app</strong> or <strong>Add to Home screen</strong>.</li>
+            <li>Open this site in <strong>Chrome</strong> (not Facebook or Messenger).</li>
+            <li>Tap <strong>Install this app</strong> again — the install dialog should open.</li>
+            <li>Or tap <strong>⋮</strong> → <strong>Install app</strong>.</li>
           </ol>
         </div>
       </template>
