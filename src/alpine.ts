@@ -38,6 +38,17 @@ import {
   isQuizDone,
 } from "./lib/progress";
 import { addPrayer, loadPrayers, removePrayer, type PrayerEntry } from "./lib/prayers";
+import { getDeviceId } from "./lib/deviceId";
+import {
+  addWallComment,
+  createWallRequest,
+  isWallLive,
+  listWallRequests,
+  removeOwnRequest,
+  toggleReaction,
+  type ReactionType,
+  type WallRequest,
+} from "./lib/prayerWall";
 import { getChallengeForDate } from "./lib/challenges";
 import { getPlan, nextPlanDay } from "./lib/plans";
 
@@ -890,15 +901,29 @@ export default (Alpine: Alpine) => {
     },
   }));
 
-  Alpine.data("prayerJournal", () => ({
+  Alpine.data("prayerHub", () => ({
+    tab: "wall" as "wall" | "journal",
+    wallLive: false,
+    wallItems: [] as WallRequest[],
+    wallName: "",
+    wallBody: "",
+    wallStatus: "" as string,
+    wallLoading: false,
+    wallBusy: false,
+    wallError: "" as string,
+    deviceId: "",
     items: [] as PrayerEntry[],
     forWhom: "",
     note: "",
     status: "" as string,
     _statusTimer: null as ReturnType<typeof setTimeout> | null,
+    _wallStatusTimer: null as ReturnType<typeof setTimeout> | null,
 
-    init() {
+    async init() {
+      this.wallLive = isWallLive();
+      this.deviceId = getDeviceId();
       this.items = loadPrayers();
+      await this.refreshWall();
     },
 
     flash(message: string) {
@@ -909,16 +934,12 @@ export default (Alpine: Alpine) => {
       }, 2200);
     },
 
-    add() {
-      if (!this.forWhom.trim()) return;
-      this.items = addPrayer(this.forWhom, this.note);
-      this.forWhom = "";
-      this.note = "";
-      this.flash("Saved");
-    },
-
-    remove(id: string) {
-      this.items = removePrayer(id);
+    flashWall(message: string) {
+      this.wallStatus = message;
+      if (this._wallStatusTimer) clearTimeout(this._wallStatusTimer);
+      this._wallStatusTimer = setTimeout(() => {
+        this.wallStatus = "";
+      }, 2200);
     },
 
     formatDate(iso: string) {
@@ -932,6 +953,92 @@ export default (Alpine: Alpine) => {
       }
     },
 
+    isMine(item: WallRequest) {
+      return item.deviceId === this.deviceId;
+    },
+
+    hasReaction(item: WallRequest, type: ReactionType) {
+      return item.myReactions.includes(type);
+    },
+
+    async refreshWall() {
+      this.wallLoading = true;
+      this.wallError = "";
+      try {
+        this.wallItems = await listWallRequests();
+      } catch (err) {
+        this.wallError =
+          err instanceof Error ? err.message : "Could not load the prayer wall.";
+        this.wallItems = [];
+      } finally {
+        this.wallLoading = false;
+      }
+    },
+
+    async submitRequest() {
+      if (!this.wallBody.trim() || this.wallBusy) return;
+      this.wallBusy = true;
+      this.wallError = "";
+      try {
+        this.wallItems = await createWallRequest(this.wallName, this.wallBody);
+        this.wallBody = "";
+        this.flashWall("Shared");
+      } catch (err) {
+        this.wallError =
+          err instanceof Error ? err.message : "Could not share your request.";
+      } finally {
+        this.wallBusy = false;
+      }
+    },
+
+    async react(requestId: string, type: ReactionType) {
+      try {
+        this.wallItems = await toggleReaction(requestId, type);
+      } catch (err) {
+        this.wallError =
+          err instanceof Error ? err.message : "Could not save reaction.";
+      }
+    },
+
+    async submitComment(item: WallRequest) {
+      const draft = (item.commentDraft ?? "").trim();
+      if (!draft) return;
+      try {
+        const openId = item.id;
+        this.wallItems = await addWallComment(
+          item.id,
+          item.commentName ?? "",
+          draft,
+        );
+        const next = this.wallItems.find((r) => r.id === openId);
+        if (next) next.commentsOpen = true;
+      } catch (err) {
+        this.wallError =
+          err instanceof Error ? err.message : "Could not post comment.";
+      }
+    },
+
+    async removeRequest(id: string) {
+      try {
+        this.wallItems = await removeOwnRequest(id);
+      } catch (err) {
+        this.wallError =
+          err instanceof Error ? err.message : "Could not remove request.";
+      }
+    },
+
+    addJournal() {
+      if (!this.forWhom.trim()) return;
+      this.items = addPrayer(this.forWhom, this.note);
+      this.forWhom = "";
+      this.note = "";
+      this.flash("Saved");
+    },
+
+    removeJournal(id: string) {
+      this.items = removePrayer(id);
+    },
+
     exportList() {
       if (!this.items.length) {
         this.flash("Nothing to export");
@@ -941,7 +1048,7 @@ export default (Alpine: Alpine) => {
       const lines = this.items.map((item) => {
         const when = this.formatDate(item.createdAt);
         const note = item.note.trim() ? `\n${item.note.trim()}` : "";
-        return `Prayed for ${item.forWhom}\n${when}${note}`;
+        return `${item.forWhom}\n${when}${note}`;
       });
       const blob = new Blob(
         [`Prayer journal · ${stamp}\n\n${lines.join("\n\n---\n\n")}\n`],

@@ -4,6 +4,7 @@ import SearchBar from "../../components/SearchBar.astro";
 import { resolveVersionId } from "../../lib/bible";
 import { getVersion } from "../../lib/versions";
 import { getVersionHomePaths } from "../../lib/staticPaths";
+import { isSupabaseConfigured } from "../../lib/supabase";
 
 export function getStaticPaths() {
   return getVersionHomePaths();
@@ -11,103 +12,328 @@ export function getStaticPaths() {
 
 const version = resolveVersionId(Astro.params.version);
 const meta = getVersion(version);
+const wallLive = isSupabaseConfigured();
 ---
 
 <Layout title={`Prayer · ${meta.shortLabel}`} version={version}>
   <SearchBar slot="header" version={version} />
 
-  <div class="page-stack measure" x-data="prayerJournal">
+  <div
+    class="page-stack measure"
+    x-data="prayerHub"
+    data-wall-live={wallLive ? "true" : "false"}
+  >
     <header class="border-b border-[var(--color-line)] pb-5">
       <p class="text-sm text-[var(--color-ink-muted)]">
         <a href={`/${version}/`} class="hover:underline" data-astro-prefetch>← Home</a>
       </p>
-      <p class="eyebrow mt-5">Journal</p>
+      <p class="eyebrow mt-5">Prayer</p>
       <h1 class="font-scripture mt-1.5 text-3xl font-semibold tracking-tight sm:text-4xl">
-        Prayer
+        Come as you are
       </h1>
       <p class="mt-2 text-sm leading-relaxed text-[var(--color-ink-muted)] sm:text-base">
-        Write who you prayed for. Kept on this device only.
+        Lift others on the wall — or speak privately with the Lord.
       </p>
     </header>
 
-    <form class="ui-card space-y-3 p-4 sm:p-5" @submit.prevent="add()">
-      <label class="block">
-        <span class="text-xs font-semibold uppercase tracking-[0.08em] text-[var(--color-ink-subtle)]">
-          Prayed for
-        </span>
-        <input
-          type="text"
-          class="mt-1.5 w-full rounded-xl border border-[var(--color-line)] bg-[var(--color-surface)] px-3 py-2.5 text-base text-[var(--color-ink)] outline-none ring-[var(--color-primary)] placeholder:text-[var(--color-ink-subtle)] focus:ring-2"
-          placeholder="A friend, family, church, nation…"
-          x-model="forWhom"
-          maxlength="120"
-          required
-        />
-      </label>
-      <label class="block">
-        <span class="text-xs font-semibold uppercase tracking-[0.08em] text-[var(--color-ink-subtle)]">
-          Note <span class="font-normal normal-case tracking-normal">(optional)</span>
-        </span>
-        <textarea
-          class="mt-1.5 w-full rounded-xl border border-[var(--color-line)] bg-[var(--color-surface)] px-3 py-2.5 text-base text-[var(--color-ink)] outline-none ring-[var(--color-primary)] placeholder:text-[var(--color-ink-subtle)] focus:ring-2 sm:text-sm"
-          rows="3"
-          placeholder="What you asked, or a verse that came to mind…"
-          x-model="note"
-          maxlength="500"
-        ></textarea>
-      </label>
-      <div class="flex flex-wrap items-center gap-2">
-        <button type="submit" class="btn-primary !min-h-11 !px-5 text-sm">
-          Save prayer
-        </button>
-        <p class="text-sm text-[var(--color-gold)]" x-show="status" x-text="status" x-cloak></p>
-      </div>
-    </form>
+    <div
+      class="flex gap-1 rounded-xl border border-[var(--color-line)] bg-[var(--color-surface-elevated)] p-1"
+      role="tablist"
+      aria-label="Prayer spaces"
+    >
+      <button
+        type="button"
+        role="tab"
+        class="flex-1 rounded-lg px-3 py-2.5 text-sm font-medium transition"
+        :class="tab === 'wall'
+          ? 'bg-[var(--color-primary)] text-[var(--color-on-primary)]'
+          : 'text-[var(--color-ink-muted)] hover:text-[var(--color-ink)]'"
+        :aria-selected="(tab === 'wall').toString()"
+        @click="tab = 'wall'"
+      >
+        Prayer wall
+      </button>
+      <button
+        type="button"
+        role="tab"
+        class="flex-1 rounded-lg px-3 py-2.5 text-sm font-medium transition"
+        :class="tab === 'journal'
+          ? 'bg-[var(--color-primary)] text-[var(--color-on-primary)]'
+          : 'text-[var(--color-ink-muted)] hover:text-[var(--color-ink)]'"
+        :aria-selected="(tab === 'journal').toString()"
+        @click="tab = 'journal'"
+      >
+        With the Lord
+      </button>
+    </div>
 
-    <div>
-      <div class="mb-3 flex flex-wrap items-center justify-between gap-2">
-        <h2 class="font-scripture text-xl font-semibold">Your list</h2>
-        <button
-          type="button"
-          class="btn-secondary !min-h-10 !px-3 text-sm"
-          x-show="items.length > 0"
-          x-cloak
-          @click="exportList()"
-        >
-          Export
-        </button>
-      </div>
-
-      <p class="text-sm text-[var(--color-ink-subtle)]" x-show="items.length === 0" x-cloak>
-        Nothing yet. Add a name above when you pray.
+    <!-- Public wall -->
+    <div x-show="tab === 'wall'" x-cloak class="space-y-5">
+      <p
+        class="rounded-xl border border-[var(--color-line)] bg-[var(--color-highlight)]/60 px-4 py-3 text-sm leading-relaxed text-[var(--color-ink-muted)]"
+        x-show="!wallLive"
+      >
+        Demo mode — posts stay on this device until you connect Supabase
+        (<code class="text-xs">PUBLIC_SUPABASE_URL</code> +
+        <code class="text-xs">PUBLIC_SUPABASE_ANON_KEY</code>). See
+        <code class="text-xs">supabase/prayer-wall.sql</code>.
+      </p>
+      <p
+        class="rounded-xl border border-[var(--color-line)] bg-[var(--color-surface-elevated)] px-4 py-3 text-sm leading-relaxed text-[var(--color-ink-muted)]"
+        x-show="wallLive"
+        x-cloak
+      >
+        Shared requests — be kind. Don’t share phone numbers, addresses, or private details.
       </p>
 
-      <ul class="space-y-3" x-show="items.length > 0" x-cloak>
-        <template x-for="item in items" :key="item.id">
+      <form class="ui-card space-y-3 p-4 sm:p-5" @submit.prevent="submitRequest()">
+        <p class="text-xs font-semibold uppercase tracking-[0.08em] text-[var(--color-ink-subtle)]">
+          New request
+        </p>
+        <label class="block">
+          <span class="sr-only">Display name</span>
+          <input
+            type="text"
+            class="w-full rounded-xl border border-[var(--color-line)] bg-[var(--color-surface)] px-3 py-2.5 text-base text-[var(--color-ink)] outline-none ring-[var(--color-primary)] placeholder:text-[var(--color-ink-subtle)] focus:ring-2"
+            placeholder="Your name or leave blank for Anonymous"
+            x-model="wallName"
+            maxlength="40"
+          />
+        </label>
+        <label class="block">
+          <span class="sr-only">Prayer request</span>
+          <textarea
+            class="w-full rounded-xl border border-[var(--color-line)] bg-[var(--color-surface)] px-3 py-2.5 text-base text-[var(--color-ink)] outline-none ring-[var(--color-primary)] placeholder:text-[var(--color-ink-subtle)] focus:ring-2 sm:text-sm"
+            rows="3"
+            placeholder="What can we pray for? Keep it brief and kind…"
+            x-model="wallBody"
+            maxlength="500"
+            required
+          ></textarea>
+        </label>
+        <div class="flex flex-wrap items-center gap-2">
+          <button
+            type="submit"
+            class="btn-primary !min-h-11 !px-5 text-sm"
+            :disabled="wallBusy"
+          >
+            Share request
+          </button>
+          <p class="text-sm text-[var(--color-gold)]" x-show="wallStatus" x-text="wallStatus" x-cloak></p>
+        </div>
+      </form>
+
+      <p class="text-sm text-[var(--color-ink-subtle)]" x-show="wallLoading" x-cloak>
+        Loading requests…
+      </p>
+      <p class="text-sm text-red-600 dark:text-red-400" x-show="wallError" x-text="wallError" x-cloak></p>
+
+      <p
+        class="text-sm text-[var(--color-ink-subtle)]"
+        x-show="!wallLoading && !wallError && wallItems.length === 0"
+        x-cloak
+      >
+        No requests yet. Be the first to share one.
+      </p>
+
+      <ul class="space-y-4" x-show="wallItems.length > 0" x-cloak>
+        <template x-for="item in wallItems" :key="item.id">
           <li class="ui-card p-4 sm:p-5">
             <div class="flex items-start justify-between gap-3">
               <div class="min-w-0 flex-1">
-                <p class="font-medium text-[var(--color-ink)]">
-                  Prayed for <span x-text="item.forWhom"></span>
-                </p>
+                <p class="text-sm font-semibold text-[var(--color-ink)]" x-text="item.displayName"></p>
                 <p
                   class="mt-2 whitespace-pre-wrap text-sm leading-relaxed text-[var(--color-ink-muted)]"
-                  x-show="item.note"
-                  x-text="item.note"
+                  x-text="item.body"
                 ></p>
-                <p class="mt-2 text-xs text-[var(--color-ink-subtle)]" x-text="formatDate(item.createdAt)"></p>
+                <p
+                  class="mt-2 text-xs text-[var(--color-ink-subtle)]"
+                  x-text="formatDate(item.createdAt)"
+                ></p>
               </div>
               <button
                 type="button"
                 class="min-h-10 shrink-0 rounded-lg px-2 text-xs text-[var(--color-ink-subtle)] transition hover:bg-[var(--color-line)]/50 hover:text-red-600 dark:hover:text-red-400"
-                @click="remove(item.id)"
+                x-show="isMine(item)"
+                x-cloak
+                @click="removeRequest(item.id)"
               >
                 Remove
               </button>
             </div>
+
+            <div class="mt-4 flex flex-wrap gap-2">
+              <button
+                type="button"
+                class="inline-flex min-h-9 items-center gap-1.5 rounded-lg border px-2.5 text-xs font-medium transition"
+                :class="hasReaction(item, 'prayed')
+                  ? 'border-[var(--color-gold)] bg-[var(--color-highlight)] text-[var(--color-ink)]'
+                  : 'border-[var(--color-line)] text-[var(--color-ink-muted)] hover:border-[var(--color-gold)]'"
+                @click="react(item.id, 'prayed')"
+              >
+                <span aria-hidden="true">🙏</span>
+                Prayed
+                <span x-text="item.reactionCounts.prayed || ''"></span>
+              </button>
+              <button
+                type="button"
+                class="inline-flex min-h-9 items-center gap-1.5 rounded-lg border px-2.5 text-xs font-medium transition"
+                :class="hasReaction(item, 'heart')
+                  ? 'border-[var(--color-gold)] bg-[var(--color-highlight)] text-[var(--color-ink)]'
+                  : 'border-[var(--color-line)] text-[var(--color-ink-muted)] hover:border-[var(--color-gold)]'"
+                @click="react(item.id, 'heart')"
+              >
+                <span aria-hidden="true">♥</span>
+                With you
+                <span x-text="item.reactionCounts.heart || ''"></span>
+              </button>
+              <button
+                type="button"
+                class="inline-flex min-h-9 items-center gap-1.5 rounded-lg border px-2.5 text-xs font-medium transition"
+                :class="hasReaction(item, 'amen')
+                  ? 'border-[var(--color-gold)] bg-[var(--color-highlight)] text-[var(--color-ink)]'
+                  : 'border-[var(--color-line)] text-[var(--color-ink-muted)] hover:border-[var(--color-gold)]'"
+                @click="react(item.id, 'amen')"
+              >
+                Amen
+                <span x-text="item.reactionCounts.amen || ''"></span>
+              </button>
+              <button
+                type="button"
+                class="inline-flex min-h-9 items-center gap-1.5 rounded-lg border border-[var(--color-line)] px-2.5 text-xs font-medium text-[var(--color-ink-muted)] transition hover:border-[var(--color-gold)]"
+                @click="item.commentsOpen = !item.commentsOpen"
+              >
+                Comments
+                <span x-text="item.comments.length || ''"></span>
+              </button>
+            </div>
+
+            <div class="mt-4 space-y-3 border-t border-[var(--color-line)] pt-4" x-show="item.commentsOpen" x-cloak>
+              <ul class="space-y-2" x-show="item.comments.length > 0">
+                <template x-for="c in item.comments" :key="c.id">
+                  <li class="rounded-lg bg-[var(--color-surface)]/80 px-3 py-2">
+                    <p class="text-xs font-semibold text-[var(--color-ink)]" x-text="c.displayName"></p>
+                    <p class="mt-0.5 text-sm text-[var(--color-ink-muted)]" x-text="c.body"></p>
+                  </li>
+                </template>
+              </ul>
+              <form class="space-y-2" @submit.prevent="submitComment(item)">
+                <input
+                  type="text"
+                  class="w-full rounded-lg border border-[var(--color-line)] bg-[var(--color-surface)] px-3 py-2 text-sm text-[var(--color-ink)] outline-none ring-[var(--color-primary)] placeholder:text-[var(--color-ink-subtle)] focus:ring-2"
+                  placeholder="Name (optional)"
+                  x-model="item.commentName"
+                  maxlength="40"
+                />
+                <div class="flex gap-2">
+                  <input
+                    type="text"
+                    class="min-w-0 flex-1 rounded-lg border border-[var(--color-line)] bg-[var(--color-surface)] px-3 py-2 text-sm text-[var(--color-ink)] outline-none ring-[var(--color-primary)] placeholder:text-[var(--color-ink-subtle)] focus:ring-2"
+                    placeholder="Short encouragement…"
+                    x-model="item.commentDraft"
+                    maxlength="280"
+                    required
+                  />
+                  <button type="submit" class="btn-secondary !min-h-10 shrink-0 !px-3 text-sm">
+                    Post
+                  </button>
+                </div>
+              </form>
+            </div>
           </li>
         </template>
       </ul>
+    </div>
+
+    <!-- Private journal -->
+    <div x-show="tab === 'journal'" x-cloak class="space-y-5">
+      <p class="text-sm leading-relaxed text-[var(--color-ink-muted)]">
+        Private communion with the Lord. Kept on this device only — no one else can read these.
+      </p>
+
+      <form class="ui-card space-y-3 p-4 sm:p-5" @submit.prevent="addJournal()">
+        <label class="block">
+          <span class="text-xs font-semibold uppercase tracking-[0.08em] text-[var(--color-ink-subtle)]">
+            Bringing to God
+          </span>
+          <input
+            type="text"
+            class="mt-1.5 w-full rounded-xl border border-[var(--color-line)] bg-[var(--color-surface)] px-3 py-2.5 text-base text-[var(--color-ink)] outline-none ring-[var(--color-primary)] placeholder:text-[var(--color-ink-subtle)] focus:ring-2"
+            placeholder="A person, a burden, gratitude…"
+            x-model="forWhom"
+            maxlength="120"
+            required
+          />
+        </label>
+        <label class="block">
+          <span class="text-xs font-semibold uppercase tracking-[0.08em] text-[var(--color-ink-subtle)]">
+            Prayer
+            <span class="font-normal normal-case tracking-normal">(optional)</span>
+          </span>
+          <textarea
+            class="mt-1.5 w-full rounded-xl border border-[var(--color-line)] bg-[var(--color-surface)] px-3 py-2.5 text-base text-[var(--color-ink)] outline-none ring-[var(--color-primary)] placeholder:text-[var(--color-ink-subtle)] focus:ring-2 sm:text-sm"
+            rows="4"
+            placeholder="Speak honestly with Him…"
+            x-model="note"
+            maxlength="500"
+          ></textarea>
+        </label>
+        <div class="flex flex-wrap items-center gap-2">
+          <button type="submit" class="btn-primary !min-h-11 !px-5 text-sm">
+            Save prayer
+          </button>
+          <p class="text-sm text-[var(--color-gold)]" x-show="status" x-text="status" x-cloak></p>
+        </div>
+      </form>
+
+      <div>
+        <div class="mb-3 flex flex-wrap items-center justify-between gap-2">
+          <h2 class="font-scripture text-xl font-semibold">Your journal</h2>
+          <button
+            type="button"
+            class="btn-secondary !min-h-10 !px-3 text-sm"
+            x-show="items.length > 0"
+            x-cloak
+            @click="exportList()"
+          >
+            Export
+          </button>
+        </div>
+
+        <p class="text-sm text-[var(--color-ink-subtle)]" x-show="items.length === 0" x-cloak>
+          Nothing yet. Write when your heart is ready.
+        </p>
+
+        <ul class="space-y-3" x-show="items.length > 0" x-cloak>
+          <template x-for="item in items" :key="item.id">
+            <li class="ui-card p-4 sm:p-5">
+              <div class="flex items-start justify-between gap-3">
+                <div class="min-w-0 flex-1">
+                  <p class="font-medium text-[var(--color-ink)]">
+                    <span x-text="item.forWhom"></span>
+                  </p>
+                  <p
+                    class="mt-2 whitespace-pre-wrap text-sm leading-relaxed text-[var(--color-ink-muted)]"
+                    x-show="item.note"
+                    x-text="item.note"
+                  ></p>
+                  <p
+                    class="mt-2 text-xs text-[var(--color-ink-subtle)]"
+                    x-text="formatDate(item.createdAt)"
+                  ></p>
+                </div>
+                <button
+                  type="button"
+                  class="min-h-10 shrink-0 rounded-lg px-2 text-xs text-[var(--color-ink-subtle)] transition hover:bg-[var(--color-line)]/50 hover:text-red-600 dark:hover:text-red-400"
+                  @click="removeJournal(item.id)"
+                >
+                  Remove
+                </button>
+              </div>
+            </li>
+          </template>
+        </ul>
+      </div>
     </div>
   </div>
 </Layout>
