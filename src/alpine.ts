@@ -109,6 +109,8 @@ import { getDeviceId } from "./lib/deviceId";
 import { isFeedbackLive, submitFeedback } from "./lib/feedback";
 import {
   chromeSpeechLikelyBroken,
+  hasBrowserSpeech,
+  hasMicrophone,
   startLocalRecording,
   warmLocalVoice,
   type LocalVoiceSession,
@@ -2468,10 +2470,11 @@ export default (Alpine: Alpine) => {
           /* ignore */
         }
       }
-      const hasSpeech = this.getSpeechRecognition() != null;
-      const hasMic = typeof navigator !== "undefined" && !!navigator.mediaDevices?.getUserMedia;
+      const hasSpeech = hasBrowserSpeech();
+      const hasMic = hasMicrophone();
       this.voiceSupported = hasSpeech || hasMic;
-      // Prefetch Whisper in preview shells so the first verse jump is faster.
+      // Prefetch Whisper when browser speech won’t work (preview shells).
+      // Installed PWAs on Chrome use fast SpeechRecognition and skip this.
       if (chromeSpeechLikelyBroken() && hasMic) warmLocalVoice();
     },
 
@@ -2670,7 +2673,7 @@ export default (Alpine: Alpine) => {
           () => {
             if (seq !== this._voiceSeq) return;
             this.listening = true;
-            this.voiceHint = "Listening… say the verse clearly (auto-opens).";
+            this.voiceHint = "Listening… say the verse (opens automatically).";
           },
           4000,
           () => {
@@ -2690,7 +2693,7 @@ export default (Alpine: Alpine) => {
         const msg = err instanceof Error ? err.message : "";
         if (/Permission|NotAllowed|denied/i.test(msg)) {
           this.voiceHint = "Allow microphone access, then tap the mic again.";
-        } else if (/session|MatMul|scale|onnx/i.test(msg)) {
+        } else if (/session|MatMul|scale|onnx|multilingual|English-only/i.test(msg)) {
           this.voiceHint =
             "Voice engine failed to load. Open this page in Chrome for instant mic search.";
         } else {
@@ -2715,9 +2718,9 @@ export default (Alpine: Alpine) => {
         await this.applyVoiceTranscript([text]);
       } catch (err) {
         const msg = err instanceof Error ? err.message : "";
-        if (/session|MatMul|scale|onnx/i.test(msg)) {
+        if (/session|MatMul|scale|onnx|multilingual|English-only/i.test(msg)) {
           this.voiceHint =
-            "Voice engine failed. For instant results, open http://localhost:4321 in Chrome.";
+            "Voice engine failed. Open the app in Chrome (or reinstall the PWA) for mic search.";
         } else {
           this.voiceHint = msg || "Could not understand. Try again.";
         }

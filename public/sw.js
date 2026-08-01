@@ -1,5 +1,5 @@
 /* Bible app — offline shell cache + daily reminder scheduling */
-const CACHE = "bible-shell-v2";
+const CACHE = "bible-shell-v3";
 const PRECACHE = ["/", "/manifest.webmanifest", "/icons/icon.svg", "/favicon.svg"];
 const REMINDER_TAG = "bible-daily-reminder";
 
@@ -26,8 +26,11 @@ self.addEventListener("activate", (event) => {
 function isCacheableGet(request) {
   if (request.method !== "GET") return false;
   const url = new URL(request.url);
+  // Same-origin only. Let Hugging Face / CDN / speech models bypass the SW.
   if (url.origin !== self.location.origin) return false;
   if (url.pathname.startsWith("/search/")) return false;
+  // Transformers / ONNX chunks must always hit the network or browser cache.
+  if (url.pathname.includes("transformers") || url.pathname.includes("onnx")) return false;
   return true;
 }
 

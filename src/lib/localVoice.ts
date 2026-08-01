@@ -1,28 +1,44 @@
 /**
- * Offline-capable voice transcription for environments where Chrome’s
- * SpeechRecognition returns “network” (Cursor/VS Code Simple Browser, Electron).
- * Uses Whisper tiny in the browser (first use downloads a small model).
+ * Voice transcription for verse search.
+ *
+ * Priority:
+ * 1) Browser SpeechRecognition (Chrome / Edge / Safari / installed PWA) — fast
+ * 2) On-device Whisper tiny.en when Google speech is unavailable
+ *    (Cursor preview, some Chromium shells, or SpeechRecognition network errors)
+ *
+ * Whisper model is cached in the browser after first download, so installed PWAs
+ * can keep using the mic offline once warmed.
  */
 
 type AsrPipeline = (
   input: string | Float32Array,
-  options?: { language?: string; task?: string },
+  options?: Record<string, unknown>,
 ) => Promise<{ text?: string } | { text?: string }[]>;
+
+const MODEL_ID = "Xenova/whisper-tiny.en";
 
 let asrPromise: Promise<AsrPipeline> | null = null;
 
+/** True when Chrome’s cloud speech API is known-broken (not real Chrome/Edge/Safari). */
 export function chromeSpeechLikelyBroken(): boolean {
   if (typeof navigator === "undefined") return true;
   const ua = navigator.userAgent;
-  // Cursor / VS Code Simple Browser / Electron lack Google’s speech service.
+  // Cursor / VS Code Simple Browser / Electron — no Google speech service.
   if (/Electron|VSCode|Cursor/i.test(ua)) return true;
-  // Embedded preview panes often run inside an iframe.
-  try {
-    if (window.self !== window.top) return true;
-  } catch {
-    return true;
-  }
   return false;
+}
+
+export function hasBrowserSpeech(): boolean {
+  if (typeof window === "undefined") return false;
+  const w = window as unknown as {
+    SpeechRecognition?: unknown;
+    webkitSpeechRecognition?: unknown;
+  };
+  return Boolean(w.SpeechRecognition || w.webkitSpeechRecognition);
+}
+
+export function hasMicrophone(): boolean {
+  return typeof navigator !== "undefined" && !!navigator.mediaDevices?.getUserMedia;
 }
 
 async function getAsr(): Promise<AsrPipeline> {
@@ -32,24 +48,18 @@ async function getAsr(): Promise<AsrPipeline> {
       env.allowLocalModels = false;
       env.useBrowserCache = true;
 
-      // q8 + default ONNX opts crash (MatMulNBits / missing scale).
-      // graphOptimizationLevel: "basic" avoids that fusion bug and stays small/fast.
+      // q8 + default ONNX opts can crash (MatMulNBits / missing scale).
+      // "basic" graph opts avoid that; fp32 is the reliable fallback.
       try {
-        const asr = await pipeline(
-          "automatic-speech-recognition",
-          "Xenova/whisper-tiny.en",
-          {
-            dtype: "q8",
-            session_options: { graphOptimizationLevel: "basic" },
-          },
-        );
+        const asr = await pipeline("automatic-speech-recognition", MODEL_ID, {
+          dtype: "q8",
+          session_options: { graphOptimizationLevel: "basic" },
+        });
         return asr as unknown as AsrPipeline;
       } catch {
-        const asr = await pipeline(
-          "automatic-speech-recognition",
-          "Xenova/whisper-tiny.en",
-          { dtype: "fp32" },
-        );
+        const asr = await pipeline("automatic-speech-recognition", MODEL_ID, {
+          dtype: "fp32",
+        });
         return asr as unknown as AsrPipeline;
       }
     })().catch((err) => {
@@ -170,7 +180,8 @@ export async function transcribeBlob(blob: Blob): Promise<string> {
   const asr = await getAsr();
   const url = URL.createObjectURL(blob);
   try {
-    const result = await asr(url, { language: "english", task: "transcribe" });
+    // English-only model — do NOT pass language/task (throws on whisper-*.en).
+    const result = await asr(url);
     const text = Array.isArray(result) ? result[0]?.text : result?.text;
     return (text || "").trim();
   } finally {
