@@ -39,12 +39,15 @@ import { syncJourneyUnlocks } from "./lib/syncUnlocks";
 import { addPrayer, loadPrayers, removePrayer, type PrayerEntry } from "./lib/prayers";
 import {
   bindInstallPromptCapture,
+  browserMaySupportInstallPrompt,
   clearDeferredInstallPrompt,
+  consumeJustInstalledTip,
   detectInstallPlatform,
   dismissInstallPrompt,
   getDeferredInstallPrompt,
   hideInstallForSession,
   isLikelyInAppBrowser,
+  markJustInstalled,
   openInChromeAndroid,
   shouldShowInstallBanner,
   waitForDeferredInstallPrompt,
@@ -221,60 +224,113 @@ export default (Alpine: Alpine) => {
   Alpine.data("installAppBanner", () => ({
     open: false,
     showGuide: false,
+    showSuccessTip: false,
     platform: "other" as InstallPlatform,
     canPrompt: false,
     inAppBrowser: false,
+    maySupportPrompt: false,
+    /** After we tried and browser still has no install prompt */
+    installBlocked: false,
     installBusy: false,
     installHint: "",
-    showHelpLink: false,
+
+    get title() {
+      if (this.showSuccessTip) return "Installed!";
+      if (this.platform === "ios") return "Add Bible to Home Screen";
+      if (this.inAppBrowser) return "Install Bible — Open Chrome";
+      if (this.installBlocked) return "Open Chrome to install";
+      return "Install Bible — 1 tap";
+    },
 
     get blurb() {
+      if (this.showSuccessTip) {
+        return "Look for the Bible icon on your home screen, then open it anytime.";
+      }
       if (this.platform === "ios") {
-        return "On iPhone, add Bible to your Home Screen in a few taps.";
+        return "Sa iPhone: Share → Add to Home Screen. Isang beses lang.";
       }
       if (this.inAppBrowser) {
-        return "Open in Chrome first — then Install adds it to your home screen.";
+        return "Naka-Facebook / Messenger ka. Buksan muna sa Chrome para 1-tap install.";
+      }
+      if (this.installBlocked) {
+        return this.platform === "android"
+          ? "Hindi pwede i-install dito. Buksan sa Chrome, tapos Install — 1 tap."
+          : "Use Chrome or Edge, then tap Install — 1 tap.";
       }
       if (this.canPrompt) {
-        return "Tap Install — Chrome installs it to your home screen right away.";
+        return "1 tap lang — lalabas sa home screen mo parang app.";
       }
-      if (this.platform === "android") {
-        return "Tap Install for a one-tap install in Chrome.";
+      if (this.platform === "android" && this.maySupportPrompt) {
+        return "1 tap lang sa Chrome — diretso sa phone mo.";
       }
-      return "Install for a fuller, app-like experience on your device.";
+      if (this.maySupportPrompt) {
+        return "1 tap — install to your device.";
+      }
+      return "Buksan sa Chrome o Edge para i-install nang madali.";
+    },
+
+    /** Show the big primary install / chrome button */
+    get showPrimaryInstall() {
+      if (this.showSuccessTip) return false;
+      if (this.platform === "ios") return true;
+      if (this.inAppBrowser) return true;
+      if (this.installBlocked) return this.platform === "android";
+      if (this.canPrompt || this.maySupportPrompt) return true;
+      return this.platform === "android";
     },
 
     get primaryLabel() {
       if (this.platform === "ios") return "Show steps";
-      if (this.installBusy) return "Installing…";
-      if (this.inAppBrowser && !this.canPrompt) return "Open in Chrome";
-      return "Install this app";
+      if (this.installBusy) return "Please wait…";
+      if (this.inAppBrowser || this.installBlocked) return "Open in Chrome to Install";
+      if (this.canPrompt) return "Install — 1 tap";
+      return "Install — 1 tap";
     },
 
     boot() {
       this.platform = detectInstallPlatform();
       this.inAppBrowser = isLikelyInAppBrowser();
+      this.maySupportPrompt = browserMaySupportInstallPrompt();
       this.canPrompt = Boolean(getDeferredInstallPrompt());
+      this.installBlocked = !this.inAppBrowser && !this.maySupportPrompt && this.platform !== "ios";
+
+      if (consumeJustInstalledTip()) {
+        this.showSuccessTip = true;
+        this.open = true;
+        window.setTimeout(() => {
+          this.showSuccessTip = false;
+          this.open = false;
+        }, 8000);
+        return;
+      }
+
       this.open = shouldShowInstallBanner();
 
       const onAvailable = () => {
         this.canPrompt = true;
+        this.installBlocked = false;
         this.installHint = "";
-        this.showHelpLink = false;
         if (shouldShowInstallBanner()) this.open = true;
       };
       const onInstalled = () => {
-        this.open = false;
-        this.showGuide = false;
+        markJustInstalled();
         this.canPrompt = false;
         this.installBusy = false;
-        this.showHelpLink = false;
+        this.installBlocked = false;
+        this.showGuide = false;
+        this.showSuccessTip = true;
+        this.open = true;
+        this.installHint = "";
+        window.setTimeout(() => {
+          this.showSuccessTip = false;
+          this.open = false;
+        }, 8000);
       };
 
       window.addEventListener("bible-install-available", onAvailable);
       window.addEventListener("bible-app-installed", onInstalled);
 
-      if (this.open) {
+      if (this.open && !this.showSuccessTip) {
         this.open = false;
         window.setTimeout(() => {
           if (shouldShowInstallBanner()) this.open = true;
@@ -287,7 +343,6 @@ export default (Alpine: Alpine) => {
       if (!promptEvent) return false;
       this.installBusy = true;
       this.installHint = "";
-      this.showHelpLink = false;
       this.showGuide = false;
       try {
         await promptEvent.prompt();
@@ -295,15 +350,21 @@ export default (Alpine: Alpine) => {
         clearDeferredInstallPrompt();
         this.canPrompt = false;
         if (choice.outcome === "accepted") {
-          this.open = false;
+          markJustInstalled();
           dismissInstallPrompt();
+          this.showSuccessTip = true;
+          this.open = true;
+          window.setTimeout(() => {
+            this.showSuccessTip = false;
+            this.open = false;
+          }, 8000);
         } else {
-          this.installHint = "Install canceled. Tap Install again anytime.";
+          this.installHint = "Canceled. Tap Install — 1 tap again anytime.";
         }
         return true;
       } catch {
-        this.installHint = "Couldn’t start install. Open this site in Chrome and tap Install.";
-        this.showHelpLink = true;
+        this.installHint = "Hindi na-open. Subukan sa Chrome.";
+        this.installBlocked = true;
         return true;
       } finally {
         this.installBusy = false;
@@ -311,40 +372,46 @@ export default (Alpine: Alpine) => {
     },
 
     async primaryAction() {
-      // iPhone: Apple blocks one-tap install — steps only.
-      if (this.platform === "ios") {
-        this.showGuide = true;
-        this.installHint = "";
-        this.showHelpLink = false;
+      if (this.showSuccessTip) {
+        this.open = false;
+        this.showSuccessTip = false;
         return;
       }
 
-      // Prefer native install dialog — never open the steps sheet first.
+      if (this.platform === "ios") {
+        this.showGuide = true;
+        this.installHint = "";
+        return;
+      }
+
+      // In-app or blocked: only open Chrome — never fake install.
+      if (this.inAppBrowser || this.installBlocked) {
+        if (this.platform === "android") {
+          this.installHint = "Opening Chrome…";
+          openInChromeAndroid();
+        } else {
+          this.installHint = "Copy the link and open it in Chrome or Edge.";
+          this.showGuide = true;
+        }
+        return;
+      }
+
       if (await this.runNativeInstall()) return;
 
       this.installBusy = true;
-      this.installHint = "Starting install…";
-      this.showGuide = false;
-      await waitForDeferredInstallPrompt(this.platform === "android" ? 3000 : 1500);
+      this.installHint = "Starting…";
+      await waitForDeferredInstallPrompt(this.platform === "android" ? 3200 : 1800);
       this.canPrompt = Boolean(getDeferredInstallPrompt());
       this.installBusy = false;
 
       if (await this.runNativeInstall()) return;
 
-      // Stuck in Facebook/etc. — jump to Chrome (no steps modal).
-      if (this.platform === "android" && (this.inAppBrowser || isLikelyInAppBrowser())) {
-        this.installHint = "Opening Chrome…";
-        openInChromeAndroid();
-        this.showHelpLink = true;
-        return;
-      }
-
-      // Still no prompt: soft hint only — steps stay hidden unless they ask.
+      // No prompt after wait — stop the fake Install loop.
+      this.installBlocked = true;
       this.installHint =
         this.platform === "android"
-          ? "Open this page in Chrome, then tap Install again."
-          : "Install isn’t available in this browser yet. Try Chrome or Edge.";
-      this.showHelpLink = true;
+          ? "Tap “Open in Chrome to Install” below."
+          : "Open this site in Chrome or Edge to install.";
       this.showGuide = false;
     },
 
@@ -352,11 +419,16 @@ export default (Alpine: Alpine) => {
       this.showGuide = true;
     },
 
+    dismissSuccess() {
+      this.showSuccessTip = false;
+      this.open = false;
+    },
+
     notNow() {
       this.open = false;
       this.showGuide = false;
+      this.showSuccessTip = false;
       this.installHint = "";
-      this.showHelpLink = false;
       hideInstallForSession();
     },
 
@@ -364,8 +436,8 @@ export default (Alpine: Alpine) => {
       dismissInstallPrompt();
       this.open = false;
       this.showGuide = false;
+      this.showSuccessTip = false;
       this.installHint = "";
-      this.showHelpLink = false;
     },
   }));
 

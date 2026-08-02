@@ -1,5 +1,6 @@
 const DISMISS_KEY = "bible-install-dismissed";
 const SESSION_HIDE_KEY = "bible-install-session-hide";
+const JUST_INSTALLED_KEY = "bible-install-just-done";
 
 export type InstallPlatform = "ios" | "android" | "desktop" | "other";
 
@@ -45,6 +46,20 @@ export function isLikelyInAppBrowser(): boolean {
   return false;
 }
 
+/**
+ * Browsers that can fire beforeinstallprompt (Chrome / Edge / Samsung / Opera).
+ * Others should not show a fake “Install” button.
+ */
+export function browserMaySupportInstallPrompt(): boolean {
+  if (typeof window === "undefined") return false;
+  if (isLikelyInAppBrowser()) return false;
+  const ua = window.navigator.userAgent || "";
+  if (/Firefox|FxiOS/i.test(ua)) return false;
+  // iOS Chrome still cannot one-tap install like Android
+  if (/iPhone|iPad|iPod/i.test(ua)) return false;
+  return /Chrome\/|Edg\/|OPR\/|SamsungBrowser/i.test(ua);
+}
+
 /** Open the same page in Chrome on Android when stuck in an in-app browser. */
 export function openInChromeAndroid(url = typeof location !== "undefined" ? location.href : ""): boolean {
   if (typeof window === "undefined" || !url) return false;
@@ -59,6 +74,27 @@ export function openInChromeAndroid(url = typeof location !== "undefined" ? loca
   } catch {
     return false;
   }
+}
+
+export function markJustInstalled() {
+  try {
+    sessionStorage.setItem(JUST_INSTALLED_KEY, "1");
+  } catch {
+    /* ignore */
+  }
+}
+
+/** True once after a successful install in this tab session. */
+export function consumeJustInstalledTip(): boolean {
+  try {
+    if (sessionStorage.getItem(JUST_INSTALLED_KEY) === "1") {
+      sessionStorage.removeItem(JUST_INSTALLED_KEY);
+      return true;
+    }
+  } catch {
+    /* ignore */
+  }
+  return false;
 }
 
 export function isInstallDismissed(): boolean {
@@ -135,6 +171,7 @@ export function bindInstallPromptCapture() {
 
   window.addEventListener("appinstalled", () => {
     deferredPrompt = null;
+    markJustInstalled();
     dismissInstallPrompt();
     window.dispatchEvent(new CustomEvent("bible-app-installed"));
   });
