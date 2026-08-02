@@ -13,7 +13,7 @@ const { version, sections } = Astro.props;
   {
     sections.map((section) => (
       <div>
-        <p class="mb-2 text-[0.7rem] font-semibold uppercase tracking-[0.12em] text-[var(--color-ink-subtle)]">
+        <p class="mb-2 text-xs font-semibold text-[var(--color-ink-subtle)]">
           {section.label}
         </p>
         <ul class="grid grid-cols-2 gap-2 sm:grid-cols-3 md:grid-cols-4">

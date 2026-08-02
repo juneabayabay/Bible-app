@@ -124,14 +124,14 @@ html.dark body {
 .page-stack {
   display: flex;
   flex-direction: column;
-  gap: 2rem;
+  gap: 2.25rem;
   min-width: 0;
   width: 100%;
 }
 
 @media (min-width: 640px) {
   .page-stack {
-    gap: 3rem;
+    gap: 2.75rem;
   }
 }
 
@@ -155,13 +155,94 @@ html.dark body {
 
 .section-rule {
   border-top: 1px solid var(--color-line);
-  padding-top: 2.5rem;
+  padding-top: 2.25rem;
 }
 
 @media (min-width: 640px) {
   .section-rule {
-    padding-top: 3rem;
+    padding-top: 2.75rem;
   }
+}
+
+/* Consistent home / page section chrome */
+.section-head {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  max-width: 36rem;
+}
+
+.section-head-row {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+@media (min-width: 640px) {
+  .section-head-row {
+    flex-direction: row;
+    align-items: flex-end;
+    justify-content: space-between;
+    gap: 1.5rem;
+  }
+
+  .section-head-row .section-head {
+    flex: 1;
+    min-width: 0;
+  }
+}
+
+.section-title {
+  font-family: var(--font-serif);
+  font-size: 1.5rem;
+  font-weight: 600;
+  letter-spacing: -0.02em;
+  line-height: 1.2;
+  color: var(--color-ink);
+}
+
+@media (min-width: 640px) {
+  .section-title {
+    font-size: 1.75rem;
+  }
+}
+
+.section-lead {
+  font-size: 0.9375rem;
+  line-height: 1.55;
+  color: var(--color-ink-muted);
+}
+
+.segment {
+  display: inline-flex;
+  max-width: 100%;
+  overflow-x: auto;
+  border-radius: 0.625rem;
+  border: 1px solid var(--color-line);
+  background: var(--color-surface-elevated);
+  padding: 0.2rem;
+}
+
+.segment-btn {
+  display: inline-flex;
+  min-height: 2.25rem;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
+  border-radius: 0.5rem;
+  padding: 0.35rem 0.9rem;
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: var(--color-ink-muted);
+  transition:
+    background-color 0.2s ease,
+    color 0.2s ease;
+}
+
+.segment-btn.is-active,
+.segment-btn[aria-selected="true"] {
+  background: var(--color-primary);
+  color: var(--color-on-primary);
 }
 
 /* Theme-aware transitions */
