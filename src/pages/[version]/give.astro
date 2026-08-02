@@ -28,25 +28,41 @@ const accountName = SUPPORT_WALLET.accountName;
       <h1 class="font-scripture mt-6 text-[1.75rem] font-semibold tracking-tight text-[var(--color-ink)] sm:text-3xl">
         Give
       </h1>
-      <p class="mt-3 max-w-lg text-[0.9375rem] leading-relaxed text-[var(--color-ink-muted)] sm:text-base">
-        This app is free. If it has helped you, you may send a gift to help keep it online.
-        Optional — nothing changes if you don’t.
+      <p class="mt-3 max-w-xl text-[0.9375rem] leading-relaxed text-[var(--color-ink-muted)] sm:text-base">
+        This Bible app is free for everyone. If it has quietly helped you draw near to God’s Word,
+        you’re welcome to help keep it here for others too.
+      </p>
+      <p class="mt-2 max-w-xl text-[0.9375rem] leading-relaxed text-[var(--color-ink-muted)] sm:text-base">
+        There is no pressure. If you don’t give, nothing changes — you can keep reading the same way.
       </p>
     </header>
 
+    <section class="space-y-3" aria-labelledby="why-heading">
+      <h2
+        id="why-heading"
+        class="text-xs font-semibold uppercase tracking-[0.14em] text-[var(--color-ink-subtle)]"
+      >
+        A gentle word
+      </h2>
+      <p class="max-w-xl text-[0.9375rem] leading-relaxed text-[var(--color-ink-muted)] sm:text-base">
+        This is a personal labor of love — made so people can open Scripture with peace, wherever they are.
+        A gift is not payment for features. It is simply kindness that helps the lights stay on.
+      </p>
+    </section>
+
     {
       walletReady ? (
-        <section class="space-y-5" aria-labelledby="transfer-heading">
+        <section class="space-y-5 border-t border-[var(--color-line)] pt-7" aria-labelledby="transfer-heading">
           <div>
             <h2
               id="transfer-heading"
               class="text-xs font-semibold uppercase tracking-[0.14em] text-[var(--color-ink-subtle)]"
             >
-              How to give
+              If you’d like to give
             </h2>
             <p class="mt-2 text-[0.9375rem] leading-relaxed text-[var(--color-ink)] sm:text-base">
-              Send to <span class="font-medium">{accountName}</span> via GCash or GoTyme.
-              Please check the name before you send.
+              Send any amount to <span class="font-medium">{accountName}</span> through GCash or GoTyme.
+              Please confirm the name in your app before you send.
             </p>
           </div>
 
@@ -79,11 +95,11 @@ const accountName = SUPPORT_WALLET.accountName;
           </ul>
 
           <p class="text-sm leading-relaxed text-[var(--color-ink-subtle)]">
-            Copy the number, then send from your wallet app. No payment happens on this site.
+            Copy a number, then finish in your wallet app. No money is taken on this website.
           </p>
         </section>
       ) : (
-        <p class="text-[0.9375rem] text-[var(--color-ink-muted)]">
+        <p class="border-t border-[var(--color-line)] pt-7 text-[0.9375rem] text-[var(--color-ink-muted)]">
           Giving details will appear here soon.
         </p>
       )
@@ -96,16 +112,17 @@ const accountName = SUPPORT_WALLET.accountName;
       >
         Where your gift goes
       </h2>
-      <p class="mt-2 max-w-lg text-[0.9375rem] leading-relaxed text-[var(--color-ink-muted)] sm:text-base">
-        We keep this simple and honest. Gifts help with real costs so Scripture can stay free for anyone to open.
+      <p class="mt-2 max-w-xl text-[0.9375rem] leading-relaxed text-[var(--color-ink-muted)] sm:text-base">
+        We want to be clear with you. Every gift helps with real needs — so the Bible can stay free to open
+        for anyone who needs it.
       </p>
       <ul class="mt-5 space-y-4">
         <li>
           <p class="text-[0.9375rem] font-medium text-[var(--color-ink)] sm:text-base">
-            Maintaining the website
+            Keeping the site alive
           </p>
           <p class="mt-1 text-sm leading-relaxed text-[var(--color-ink-muted)] sm:text-[0.9375rem]">
-            So the site stays online, updated, and easy for anyone to open and read the Bible freely.
+            Day-to-day care so the website stays online, clear, and ready whenever someone wants to read.
           </p>
         </li>
         <li>
@@ -113,33 +130,34 @@ const accountName = SUPPORT_WALLET.accountName;
             Hosting and domain
           </p>
           <p class="mt-1 text-sm leading-relaxed text-[var(--color-ink-muted)] sm:text-[0.9375rem]">
-            The yearly cost of keeping the app’s address and servers running.
+            The yearly cost of the web address and the space that holds this app.
           </p>
         </li>
         <li>
           <p class="text-[0.9375rem] font-medium text-[var(--color-ink)] sm:text-base">
-            Shared features
+            Shared tools
           </p>
           <p class="mt-1 text-sm leading-relaxed text-[var(--color-ink-muted)] sm:text-[0.9375rem]">
-            Tools like the prayer wall that need a small database to work for everyone.
+            Things like the prayer wall, which need a small database so people can encourage one another.
           </p>
         </li>
         <li>
           <p class="text-[0.9375rem] font-medium text-[var(--color-ink)] sm:text-base">
-            Google Play listing
+            Reaching more readers
           </p>
           <p class="mt-1 text-sm leading-relaxed text-[var(--color-ink-muted)] sm:text-[0.9375rem]">
-            Fees and costs if we publish the app on Google Play so more people can find it easily.
+            Costs toward listing on Google Play, so more people can find a quiet place to open Scripture.
           </p>
         </li>
       </ul>
       <p class="mt-5 text-sm leading-relaxed text-[var(--color-ink-subtle)]">
-        No gift unlocks special features. Reading stays free for all.
+        A gift never unlocks special access. Reading stays free for all — today and always.
       </p>
     </section>
 
     <p class="border-t border-[var(--color-line)] pt-7 text-[0.9375rem] leading-relaxed text-[var(--color-ink-muted)] sm:text-base">
-      Thank you for reading here.
+      Whether you give, leave a kind word, or simply keep reading — thank you for being here.
+      Your presence already matters.
       <a
         class="ml-1 text-[var(--color-ink)] underline-offset-2 hover:underline"
         href={`/${version}/feedback`}
@@ -147,7 +165,7 @@ const accountName = SUPPORT_WALLET.accountName;
       >
         Send feedback
       </a>
-      if you’d like.
+      anytime.
     </p>
   </div>
 </Layout>
