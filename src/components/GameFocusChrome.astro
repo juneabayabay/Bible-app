@@ -10,12 +10,6 @@ interface Props {
 const { version, title, vibe } = Astro.props;
 ---
 
-<SectionFocusChrome
-  version={version}
-  title={title}
-  eyebrow={vibe}
-  backHref={`/${version}/play`}
-  backLabel="Games"
->
+<SectionFocusChrome version={version} title={title} eyebrow={vibe}>
   <slot />
 </SectionFocusChrome>

@@ -1,6 +1,6 @@
 ---
 import Layout from "../../../layouts/Layout.astro";
-import SearchBar from "../../../components/SearchBar.astro";
+import SectionFocusChrome from "../../../components/SectionFocusChrome.astro";
 import { resolveVersionId } from "../../../lib/bible";
 import { getVersion, VERSION_IDS } from "../../../lib/versions";
 import { getDevotionTheme, getDevotionThemes } from "../../../lib/devotionals";
@@ -26,49 +26,28 @@ if (!theme) {
 const verseCount = theme.relatedVerses.length;
 ---
 
-<Layout title={`${theme.title} · Devotionals`} version={version}>
-  <SearchBar slot="header" version={version} />
-
+<Layout title={`${theme.title} · Devotionals`} version={version} focus showFooter={false}>
   <div
-    class="space-y-12"
+    class="space-y-10"
     x-data={`devotionTheme('${theme.slug}', ${JSON.stringify(theme.entries.map((e) => e.id))})`}
   >
-    <header class="space-y-6">
-      <p class="text-sm text-[var(--color-ink-muted)]">
-        <a
-          href={`/${version}/devotionals`}
-          class="hover:text-[var(--color-ink)] hover:underline"
-          data-astro-prefetch
-        >
-          ← All devotionals
-        </a>
+    <SectionFocusChrome version={version} title={theme.title} eyebrow="Theme">
+      <p class="mt-2 max-w-2xl text-sm leading-relaxed text-[var(--color-ink-muted)] sm:text-base">
+        {theme.summary}
       </p>
+      <p class="mt-1 text-sm text-[var(--color-ink-subtle)]">{theme.focus}</p>
+    </SectionFocusChrome>
 
-      <div class="relative overflow-hidden rounded-2xl border border-[var(--color-line)]">
-        <img
-          src={theme.image}
-          alt={theme.imageAlt}
-          width="1200"
-          height="675"
-          class="aspect-[21/9] w-full object-cover sm:aspect-[2.4/1]"
-          fetchpriority="high"
-        />
-        <div class="hero-banner-scrim" aria-hidden="true"></div>
-        <div class="absolute inset-x-0 bottom-0 p-5 sm:p-8">
-          <p class="eyebrow hero-gold">Theme</p>
-          <h1 class="font-scripture hero-ink mt-2 text-3xl font-semibold tracking-tight sm:text-4xl">
-            {theme.title}
-          </h1>
-        </div>
-      </div>
-
-      <div>
-        <p class="max-w-2xl text-base leading-relaxed text-[var(--color-ink-muted)]">
-          {theme.summary}
-        </p>
-        <p class="mt-2 text-sm text-[var(--color-ink-subtle)]">{theme.focus}</p>
-      </div>
-    </header>
+    <div class="overflow-hidden rounded-2xl border border-[var(--color-line)]">
+      <img
+        src={theme.image}
+        alt={theme.imageAlt}
+        width="1200"
+        height="675"
+        class="aspect-[21/9] w-full object-cover sm:aspect-[2.4/1]"
+        fetchpriority="high"
+      />
+    </div>
 
     <!-- Choose a verse -->
     <section aria-labelledby="verses-heading">

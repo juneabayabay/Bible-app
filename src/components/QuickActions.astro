@@ -7,7 +7,7 @@
 <section aria-label="Continue reading" class="grid gap-2 sm:grid-cols-[1fr_auto]">
   <a
     class="btn-primary flex !min-h-12 touch-manipulation items-center justify-center gap-2 !px-5 text-sm sm:justify-start"
-    :href="continueUrl || `/${version}/books`"
+    :href="continueUrl || ('/' + version + '/books')"
     data-astro-prefetch
   >
     <span class="opacity-80" aria-hidden="true">→</span>

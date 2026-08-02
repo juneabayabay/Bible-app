@@ -1,22 +1,16 @@
 ---
 import Layout from "../layouts/Layout.astro";
-import SearchBar from "../components/SearchBar.astro";
-import { DEFAULT_VERSION, VERSION_IDS } from "../lib/versions";
+import SectionFocusChrome from "../components/SectionFocusChrome.astro";
+import { DEFAULT_VERSION } from "../lib/versions";
 ---
 
-<Layout title="Saved" version={DEFAULT_VERSION}>
-  <SearchBar slot="header" version={DEFAULT_VERSION} />
-
+<Layout title="Saved" version={DEFAULT_VERSION} focus showFooter={false}>
   <div class="page-stack">
-    <header class="page-header">
-      <p class="eyebrow">Library</p>
-      <h1 class="font-scripture mt-1.5 text-2xl font-semibold tracking-tight sm:text-3xl">
-        Saved
-      </h1>
-      <p class="mt-2 text-sm leading-relaxed text-[var(--color-ink-muted)] sm:text-base">
+    <SectionFocusChrome version={DEFAULT_VERSION} title="Saved" eyebrow="Library">
+      <p class="mt-2 text-sm leading-relaxed text-[var(--color-ink-muted)]">
         Highlights and notes stay on this device.
       </p>
-    </header>
+    </SectionFocusChrome>
 
     <div x-data="savedList" class="measure-wide">
       <p
