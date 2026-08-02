@@ -9,29 +9,94 @@ interface Props {
 const { version } = Astro.props;
 const showGive = hasWalletNumbers();
 
-const links = [
-  { href: `/${version}/devotionals`, label: "Devotionals" },
-  { href: `/${version}/plans`, label: "Plans" },
-  { href: `/${version}/journey`, label: "Journey" },
-  { href: `/${version}/play`, label: "Play" },
-  { href: `/${version}/feedback`, label: "Feedback" },
-  ...(showGive ? [{ href: `/${version}/give`, label: "Give" }] : []),
-] as const;
+type Link = {
+  href: string;
+  label: string;
+  hint: string;
+  image: string;
+};
+
+const links: Link[] = [
+  {
+    href: `/${version}/devotionals`,
+    label: "Devotionals",
+    hint: "Quiet themes to reflect on",
+    image: "/images/more/more-devotionals.jpg",
+  },
+  {
+    href: `/${version}/plans`,
+    label: "Plans",
+    hint: "Guided reading day by day",
+    image: "/images/more/more-plans.jpg",
+  },
+  {
+    href: `/${version}/journey`,
+    label: "Journey",
+    hint: "Your streak and progress",
+    image: "/images/more/more-journey.jpg",
+  },
+  {
+    href: `/${version}/play`,
+    label: "Play",
+    hint: "Learn through Scripture games",
+    image: "/images/more/more-play.jpg",
+  },
+  {
+    href: `/${version}/feedback`,
+    label: "Feedback",
+    hint: "Help us improve this app",
+    image: "/images/more/more-feedback.jpg",
+  },
+];
+
+if (showGive) {
+  links.push({
+    href: `/${version}/give`,
+    label: "Give",
+    hint: "Optional support for the site",
+    image: "/images/more/more-give.jpg",
+  });
+}
 ---
 
 <section class="section-rule scroll-mt-28" aria-labelledby="more-heading">
-  <h2 id="more-heading" class="section-title mb-4">More</h2>
+  <div class="mb-5">
+    <h2 id="more-heading" class="section-title">More</h2>
+    <p class="mt-1 text-sm text-[var(--color-ink-muted)]">Explore when you’re ready</p>
+  </div>
 
-  <ul class="grid grid-cols-2 gap-2 sm:grid-cols-3">
+  <ul class="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
     {
       links.map((link) => (
         <li>
           <a
             href={link.href}
-            class="flex min-h-12 touch-manipulation items-center justify-center rounded-xl border border-[var(--color-line)] bg-[var(--color-surface-elevated)] px-3 text-center text-sm font-semibold text-[var(--color-ink)] transition hover:border-[var(--color-primary)]/45"
+            class="group flex h-full flex-col overflow-hidden rounded-2xl border border-[var(--color-line)] bg-[var(--color-surface-elevated)] transition hover:border-[var(--color-primary)]/40"
             data-astro-prefetch="tap"
           >
-            {link.label}
+            <div class="relative aspect-[16/10] overflow-hidden bg-[var(--color-surface)]">
+              <img
+                src={link.image}
+                alt=""
+                width="900"
+                height="560"
+                loading="lazy"
+                decoding="async"
+                class="h-full w-full object-cover transition duration-500 group-hover:scale-[1.03]"
+              />
+              <div
+                class="pointer-events-none absolute inset-0 bg-gradient-to-t from-[var(--color-surface-elevated)]/80 via-transparent to-black/15"
+                aria-hidden="true"
+              />
+            </div>
+            <div class="flex flex-1 flex-col px-4 py-4">
+              <span class="font-scripture text-lg font-semibold tracking-tight text-[var(--color-ink)]">
+                {link.label}
+              </span>
+              <span class="mt-1 text-sm leading-relaxed text-[var(--color-ink-muted)]">
+                {link.hint}
+              </span>
+            </div>
           </a>
         </li>
       ))

@@ -656,7 +656,7 @@ export default (Alpine: Alpine) => {
       this.loading = true;
       try {
         const all = await listWallRequests();
-        this.items = all.slice(0, 6).map((item) => ({
+        this.items = all.slice(0, 3).map((item) => ({
           ...item,
           commentsOpen: false,
         }));
@@ -691,7 +691,7 @@ export default (Alpine: Alpine) => {
       try {
         const all = await toggleReaction(requestId, type);
         const openMap = new Map(this.items.map((i) => [i.id, Boolean(i.commentsOpen)]));
-        this.items = all.slice(0, 6).map((item) => ({
+        this.items = all.slice(0, 3).map((item) => ({
           ...item,
           commentsOpen: openMap.get(item.id) ?? false,
         }));
