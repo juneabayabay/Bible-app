@@ -20,6 +20,15 @@ const meta = getVersion(version);
     </div>
     <p class="flex flex-wrap gap-x-0 gap-y-1 text-[var(--color-ink-subtle)]">
       <a
+        href={`/${version}/give`}
+        data-nav-version="/give"
+        class="font-medium text-[var(--color-primary)] transition hover:underline"
+        data-astro-prefetch="tap"
+      >
+        Give
+      </a>
+      <span class="mx-1.5 opacity-40">·</span>
+      <a
         href={`/${version}/feedback`}
         data-nav-version="/feedback"
         class="text-[var(--color-ink-muted)] transition hover:text-[var(--color-ink)] hover:underline"

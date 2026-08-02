@@ -1,6 +1,4 @@
 ---
-import { existsSync } from "node:fs";
-import { join } from "node:path";
 import Layout from "../../layouts/Layout.astro";
 import SearchBar from "../../components/SearchBar.astro";
 import { resolveVersionId } from "../../lib/bible";
@@ -8,6 +6,7 @@ import { getVersion } from "../../lib/versions";
 import { getVersionHomePaths } from "../../lib/staticPaths";
 import {
   getFeedbackFormUrl,
+  getGiveMethods,
   hasFeedbackForm,
   hasWalletNumbers,
   SUPPORT_WALLET,
@@ -22,12 +21,8 @@ const meta = getVersion(version);
 const feedbackUrl = getFeedbackFormUrl();
 const showFeedback = hasFeedbackForm();
 const walletReady = hasWalletNumbers();
-const { accountName, gcashNumber, gotymeNumber, gcashQrSrc, gotymeQrSrc } =
-  SUPPORT_WALLET;
-
-const publicRoot = join(process.cwd(), "public");
-const showGcashQr = existsSync(join(publicRoot, "images", "support", "gcash-qr.png"));
-const showGotymeQr = existsSync(join(publicRoot, "images", "support", "gotyme-qr.png"));
+const methods = getGiveMethods();
+const accountName = SUPPORT_WALLET.accountName;
 ---
 
 <Layout title={`Support · ${meta.shortLabel}`} version={version}>
@@ -40,19 +35,68 @@ const showGotymeQr = existsSync(join(publicRoot, "images", "support", "gotyme-qr
       </p>
       <p class="eyebrow mt-5">Support</p>
       <h1 class="font-scripture mt-1.5 text-3xl font-semibold tracking-tight sm:text-4xl">
-        A quiet place to help
+        Help keep this free
       </h1>
       <p class="mt-2 text-sm leading-relaxed text-[var(--color-ink-muted)] sm:text-base">
-        This app stays free. Here you can share a note—or, if you wish, help with the small costs of keeping it online.
+        Optional gift or a short note — both help. No pressure.
       </p>
     </header>
 
-    <section id="feedback" aria-labelledby="feedback-heading" class="scroll-mt-24">
+    <section id="give" aria-labelledby="give-heading" class="scroll-mt-24">
+      <div class="flex flex-wrap items-end justify-between gap-3">
+        <div>
+          <h2 id="give-heading" class="font-scripture text-xl font-semibold">
+            Give
+          </h2>
+          <p class="mt-2 text-sm leading-relaxed text-[var(--color-ink-muted)] sm:text-base">
+            Send any amount via GCash or GoTyme. Numbers only — copy and paste in your wallet app.
+          </p>
+        </div>
+        <a class="btn-secondary !min-h-10 text-sm" href={`/${version}/give`} data-astro-prefetch>
+          Open Give page
+        </a>
+      </div>
+
+      {
+        walletReady ? (
+          <ul class="mt-6 space-y-3">
+            <p class="text-sm text-[var(--color-ink-muted)]">
+              Account name: <span class="font-medium text-[var(--color-ink)]">{accountName}</span>
+            </p>
+            {methods.map((method) => (
+              <li class="rounded-2xl border border-[var(--color-line)] bg-[var(--color-surface-elevated)] p-4">
+                <p class="text-[0.7rem] font-semibold uppercase tracking-[0.14em] text-[var(--color-primary)]">
+                  {method.label}
+                </p>
+                <p class="mt-2 font-mono text-xl font-semibold tabular-nums text-[var(--color-ink)] sm:text-2xl">
+                  {method.number}
+                </p>
+                <button
+                  type="button"
+                  class="btn-primary mt-3 !min-h-10 !px-4 text-sm"
+                  data-number={method.number}
+                  data-which={method.id}
+                  @click="copyNumber($el.dataset.number, $el.dataset.which)"
+                >
+                  <span x-text={`copied === '${method.id}' ? 'Copied ✓' : 'Copy number'`}></span>
+                </button>
+              </li>
+            ))}
+          </ul>
+        ) : (
+          <p class="mt-6 text-sm text-[var(--color-ink-subtle)]">
+            Wallet details will appear here soon.
+          </p>
+        )
+      }
+    </section>
+
+    <section id="feedback" aria-labelledby="feedback-heading" class="scroll-mt-24 border-t border-[var(--color-line)] pt-8">
       <h2 id="feedback-heading" class="font-scripture text-xl font-semibold">
         Feedback
       </h2>
       <p class="mt-2 text-sm leading-relaxed text-[var(--color-ink-muted)] sm:text-base">
-        What’s working? What’s hard? A few honest words help us grow this quietly, for people who open Scripture here.
+        What’s working? What’s hard? A few honest words help.
       </p>
       <p class="mt-5 flex flex-wrap gap-3">
         <a class="btn-primary" href={`/${version}/feedback`} data-astro-prefetch>
@@ -72,122 +116,5 @@ const showGotymeQr = existsSync(join(publicRoot, "images", "support", "gotyme-qr
         }
       </p>
     </section>
-
-    <section id="give" aria-labelledby="give-heading" class="scroll-mt-24">
-      <h2 id="give-heading" class="font-scripture text-xl font-semibold">
-        Optional gift
-      </h2>
-      <p class="mt-2 text-sm leading-relaxed text-[var(--color-ink-muted)] sm:text-base">
-        If this app has helped you and you’d like to help with running costs, you’re welcome to send any amount.
-        No pressure. Giving never unlocks features or medals.
-      </p>
-
-      <div class="mt-5 space-y-2 text-sm text-[var(--color-ink-muted)]">
-        <p class="text-xs font-semibold uppercase tracking-[0.12em] text-[var(--color-ink-subtle)]">
-          What gifts help with
-        </p>
-        <ul class="list-disc space-y-1.5 pl-5 leading-relaxed">
-          <li>Domain renewal</li>
-          <li>Database and hosting</li>
-          <li>Keeping Scripture free to open for everyone</li>
-        </ul>
-      </div>
-
-      {
-        walletReady ? (
-          <div class="mt-8 space-y-8">
-            <p class="text-sm text-[var(--color-ink-muted)]">
-              Send via <span class="font-medium text-[var(--color-ink)]">GCash</span> or{" "}
-              <span class="font-medium text-[var(--color-ink)]">GoTyme</span>
-              {" · "}
-              Account name:{" "}
-              <span class="font-medium text-[var(--color-ink)]">{accountName}</span>
-            </p>
-
-            <div class="space-y-5">
-              <div>
-                <p class="text-xs font-semibold uppercase tracking-[0.12em] text-[var(--color-ink-subtle)]">
-                  GCash
-                </p>
-                <div class="mt-2 flex flex-wrap items-center gap-2">
-                  <p class="font-mono text-base text-[var(--color-ink)] tabular-nums">
-                    {gcashNumber}
-                  </p>
-                  <button
-                    type="button"
-                    class="btn-secondary !min-h-9 !px-3 text-xs"
-                    data-number={gcashNumber}
-                    @click="copyNumber($el.dataset.number, 'gcash')"
-                  >
-                    <span x-text="copied === 'gcash' ? 'Copied' : 'Copy'"></span>
-                  </button>
-                </div>
-                {
-                  showGcashQr && (
-                    <figure class="mt-4 max-w-[12rem]">
-                      <img
-                        src={gcashQrSrc}
-                        alt="GCash QR code"
-                        width="480"
-                        height="480"
-                        class="w-full rounded-lg border border-[var(--color-line)] bg-[var(--color-surface-elevated)]"
-                        loading="lazy"
-                      />
-                      <figcaption class="mt-2 text-xs text-[var(--color-ink-subtle)]">
-                        Scan with GCash
-                      </figcaption>
-                    </figure>
-                  )
-                }
-              </div>
-
-              <div>
-                <p class="text-xs font-semibold uppercase tracking-[0.12em] text-[var(--color-ink-subtle)]">
-                  GoTyme
-                </p>
-                <div class="mt-2 flex flex-wrap items-center gap-2">
-                  <p class="font-mono text-base text-[var(--color-ink)] tabular-nums">
-                    {gotymeNumber}
-                  </p>
-                  <button
-                    type="button"
-                    class="btn-secondary !min-h-9 !px-3 text-xs"
-                    data-number={gotymeNumber}
-                    @click="copyNumber($el.dataset.number, 'gotyme')"
-                  >
-                    <span x-text="copied === 'gotyme' ? 'Copied' : 'Copy'"></span>
-                  </button>
-                </div>
-                {
-                  showGotymeQr && (
-                    <figure class="mt-4 max-w-[12rem]">
-                      <img
-                        src={gotymeQrSrc}
-                        alt="GoTyme QR code"
-                        width="480"
-                        height="480"
-                        class="w-full rounded-lg border border-[var(--color-line)] bg-[var(--color-surface-elevated)]"
-                        loading="lazy"
-                      />
-                      <figcaption class="mt-2 text-xs text-[var(--color-ink-subtle)]">
-                        Scan with GoTyme
-                      </figcaption>
-                    </figure>
-                  )
-                }
-              </div>
-            </div>
-          </div>
-        ) : (
-          <p class="mt-6 text-sm text-[var(--color-ink-subtle)]">
-            Wallet details will appear here soon. Until then, feedback above is always welcome.
-          </p>
-        )
-      }
-    </section>
-
-    <p class="border-t border-[var(--color-line)] pt-6 text-sm leading-relaxed text-[var(--color-ink-muted)]">
-      Thank you for reading here—whether you send a note, a gift, or simply return tomorrow.
-    </p>
   </div>
 </Layout>

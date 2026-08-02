@@ -576,16 +576,31 @@ export default (Alpine: Alpine) => {
     _copyTimer: null as ReturnType<typeof setTimeout> | null,
 
     async copyNumber(number: string, id: string) {
+      const text = number.trim();
+      if (!text) return;
       try {
-        await navigator.clipboard.writeText(number);
-        this.copiedId = id;
-        if (this._copyTimer) clearTimeout(this._copyTimer);
-        this._copyTimer = setTimeout(() => {
-          this.copiedId = "";
-        }, 1800);
+        await navigator.clipboard.writeText(text);
       } catch {
-        this.copiedId = "";
+        try {
+          const el = document.createElement("textarea");
+          el.value = text;
+          el.setAttribute("readonly", "");
+          el.style.position = "fixed";
+          el.style.left = "-9999px";
+          document.body.appendChild(el);
+          el.select();
+          document.execCommand("copy");
+          document.body.removeChild(el);
+        } catch {
+          this.copiedId = "";
+          return;
+        }
       }
+      this.copiedId = id;
+      if (this._copyTimer) clearTimeout(this._copyTimer);
+      this._copyTimer = setTimeout(() => {
+        this.copiedId = "";
+      }, 1800);
     },
   }));
 

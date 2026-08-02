@@ -147,7 +147,7 @@ export function isOldTestament(slug: string) {
   return OT_SLUGS.has(slug);
 }
 
-export type BookLike = { name: string; slug: string };
+export type BookLike = { name: string; slug: string; chapters?: number[] };
 
 export type BookSection = {
   id: string;

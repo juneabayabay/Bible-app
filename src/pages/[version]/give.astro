@@ -4,6 +4,7 @@ import SearchBar from "../../components/SearchBar.astro";
 import { resolveVersionId } from "../../lib/bible";
 import { getVersion } from "../../lib/versions";
 import { getVersionHomePaths } from "../../lib/staticPaths";
+import { getGiveMethods, hasWalletNumbers, SUPPORT_WALLET } from "../../lib/support";
 
 export function getStaticPaths() {
   return getVersionHomePaths();
@@ -11,25 +12,15 @@ export function getStaticPaths() {
 
 const version = resolveVersionId(Astro.params.version);
 const meta = getVersion(version);
-
-const methods = [
-  {
-    id: "gcash",
-    label: "GCash",
-    number: "09668873328",
-  },
-  {
-    id: "gotyme",
-    label: "GoTyme",
-    number: "018587187647",
-  },
-] as const;
+const walletReady = hasWalletNumbers();
+const methods = getGiveMethods();
+const accountName = SUPPORT_WALLET.accountName;
 
 const uses = [
   "Keeping this Bible app online (hosting and domain)",
   "Database for shared features (like the prayer wall)",
   "Costs toward listing the app on Google Play",
-  "Other work of the Lord when needs arise — outreach, encouragement, and quiet acts of care",
+  "Other work of the Lord when needs arise",
 ] as const;
 ---
 
@@ -41,28 +32,84 @@ const uses = [
       <p class="text-sm text-[var(--color-ink-muted)]">
         <a href={`/${version}/`} class="hover:underline" data-astro-prefetch>← Home</a>
       </p>
-      <p class="eyebrow mt-5">Support</p>
+      <p class="eyebrow mt-5">Optional gift</p>
       <h1 class="font-scripture mt-1.5 text-3xl font-semibold tracking-tight sm:text-4xl">
         Give
       </h1>
       <p class="mt-2 text-sm leading-relaxed text-[var(--color-ink-muted)] sm:text-base">
-        Giving is optional. Any gift helps keep this Bible app free — and may also bless other work of the Lord.
+        This app stays free. If you want to help with running costs, send any amount via GCash or GoTyme.
+        No pressure — giving never unlocks features.
       </p>
     </header>
 
-    <section class="space-y-3" aria-labelledby="where-goes">
+    {
+      walletReady ? (
+        <section class="space-y-4" aria-labelledby="send-gift">
+          <div>
+            <h2 id="send-gift" class="font-scripture text-xl font-semibold text-[var(--color-ink)]">
+              Send a gift
+            </h2>
+            <p class="mt-1.5 text-sm leading-relaxed text-[var(--color-ink-muted)]">
+              Account name:
+              <span class="font-medium text-[var(--color-ink)]">{accountName}</span>
+              — please confirm before you send.
+            </p>
+          </div>
+
+          <ul class="space-y-3">
+            {methods.map((method) => (
+              <li class="rounded-2xl border border-[var(--color-line)] bg-[var(--color-surface-elevated)] p-4 sm:p-5">
+                <div class="flex items-start justify-between gap-3">
+                  <div>
+                    <p class="text-[0.7rem] font-semibold uppercase tracking-[0.14em] text-[var(--color-primary)]">
+                      {method.label}
+                    </p>
+                    <p class="mt-1 text-xs text-[var(--color-ink-subtle)]">{accountName}</p>
+                  </div>
+                </div>
+                <p
+                  class="mt-3 font-mono text-2xl font-semibold tracking-wide text-[var(--color-ink)] tabular-nums sm:text-3xl"
+                  aria-label={`${method.label} number`}
+                >
+                  {method.number}
+                </p>
+                <button
+                  type="button"
+                  class="btn-primary mt-4 !min-h-11 !px-5 text-sm"
+                  @click={`copyNumber('${method.number}', '${method.id}')`}
+                >
+                  <span x-show={`copiedId !== '${method.id}'`}>Copy number</span>
+                  <span x-show={`copiedId === '${method.id}'`} x-cloak>
+                    Copied ✓
+                  </span>
+                </button>
+              </li>
+            ))}
+          </ul>
+
+          <p class="text-sm leading-relaxed text-[var(--color-ink-muted)]">
+            Open GCash or GoTyme on your phone, paste the number, and send. Nothing is charged on this site.
+          </p>
+        </section>
+      ) : (
+        <p class="text-sm text-[var(--color-ink-muted)]">
+          Wallet numbers will appear here soon. Feedback is always welcome.
+        </p>
+      )
+    }
+
+    <section class="space-y-3 border-t border-[var(--color-line)] pt-6" aria-labelledby="where-goes">
       <h2 id="where-goes" class="font-scripture text-xl font-semibold text-[var(--color-ink)]">
         Where your gift goes
       </h2>
-      <p class="text-sm leading-relaxed text-[var(--color-ink-muted)] sm:text-base">
-        This app is built and cared for personally. Gifts first help run and improve it. When there is
-        something left, they may also support other work of the Lord — always with care and honesty.
-      </p>
       <ul class="space-y-2 text-sm leading-relaxed text-[var(--color-ink)] sm:text-base">
         {
           uses.map((item) => (
             <li class="flex gap-2">
-              <span class="mt-2 h-1.5 w-1.5 shrink-0 rounded-full bg-[var(--color-gold)]" aria-hidden="true"></span>
+              <span
+                class="mt-2 h-1.5 w-1.5 shrink-0 rounded-full bg-[var(--color-primary)]"
+                aria-hidden="true"
+              />
               <span>{item}</span>
             </li>
           ))
@@ -70,48 +117,11 @@ const uses = [
       </ul>
     </section>
 
-    <section class="space-y-4" aria-labelledby="send-gift">
-      <div>
-        <h2 id="send-gift" class="font-scripture text-xl font-semibold text-[var(--color-ink)]">
-          Send a gift
-        </h2>
-        <p class="mt-1.5 text-sm leading-relaxed text-[var(--color-ink-muted)]">
-          Recipient name on both accounts:
-          <span class="font-medium text-[var(--color-ink)]">Arjune Abayabay</span>.
-          Please confirm the name before you send.
-        </p>
-      </div>
-
-      <ul class="space-y-3">
-        {
-          methods.map((method) => (
-            <li class="rounded-xl border border-[var(--color-line)] bg-[var(--color-surface-elevated)] p-4 sm:p-5">
-              <p class="text-[0.65rem] font-semibold uppercase tracking-[0.12em] text-[var(--color-gold)]">
-                {method.label}
-              </p>
-              <p class="mt-1 text-xs text-[var(--color-ink-subtle)]">Arjune Abayabay</p>
-              <p class="mt-2 font-scripture text-2xl font-semibold tracking-wide break-all text-[var(--color-ink)]">
-                {method.number}
-              </p>
-              <button
-                type="button"
-                class="btn-secondary mt-3 !min-h-11 !px-4 text-sm"
-                @click={`copyNumber('${method.number}', '${method.id}')`}
-              >
-                <span x-show={`copiedId !== '${method.id}'`}>Copy number</span>
-                <span x-show={`copiedId === '${method.id}'`} x-cloak>
-                  Copied
-                </span>
-              </button>
-            </li>
-          ))
-        }
-      </ul>
-
-      <p class="text-sm leading-relaxed text-[var(--color-ink-muted)]">
-        Open your own GCash or GoTyme app to complete the transfer. No payment is processed on this
-        site. Thank you for your trust.
-      </p>
-    </section>
+    <p class="text-sm leading-relaxed text-[var(--color-ink-muted)]">
+      Thank you — whether you give, share feedback, or simply keep reading.
+      <a class="ml-1 underline-offset-2 hover:underline" href={`/${version}/feedback`} data-astro-prefetch>
+        Send feedback
+      </a>
+    </p>
   </div>
 </Layout>

@@ -16,6 +16,8 @@ const book = catalog.find((b) => b.slug === bookSlug);
 if (!book) {
   return Astro.redirect(`/${version}/`);
 }
+
+const chapterCount = book.chapters.length;
 ---
 
 <Layout title={book.name} version={version} width="wide">
@@ -25,38 +27,46 @@ if (!book) {
     <nav class="mb-5 text-sm" aria-label="Breadcrumb">
       <a
         class="text-[var(--color-ink-muted)] transition hover:text-[var(--color-ink)]"
-        href={`/${version}/`}
+        href={`/${version}/#books`}
         data-astro-prefetch
       >
         ← All books
       </a>
     </nav>
 
-    <header class="border-b border-[var(--color-line)] pb-5">
-      <p class="eyebrow">Book</p>
-      <h1 class="font-scripture mt-1.5 text-2xl font-semibold tracking-tight sm:text-3xl">
+    <header class="border-b border-[var(--color-line)] pb-6">
+      <p class="eyebrow">Choose a chapter</p>
+      <h1 class="font-scripture mt-1.5 text-3xl font-semibold tracking-tight sm:text-4xl">
         {book.name}
       </h1>
-      <p class="mt-2 text-sm text-[var(--color-ink-muted)]">
-        {book.chapters.length} {book.chapters.length === 1 ? "chapter" : "chapters"}
+      <p class="mt-2 text-sm text-[var(--color-ink-muted)] sm:text-base">
+        {chapterCount} {chapterCount === 1 ? "chapter" : "chapters"} · tap a number to start reading
       </p>
     </header>
 
-    <h2 class="mt-8 text-sm font-semibold uppercase tracking-[0.1em] text-[var(--color-ink-subtle)]">
-      Chapters
-    </h2>
-    <ul class="mt-4 grid grid-cols-5 gap-2 sm:grid-cols-8 md:grid-cols-10">
-      {book.chapters.map((chapter) => (
-        <li>
-          <a
-            class="inline-flex h-11 w-full items-center justify-center rounded-xl border border-[var(--color-line)] bg-[var(--color-surface-elevated)] text-sm tabular-nums text-[var(--color-ink)] transition hover:border-[var(--color-primary)] hover:bg-[color-mix(in_srgb,var(--color-primary)_6%,var(--color-surface-elevated))] active:scale-[0.98] sm:h-10"
-            href={`/${version}/chapter/${book.slug}/${chapter}`}
-            data-astro-prefetch
-          >
-            {chapter}
-          </a>
-        </li>
-      ))}
+    <h2 class="sr-only">Chapters</h2>
+    <ul
+      class="mt-6 grid grid-cols-4 gap-2.5 sm:grid-cols-6 md:grid-cols-8 lg:grid-cols-10"
+      aria-label={`Chapters of ${book.name}`}
+    >
+      {
+        book.chapters.map((chapter) => (
+          <li>
+            <a
+              class="inline-flex h-12 w-full items-center justify-center rounded-xl border border-[var(--color-line)] bg-[var(--color-surface-elevated)] text-base font-semibold tabular-nums text-[var(--color-ink)] shadow-[0_1px_0_rgba(0,0,0,0.03)] transition hover:border-[var(--color-primary)] hover:bg-[color-mix(in_srgb,var(--color-primary)_8%,var(--color-surface-elevated))] hover:text-[var(--color-primary)] active:scale-[0.97] sm:h-11 sm:text-[0.95rem]"
+              href={`/${version}/chapter/${book.slug}/${chapter}`}
+              data-astro-prefetch
+              aria-label={`${book.name} chapter ${chapter}`}
+            >
+              {chapter}
+            </a>
+          </li>
+        ))
+      }
     </ul>
+
+    <p class="mt-8 text-sm text-[var(--color-ink-muted)]">
+      Tip: after opening a chapter, use Next / Previous at the bottom to keep reading.
+    </p>
   </div>
 </Layout>
