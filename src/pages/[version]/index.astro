@@ -28,7 +28,10 @@ const showTabs = otCount > 0 && ntCount > 0;
 const defaultTab = otCount > 0 ? "ot" : "nt";
 
 const startHref =
-  daily?.url ?? (books[0] ? `/${version}/book/${books[0].slug}` : "#books");
+  daily?.url ??
+  (books[0]?.chapters?.[0]
+    ? `/${version}/chapter/${books[0].slug}/${books[0].chapters[0]}`
+    : "#books");
 ---
 
 <Layout title={`Bible · ${meta.shortLabel}`} version={version} width="wide" flushHero>

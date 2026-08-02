@@ -1,0 +1,88 @@
+---
+import type { BookLike } from "../lib/books";
+
+interface Props {
+  version: string;
+  sections: Array<{ id: string; label: string; books: BookLike[] }>;
+}
+
+const { version, sections } = Astro.props;
+
+function chaptersOf(book: BookLike): number[] {
+  return book.chapters ?? [];
+}
+---
+
+<div class="space-y-3">
+  {
+    sections.map((section) => {
+      const totalChapters = section.books.reduce(
+        (sum, book) => sum + chaptersOf(book).length,
+        0,
+      );
+      return (
+        <details class="group book-start overflow-hidden rounded-2xl border border-[var(--color-line)] bg-[var(--color-surface-elevated)]">
+          <summary class="flex min-h-[4.25rem] cursor-pointer list-none touch-manipulation items-center justify-between gap-4 px-4 py-4 transition hover:bg-[color-mix(in_srgb,var(--color-primary)_6%,transparent)] sm:px-5 [&::-webkit-details-marker]:hidden">
+            <span class="min-w-0">
+              <span class="block text-[0.65rem] font-semibold uppercase tracking-[0.14em] text-[var(--color-ink-subtle)]">
+                {section.label}
+              </span>
+              <span class="mt-1 flex flex-wrap items-baseline gap-x-2 gap-y-0.5">
+                <span class="font-scripture text-xl font-semibold tracking-tight text-[var(--color-ink)] sm:text-2xl">
+                  Start reading
+                </span>
+                <span class="text-sm text-[var(--color-ink-muted)]">
+                  {section.books.length} books · {totalChapters} chapters
+                </span>
+              </span>
+            </span>
+            <span
+              class="inline-flex h-10 shrink-0 items-center gap-1.5 rounded-full border border-[var(--color-line)] bg-[var(--color-surface)] px-3 text-sm font-medium text-[var(--color-ink-muted)] transition group-open:border-[var(--color-primary)]/40 group-open:text-[var(--color-primary)]"
+            >
+              <span class="group-open:hidden">Open</span>
+              <span class="hidden group-open:inline">Close</span>
+              <span class="text-[0.65rem] transition group-open:rotate-180" aria-hidden="true">
+                ▾
+              </span>
+            </span>
+          </summary>
+
+          <div class="space-y-6 border-t border-[var(--color-line)] bg-[var(--color-surface)]/35 px-4 py-5 sm:px-5">
+            {section.books.map((book) => {
+              const chs = chaptersOf(book);
+              return (
+                <div>
+                  <h4 class="font-scripture text-base font-semibold tracking-tight text-[var(--color-ink)] sm:text-lg">
+                    {book.name}
+                  </h4>
+                  <ul class="mt-2.5 grid grid-cols-6 gap-1.5 sm:grid-cols-9 md:grid-cols-12">
+                    {chs.map((n) => (
+                      <li>
+                        <a
+                          class="inline-flex h-9 w-full touch-manipulation items-center justify-center rounded-md border border-[var(--color-line)] bg-[var(--color-surface-elevated)] text-sm font-medium tabular-nums text-[var(--color-ink)] transition hover:border-[var(--color-primary)] hover:text-[var(--color-primary)] active:scale-[0.96] sm:h-10"
+                          href={`/${version}/chapter/${book.slug}/${n}`}
+                          data-astro-prefetch="tap"
+                        >
+                          {n}
+                        </a>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              );
+            })}
+          </div>
+        </details>
+      );
+    })
+  }
+</div>
+
+<style>
+  .book-start summary {
+    outline: none;
+  }
+  .book-start summary:focus-visible {
+    box-shadow: inset 0 0 0 2px var(--color-primary);
+  }
+</style>

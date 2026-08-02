@@ -11,108 +11,123 @@ const links = [
   {
     href: `/${version}/prayer`,
     label: "Prayer",
-    hint: "Wall & private journal",
+    hint: "Share and pray with others",
     icon: "prayer",
+    tone: "from-[#1e3a5f]/35 to-transparent",
   },
   {
     href: `/${version}/devotionals`,
     label: "Devotionals",
-    hint: "Themes for the heart",
+    hint: "Quiet themes for the heart",
     icon: "devotionals",
+    tone: "from-[#8f7024]/30 to-transparent",
   },
   {
     href: `/${version}/journey`,
     label: "Journey",
-    hint: "Streak & progress",
+    hint: "Your streak and progress",
     icon: "journey",
+    tone: "from-[#4f6b54]/30 to-transparent",
   },
   {
     href: `/${version}/plans`,
     label: "Plans",
-    hint: "Guided reading",
+    hint: "Guided reading paths",
     icon: "plans",
+    tone: "from-[#2c4a73]/30 to-transparent",
   },
   {
     href: `/${version}/play`,
     label: "Play",
     hint: "Scripture games",
     icon: "play",
+    tone: "from-[#5a4a8a]/28 to-transparent",
   },
   {
     href: "/saved",
     label: "Saved",
-    hint: "Highlights & notes",
+    hint: "Highlights and notes",
     icon: "saved",
+    tone: "from-[#8f7024]/22 to-transparent",
   },
   {
     href: `/${version}/feedback`,
     label: "Feedback",
-    hint: "Help improve the app",
+    hint: "Help us improve",
     icon: "feedback",
+    tone: "from-[#334155]/35 to-transparent",
   },
 ] as const;
 
-const iconPaths: Record<(typeof links)[number]["icon"], string> = {
+const icons: Record<(typeof links)[number]["icon"], string> = {
   prayer:
     "M12 21c-4.2-2.8-7-6.1-7-9.5A4.5 4.5 0 0 1 12 7a4.5 4.5 0 0 1 7 4.5c0 3.4-2.8 6.7-7 9.5z",
   devotionals:
-    "M6 4h9a3 3 0 0 1 3 3v13l-4.5-2.5L9 20V7a1 1 0 0 0-1-1H6zm0 0H5a1 1 0 0 0-1 1v12",
-  journey:
-    "M4 19h16M7 16l3-8 3 5 3-7 3 10",
-  plans:
-    "M8 5h11v14H8zm0 0H6a1 1 0 0 0-1 1v13m4-10h7m-7 4h7m-7 4h4",
-  play:
-    "M8 6.5v11l9-5.5-9-5.5z",
-  saved:
-    "M7 4h10v16l-5-3-5 3V4z",
-  feedback:
-    "M5 6h14v9H9l-4 3V6z",
+    "M5 4h9a3 3 0 0 1 3 3v13l-4-2.2L9 20V7H5zm0 0H4a1 1 0 0 0-1 1v14",
+  journey: "M4 19h16M6 15l4-9 3 6 3-8 4 11",
+  plans: "M8 4h11v16H8zm0 0H6v16m3-11h7m-7 4h7m-7 4h5",
+  play: "M9 7.5v9l7.5-4.5L9 7.5z",
+  saved: "M8 3h8v18l-4-2.5L8 21V3z",
+  feedback: "M4 5h16v10H9l-5 4V5z",
 };
 ---
 
 <section class="section-rule scroll-mt-28" aria-labelledby="path-heading">
-  <header class="max-w-xl">
+  <header class="max-w-xl border-b border-[var(--color-line)] pb-5">
     <p class="eyebrow">Go deeper</p>
     <h2
       id="path-heading"
-      class="font-scripture mt-2 text-2xl font-semibold tracking-tight text-[var(--color-ink)] sm:text-3xl"
+      class="font-scripture mt-1.5 text-2xl font-semibold tracking-tight text-[var(--color-ink)] sm:text-3xl"
     >
       When you’re ready
     </h2>
-    <p class="mt-2 text-sm leading-relaxed text-[var(--color-ink-muted)] sm:text-base">
-      Optional paths — open only what you need today.
+    <p class="mt-2 text-sm leading-relaxed text-[var(--color-ink-muted)]">
+      Choose a path — each one is optional, clear, and ready when you are.
     </p>
   </header>
 
-  <ul class="mt-7 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+  <ul class="mt-7 grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
     {
       links.map((link) => (
         <li>
           <a
             href={link.href}
-            class="ui-card group flex h-full items-start gap-3.5 p-4 transition hover:border-[var(--color-primary)]/40 sm:p-5"
+            class="group relative flex h-full min-h-[9.5rem] flex-col overflow-hidden rounded-2xl border border-[var(--color-line)] bg-[var(--color-surface-elevated)] transition hover:border-[var(--color-primary)]/45 hover:shadow-[0_12px_40px_-24px_rgba(0,0,0,0.45)]"
             data-astro-prefetch="tap"
           >
-            <span
-              class="inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-xl border border-[var(--color-line)] bg-[color-mix(in_srgb,var(--color-primary)_8%,var(--color-surface))] text-[var(--color-primary)] transition group-hover:border-[var(--color-primary)]/35"
+            <div
+              class:list={[
+                "pointer-events-none absolute inset-0 bg-gradient-to-br opacity-90",
+                link.tone,
+              ]}
               aria-hidden="true"
-            >
-              <svg
-                class="h-5 w-5"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                stroke-width="1.75"
-                stroke-linecap="round"
-                stroke-linejoin="round"
+            />
+            <div class="relative flex flex-1 flex-col p-5">
+              <span
+                class="inline-flex h-12 w-12 items-center justify-center rounded-2xl border border-[var(--color-line)]/80 bg-[var(--color-surface-elevated)]/90 text-[var(--color-primary)] shadow-sm backdrop-blur-sm"
+                aria-hidden="true"
               >
-                <path d={iconPaths[link.icon]} />
-              </svg>
-            </span>
-            <span class="min-w-0">
-              <span class="block font-semibold text-[var(--color-ink)]">{link.label}</span>
-              <span class="mt-1 block text-sm text-[var(--color-ink-muted)]">{link.hint}</span>
-            </span>
+                <svg
+                  class="h-6 w-6"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="1.7"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                >
+                  <path d={icons[link.icon]} />
+                </svg>
+              </span>
+              <span class="mt-auto pt-6">
+                <span class="block font-scripture text-xl font-semibold tracking-tight text-[var(--color-ink)]">
+                  {link.label}
+                </span>
+                <span class="mt-1 block text-sm leading-relaxed text-[var(--color-ink-muted)]">
+                  {link.hint}
+                </span>
+              </span>
+            </div>
           </a>
         </li>
       ))

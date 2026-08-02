@@ -1,5 +1,6 @@
 ---
 import { groupBooks, isOldTestament, type BookLike } from "../lib/books";
+import BookAccordion from "./BookAccordion.astro";
 
 interface Props {
   version: string;
@@ -28,41 +29,37 @@ const ntOther = otherBooks.filter((b) => !isOldTestament(b.slug));
 
 if (otOther.length) ot.push({ id: "other-ot", label: "Other", books: otOther });
 if (ntOther.length) nt.push({ id: "other-nt", label: "Other", books: ntOther });
-
-function chaptersOf(book: BookLike): number[] {
-  return book.chapters ?? [];
-}
 ---
 
 <section
   id="books"
   class="scroll-mt-28"
-  x-data={`{ tab: '${defaultTab}', open: '' }`}
+  x-data={`{ tab: '${defaultTab}' }`}
 >
-  <div class="flex flex-col gap-5 sm:flex-row sm:items-end sm:justify-between">
-    <div class="max-w-xl">
+  <div class="flex flex-col gap-4 border-b border-[var(--color-line)] pb-5 sm:flex-row sm:items-end sm:justify-between sm:gap-6">
+    <div class="max-w-lg">
       <p class="eyebrow">Scripture</p>
-      <h2 class="font-scripture mt-2 text-2xl font-semibold tracking-tight text-[var(--color-ink)] sm:text-3xl">
+      <h2 class="font-scripture mt-1.5 text-2xl font-semibold tracking-tight text-[var(--color-ink)] sm:text-3xl">
         Books
       </h2>
-      <p class="mt-2 text-sm leading-relaxed text-[var(--color-ink-muted)] sm:text-base">
-        Tap a book to see every chapter here — one clean list.
+      <p class="mt-2 text-sm leading-relaxed text-[var(--color-ink-muted)]">
+        Tap Start reading once — every chapter in that section opens here.
       </p>
     </div>
 
     {
       showTabs && (
         <div
-          class="inline-flex max-w-full overflow-x-auto rounded-xl border border-[var(--color-line)] bg-[var(--color-surface-elevated)] p-1"
+          class="inline-flex max-w-full overflow-x-auto rounded-full border border-[var(--color-line)] bg-[var(--color-surface-elevated)] p-1"
           role="tablist"
           aria-label="Testament"
         >
           <button
             type="button"
             role="tab"
-            class="min-h-10 shrink-0 touch-manipulation rounded-lg px-4 text-sm font-medium transition"
+            class="min-h-9 shrink-0 touch-manipulation rounded-full px-4 text-sm font-medium transition"
             :class="tab === 'ot' ? 'bg-[var(--color-primary)] text-[var(--color-on-primary)]' : 'text-[var(--color-ink-muted)] hover:text-[var(--color-ink)]'"
-            @click="tab = 'ot'; open = ''"
+            @click="tab = 'ot'"
             :aria-selected="(tab === 'ot').toString()"
           >
             Old Testament
@@ -70,9 +67,9 @@ function chaptersOf(book: BookLike): number[] {
           <button
             type="button"
             role="tab"
-            class="min-h-10 shrink-0 touch-manipulation rounded-lg px-4 text-sm font-medium transition"
+            class="min-h-9 shrink-0 touch-manipulation rounded-full px-4 text-sm font-medium transition"
             :class="tab === 'nt' ? 'bg-[var(--color-primary)] text-[var(--color-on-primary)]' : 'text-[var(--color-ink-muted)] hover:text-[var(--color-ink)]'"
-            @click="tab = 'nt'; open = ''"
+            @click="tab = 'nt'"
             :aria-selected="(tab === 'nt').toString()"
           >
             New Testament
@@ -82,140 +79,22 @@ function chaptersOf(book: BookLike): number[] {
     }
   </div>
 
-  <div class="mt-8" x-show="tab === 'ot'" {...(defaultTab === "nt" ? { "x-cloak": true } : {})}>
+  <div class="mt-6" x-show="tab === 'ot'" {...(defaultTab === "nt" ? { "x-cloak": true } : {})}>
     {
       ot.length === 0 ? (
         <p class="text-sm text-[var(--color-ink-subtle)]">No Old Testament books in this edition.</p>
       ) : (
-        <div class="space-y-8">
-          {ot.map((section) => (
-            <div>
-              <h3 class="text-xs font-semibold uppercase tracking-[0.12em] text-[var(--color-ink-subtle)]">
-                {section.label}
-              </h3>
-              <ul class="mt-3 space-y-2">
-                {section.books.map((book) => {
-                  const chs = chaptersOf(book);
-                  return (
-                    <li class="overflow-hidden rounded-xl border border-[var(--color-line)] bg-[var(--color-surface-elevated)]">
-                      <button
-                        type="button"
-                        class="flex min-h-12 w-full touch-manipulation items-center justify-between gap-3 px-3.5 py-2.5 text-left transition hover:bg-[color-mix(in_srgb,var(--color-primary)_5%,transparent)]"
-                        @click={`open = open === '${book.slug}' ? '' : '${book.slug}'`}
-                        :aria-expanded={`open === '${book.slug}'`}
-                      >
-                        <span class="font-medium text-[var(--color-ink)]">{book.name}</span>
-                        <span
-                          class="text-xs text-[var(--color-ink-subtle)] transition"
-                          :class={`open === '${book.slug}' ? 'rotate-180' : ''`}
-                          aria-hidden="true"
-                        >
-                          ▾
-                        </span>
-                      </button>
-                      <div
-                        class="border-t border-[var(--color-line)] px-3 pb-3 pt-2"
-                        x-show={`open === '${book.slug}'`}
-                        x-cloak
-                      >
-                        <p class="mb-2 text-xs text-[var(--color-ink-subtle)]">Choose a chapter</p>
-                        <ul class="grid grid-cols-5 gap-1.5 sm:grid-cols-8 md:grid-cols-10">
-                          {chs.map((n) => (
-                            <li>
-                              <a
-                                class="inline-flex h-10 w-full touch-manipulation items-center justify-center rounded-lg border border-[var(--color-line)] text-sm font-semibold tabular-nums text-[var(--color-ink)] transition hover:border-[var(--color-primary)] hover:text-[var(--color-primary)] active:scale-[0.97]"
-                                href={`/${version}/chapter/${book.slug}/${n}`}
-                                data-astro-prefetch="tap"
-                              >
-                                {n}
-                              </a>
-                            </li>
-                          ))}
-                        </ul>
-                        <a
-                          class="mt-2.5 inline-flex text-xs text-[var(--color-ink-subtle)] underline-offset-2 hover:underline"
-                          href={`/${version}/book/${book.slug}`}
-                          data-astro-prefetch="tap"
-                        >
-                          Open book page →
-                        </a>
-                      </div>
-                    </li>
-                  );
-                })}
-              </ul>
-            </div>
-          ))}
-        </div>
+        <BookAccordion version={version} sections={ot} />
       )
     }
   </div>
 
-  <div class="mt-8" x-show="tab === 'nt'" {...(defaultTab === "ot" ? { "x-cloak": true } : {})}>
+  <div class="mt-6" x-show="tab === 'nt'" {...(defaultTab === "ot" ? { "x-cloak": true } : {})}>
     {
       nt.length === 0 ? (
         <p class="text-sm text-[var(--color-ink-subtle)]">No New Testament books in this edition.</p>
       ) : (
-        <div class="space-y-8">
-          {nt.map((section) => (
-            <div>
-              <h3 class="text-xs font-semibold uppercase tracking-[0.12em] text-[var(--color-ink-subtle)]">
-                {section.label}
-              </h3>
-              <ul class="mt-3 space-y-2">
-                {section.books.map((book) => {
-                  const chs = chaptersOf(book);
-                  return (
-                    <li class="overflow-hidden rounded-xl border border-[var(--color-line)] bg-[var(--color-surface-elevated)]">
-                      <button
-                        type="button"
-                        class="flex min-h-12 w-full touch-manipulation items-center justify-between gap-3 px-3.5 py-2.5 text-left transition hover:bg-[color-mix(in_srgb,var(--color-primary)_5%,transparent)]"
-                        @click={`open = open === '${book.slug}' ? '' : '${book.slug}'`}
-                        :aria-expanded={`open === '${book.slug}'`}
-                      >
-                        <span class="font-medium text-[var(--color-ink)]">{book.name}</span>
-                        <span
-                          class="text-xs text-[var(--color-ink-subtle)] transition"
-                          :class={`open === '${book.slug}' ? 'rotate-180' : ''`}
-                          aria-hidden="true"
-                        >
-                          ▾
-                        </span>
-                      </button>
-                      <div
-                        class="border-t border-[var(--color-line)] px-3 pb-3 pt-2"
-                        x-show={`open === '${book.slug}'`}
-                        x-cloak
-                      >
-                        <p class="mb-2 text-xs text-[var(--color-ink-subtle)]">Choose a chapter</p>
-                        <ul class="grid grid-cols-5 gap-1.5 sm:grid-cols-8 md:grid-cols-10">
-                          {chs.map((n) => (
-                            <li>
-                              <a
-                                class="inline-flex h-10 w-full touch-manipulation items-center justify-center rounded-lg border border-[var(--color-line)] text-sm font-semibold tabular-nums text-[var(--color-ink)] transition hover:border-[var(--color-primary)] hover:text-[var(--color-primary)] active:scale-[0.97]"
-                                href={`/${version}/chapter/${book.slug}/${n}`}
-                                data-astro-prefetch="tap"
-                              >
-                                {n}
-                              </a>
-                            </li>
-                          ))}
-                        </ul>
-                        <a
-                          class="mt-2.5 inline-flex text-xs text-[var(--color-ink-subtle)] underline-offset-2 hover:underline"
-                          href={`/${version}/book/${book.slug}`}
-                          data-astro-prefetch="tap"
-                        >
-                          Open book page →
-                        </a>
-                      </div>
-                    </li>
-                  );
-                })}
-              </ul>
-            </div>
-          ))}
-        </div>
+        <BookAccordion version={version} sections={nt} />
       )
     }
   </div>

@@ -1,6 +1,6 @@
 ---
 /**
- * Live public prayer wall preview on the home page.
+ * Live public prayer wall preview — clean home feed.
  * Alpine: homePrayerWall
  */
 interface Props {
@@ -17,74 +17,76 @@ const { version } = Astro.props;
   x-data="homePrayerWall()"
   x-init="boot()"
 >
-  <header class="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
-    <div class="max-w-xl">
-      <p class="eyebrow">Community</p>
+  <div class="flex flex-col gap-4 border-b border-[var(--color-line)] pb-5 sm:flex-row sm:items-end sm:justify-between sm:gap-6">
+    <div class="max-w-lg">
+      <p class="eyebrow">Together</p>
       <h2
         id="home-prayer-heading"
-        class="font-scripture mt-2 text-2xl font-semibold tracking-tight text-[var(--color-ink)] sm:text-3xl"
+        class="font-scripture mt-1.5 text-2xl font-semibold tracking-tight text-[var(--color-ink)] sm:text-3xl"
       >
         Prayer wall
       </h2>
-      <p class="mt-2 text-sm leading-relaxed text-[var(--color-ink-muted)] sm:text-base">
-        Public requests — pray, react, and leave a short word of encouragement.
+      <p class="mt-2 text-sm leading-relaxed text-[var(--color-ink-muted)]">
+        Live requests from others. Pray with them, react, or read a short comment.
       </p>
     </div>
     <a
-      class="btn-primary inline-flex !min-h-11 shrink-0 !px-4 text-sm"
+      class="btn-secondary inline-flex !min-h-10 shrink-0 touch-manipulation !px-4 text-sm"
       href={`/${version}/prayer`}
       data-astro-prefetch="tap"
     >
-      Open full wall
+      Full wall
     </a>
-  </header>
+  </div>
 
-  <p class="mt-4 text-xs text-[var(--color-ink-subtle)]" x-show="status" x-text="status" x-cloak></p>
+  <p class="mt-3 text-xs text-[var(--color-ink-subtle)]" x-show="status" x-text="status" x-cloak></p>
 
-  <div
-    class="mt-5 rounded-2xl border border-[var(--color-line)] bg-[var(--color-surface-elevated)]"
-  >
-    <p class="px-4 py-6 text-sm text-[var(--color-ink-subtle)] sm:px-5" x-show="loading" x-cloak>
-      Loading prayer requests…
+  <div class="mt-5">
+    <p class="py-8 text-center text-sm text-[var(--color-ink-subtle)]" x-show="loading" x-cloak>
+      Loading…
     </p>
     <p
-      class="px-4 py-6 text-sm text-[var(--color-ink-muted)] sm:px-5"
+      class="rounded-xl border border-dashed border-[var(--color-line)] px-4 py-8 text-center text-sm text-[var(--color-ink-muted)]"
       x-show="!loading && items.length === 0"
       x-cloak
     >
-      No public requests yet.
-      <a class="underline-offset-2 hover:underline" href={`/${version}/prayer`} data-astro-prefetch="tap">
-        Be the first to share
-      </a>.
+      No requests yet.
+      <a
+        class="font-medium text-[var(--color-ink)] underline-offset-2 hover:underline"
+        href={`/${version}/prayer`}
+        data-astro-prefetch="tap"
+      >
+        Share one
+      </a>
     </p>
 
-    <ul class="divide-y divide-[var(--color-line)]" x-show="!loading && items.length > 0" x-cloak>
+    <ul class="space-y-3" x-show="!loading && items.length > 0" x-cloak>
       <template x-for="item in items" :key="item.id">
-        <li class="px-4 py-4 sm:px-5 sm:py-5">
-          <div class="min-w-0">
-            <div class="flex flex-wrap items-baseline gap-x-2 gap-y-0.5">
-              <p class="text-sm font-semibold text-[var(--color-ink)]" x-text="item.displayName"></p>
-              <p class="text-xs text-[var(--color-ink-subtle)]" x-text="formatDate(item.createdAt)"></p>
-            </div>
-            <p
-              class="mt-2 whitespace-pre-wrap break-words text-[0.95rem] leading-relaxed text-[var(--color-ink-muted)]"
-              x-text="item.body"
-            ></p>
+        <li
+          class="rounded-xl border border-[var(--color-line)] bg-[var(--color-surface-elevated)] p-4 sm:p-5"
+        >
+          <div class="flex items-baseline justify-between gap-3">
+            <p class="truncate text-sm font-semibold text-[var(--color-ink)]" x-text="item.displayName"></p>
+            <p class="shrink-0 text-xs tabular-nums text-[var(--color-ink-subtle)]" x-text="formatDate(item.createdAt)"></p>
           </div>
+          <p
+            class="mt-2 whitespace-pre-wrap break-words text-[0.95rem] leading-relaxed text-[var(--color-ink-muted)]"
+            x-text="item.body"
+          ></p>
 
-          <div class="mt-3.5 flex flex-wrap items-center gap-2">
+          <div class="mt-4 flex flex-wrap gap-2">
             <button
               type="button"
-              class="inline-flex min-h-10 touch-manipulation items-center gap-1.5 rounded-full px-3 text-sm transition"
+              class="inline-flex min-h-9 touch-manipulation items-center gap-1.5 rounded-lg border border-[var(--color-line)] px-2.5 text-xs font-medium transition sm:text-sm"
               :class="hasReaction(item, 'prayed')
-                ? 'bg-[var(--color-highlight)] text-[var(--color-ink)]'
-                : 'text-[var(--color-ink-muted)] hover:bg-[var(--color-line)]/50'"
+                ? 'border-[var(--color-primary)]/40 bg-[color-mix(in_srgb,var(--color-primary)_12%,transparent)] text-[var(--color-ink)]'
+                : 'text-[var(--color-ink-muted)] hover:border-[var(--color-ink-subtle)]'"
               :disabled="busy"
               @click="react(item.id, 'prayed')"
             >
-              <span aria-hidden="true">🙏</span>
+              Prayed
               <span
-                class="tabular-nums text-xs"
+                class="tabular-nums text-[var(--color-ink-subtle)]"
                 x-show="item.reactionCounts.prayed"
                 x-text="item.reactionCounts.prayed"
                 x-cloak
@@ -92,16 +94,16 @@ const { version } = Astro.props;
             </button>
             <button
               type="button"
-              class="inline-flex min-h-10 touch-manipulation items-center gap-1.5 rounded-full px-3 text-sm transition"
+              class="inline-flex min-h-9 touch-manipulation items-center gap-1.5 rounded-lg border border-[var(--color-line)] px-2.5 text-xs font-medium transition sm:text-sm"
               :class="hasReaction(item, 'heart')
-                ? 'bg-[var(--color-highlight)] text-[var(--color-ink)]'
-                : 'text-[var(--color-ink-muted)] hover:bg-[var(--color-line)]/50'"
+                ? 'border-[var(--color-primary)]/40 bg-[color-mix(in_srgb,var(--color-primary)_12%,transparent)] text-[var(--color-ink)]'
+                : 'text-[var(--color-ink-muted)] hover:border-[var(--color-ink-subtle)]'"
               :disabled="busy"
               @click="react(item.id, 'heart')"
             >
-              <span aria-hidden="true">❤️</span>
+              Love
               <span
-                class="tabular-nums text-xs"
+                class="tabular-nums text-[var(--color-ink-subtle)]"
                 x-show="item.reactionCounts.heart"
                 x-text="item.reactionCounts.heart"
                 x-cloak
@@ -109,17 +111,16 @@ const { version } = Astro.props;
             </button>
             <button
               type="button"
-              class="inline-flex min-h-10 touch-manipulation items-center gap-1.5 rounded-full px-3 text-sm transition"
+              class="inline-flex min-h-9 touch-manipulation items-center gap-1.5 rounded-lg border border-[var(--color-line)] px-2.5 text-xs font-medium transition sm:text-sm"
               :class="hasReaction(item, 'amen')
-                ? 'bg-[var(--color-highlight)] text-[var(--color-ink)]'
-                : 'text-[var(--color-ink-muted)] hover:bg-[var(--color-line)]/50'"
+                ? 'border-[var(--color-primary)]/40 bg-[color-mix(in_srgb,var(--color-primary)_12%,transparent)] text-[var(--color-ink)]'
+                : 'text-[var(--color-ink-muted)] hover:border-[var(--color-ink-subtle)]'"
               :disabled="busy"
               @click="react(item.id, 'amen')"
             >
-              <span aria-hidden="true">✦</span>
-              <span class="text-xs">Amen</span>
+              Amen
               <span
-                class="tabular-nums text-xs"
+                class="tabular-nums text-[var(--color-ink-subtle)]"
                 x-show="item.reactionCounts.amen"
                 x-text="item.reactionCounts.amen"
                 x-cloak
@@ -127,12 +128,12 @@ const { version } = Astro.props;
             </button>
             <button
               type="button"
-              class="inline-flex min-h-10 touch-manipulation items-center gap-1.5 rounded-full px-3 text-sm text-[var(--color-ink-muted)] transition hover:bg-[var(--color-line)]/50"
+              class="inline-flex min-h-9 touch-manipulation items-center gap-1.5 rounded-lg border border-[var(--color-line)] px-2.5 text-xs font-medium text-[var(--color-ink-muted)] transition hover:border-[var(--color-ink-subtle)] sm:text-sm"
               @click="item.commentsOpen = !item.commentsOpen"
             >
               Comments
               <span
-                class="tabular-nums text-xs"
+                class="tabular-nums"
                 x-show="item.comments.length"
                 x-text="item.comments.length"
                 x-cloak
@@ -140,24 +141,24 @@ const { version } = Astro.props;
             </button>
           </div>
 
-          <div class="mt-3 space-y-2.5 border-t border-[var(--color-line)]/70 pt-3" x-show="item.commentsOpen" x-cloak>
-            <template x-if="item.comments.length === 0">
-              <p class="text-sm text-[var(--color-ink-subtle)]">No comments yet.</p>
-            </template>
+          <div class="mt-3 space-y-2 rounded-lg bg-[var(--color-surface)]/60 px-3 py-3" x-show="item.commentsOpen" x-cloak>
+            <p class="text-sm text-[var(--color-ink-subtle)]" x-show="item.comments.length === 0" x-cloak>
+              No comments yet.
+            </p>
             <ul class="space-y-2" x-show="item.comments.length > 0">
               <template x-for="c in item.comments.slice(0, 3)" :key="c.id">
-                <li class="text-sm leading-relaxed">
+                <li class="text-sm leading-relaxed text-[var(--color-ink-muted)]">
                   <span class="font-medium text-[var(--color-ink)]" x-text="c.displayName"></span>
-                  <span class="text-[var(--color-ink-muted)]" x-text="': ' + c.body"></span>
+                  <span x-text="' — ' + c.body"></span>
                 </li>
               </template>
             </ul>
             <a
-              class="inline-flex text-sm text-[var(--color-primary)] underline-offset-2 hover:underline"
-              :href="`/${version}/prayer#wall`"
+              class="inline-flex pt-1 text-sm font-medium text-[var(--color-primary)] underline-offset-2 hover:underline"
+              href={`/${version}/prayer#wall`}
               data-astro-prefetch="tap"
             >
-              Reply on the full wall →
+              Reply on full wall
             </a>
           </div>
         </li>
