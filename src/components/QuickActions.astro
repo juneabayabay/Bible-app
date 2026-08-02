@@ -1,25 +1,23 @@
 ---
 /**
- * Compact continue bar — no extra heading noise.
+ * Continue + Saved — balanced action strip.
  */
 ---
 
-<section
-  class="flex flex-col gap-2 rounded-xl border border-[var(--color-line)] bg-[var(--color-surface-elevated)] p-3 sm:flex-row sm:items-center sm:gap-3 sm:p-3.5"
-  aria-label="Continue"
->
+<section aria-label="Continue reading" class="grid gap-2 sm:grid-cols-[1fr_auto]">
   <a
-    class="btn-primary !min-h-11 w-full touch-manipulation !px-4 text-sm sm:flex-1"
+    class="btn-primary flex !min-h-12 touch-manipulation items-center justify-center gap-2 !px-5 text-sm sm:justify-start"
     :href="continueUrl || '#books'"
     data-astro-prefetch
   >
+    <span class="opacity-80" aria-hidden="true">→</span>
     <span x-show="continueUrl" x-cloak>
-      Continue · <span x-text="continueLabel"></span>
+      Continue · <span class="font-semibold" x-text="continueLabel"></span>
     </span>
     <span x-show="!continueUrl">Open Bible</span>
   </a>
   <a
-    class="btn-secondary !min-h-11 w-full touch-manipulation !px-4 text-sm sm:w-auto"
+    class="btn-secondary flex !min-h-12 touch-manipulation items-center justify-center !px-5 text-sm"
     href="/saved"
     data-astro-prefetch="tap"
   >
