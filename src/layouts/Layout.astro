@@ -15,6 +15,11 @@ interface Props {
   width?: "reading" | "wide";
   /** Allow full-bleed hero to reach the top edge under the header */
   flushHero?: boolean;
+  /**
+   * Focus mode — hide site header/footer for immersive play.
+   * Use with a slim in-page back bar.
+   */
+  focus?: boolean;
 }
 
 const {
@@ -23,6 +28,7 @@ const {
   showFooter = true,
   width = "reading",
   flushHero = false,
+  focus = false,
 } = Astro.props;
 
 const shell =
@@ -34,7 +40,7 @@ const oneSignalAppId = getOneSignalAppId();
 ---
 
 <!doctype html>
-<html lang="en">
+<html lang="en" class:list={[focus && "focus-mode"]}>
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
@@ -104,41 +110,65 @@ const oneSignalAppId = getOneSignalAppId();
     }
   </head>
   <body class="flex min-h-dvh min-h-screen flex-col antialiased transition-colors duration-200">
-    <header class="site-header sticky top-0 z-40 border-b border-[var(--color-line)] bg-[var(--color-surface-elevated)]/92 backdrop-blur-md supports-[padding:max(0px)]:pt-[env(safe-area-inset-top)]">
-      <div class:list={[shell, "py-2 sm:py-2.5"]}>
-        <div class="flex flex-wrap items-center gap-x-2 gap-y-2 sm:flex-nowrap sm:gap-x-3">
-          <a
-            href={`/${version}/`}
-            data-home-link
-            class="order-1 shrink-0 font-scripture text-lg font-semibold tracking-tight text-[var(--color-ink)] transition hover:text-[var(--color-primary)] sm:text-xl"
-            data-astro-prefetch
-          >
-            Bible
-          </a>
+    {
+      !focus && (
+        <header class="site-header sticky top-0 z-40 border-b border-[var(--color-line)] bg-[var(--color-surface-elevated)]/92 backdrop-blur-md supports-[padding:max(0px)]:pt-[env(safe-area-inset-top)]">
+          <div class:list={[shell, "py-2 sm:py-2.5"]}>
+            <div class="flex flex-wrap items-center gap-x-2 gap-y-2 sm:flex-nowrap sm:gap-x-3">
+              <a
+                href={`/${version}/`}
+                data-home-link
+                class="order-1 shrink-0 font-scripture text-lg font-semibold tracking-tight text-[var(--color-ink)] transition hover:text-[var(--color-primary)] sm:text-xl"
+                data-astro-prefetch
+              >
+                Bible
+              </a>
 
-          <div class="order-3 w-full min-w-0 sm:order-2 sm:w-auto sm:flex-1 sm:max-w-xl md:max-w-2xl">
-            <slot name="header" />
+              <div class="order-3 w-full min-w-0 sm:order-2 sm:w-auto sm:flex-1 sm:max-w-xl md:max-w-2xl">
+                <slot name="header" />
+              </div>
+
+              <div class="order-2 ml-auto flex shrink-0 items-center gap-0.5 sm:order-3 sm:ml-0">
+                <VersionPicker version={version} />
+                <ThemeToggle />
+                <NavMenu version={version} />
+              </div>
+            </div>
           </div>
+        </header>
+      )
+    }
 
-          <div class="order-2 ml-auto flex shrink-0 items-center gap-0.5 sm:order-3 sm:ml-0">
-            <VersionPicker version={version} />
-            <ThemeToggle />
-            <NavMenu version={version} />
-          </div>
-        </div>
-      </div>
-    </header>
-
-    <main class:list={[shell, "flex-1", flushHero ? "pb-16 sm:pb-14 lg:pb-14" : "py-7 pb-16 sm:py-9 sm:pb-14 lg:py-11"]}>
+    <main
+      class:list={[
+        shell,
+        "flex-1",
+        focus
+          ? "focus-main pb-[max(1.25rem,env(safe-area-inset-bottom))] pt-[max(0.75rem,env(safe-area-inset-top))]"
+          : flushHero
+            ? "pb-16 sm:pb-14 lg:pb-14"
+            : "py-7 pb-16 sm:py-9 sm:pb-14 lg:py-11",
+      ]}
+    >
       <slot />
-      {showFooter && <SiteFooter version={version} />}
+      {!focus && showFooter && <SiteFooter version={version} />}
     </main>
-    <InstallAppBanner />
+    {!focus && <InstallAppBanner />}
   </body>
 </html>
 
 <style is:global>
   [x-cloak] {
     display: none !important;
+  }
+
+  html.focus-mode,
+  html.focus-mode body {
+    background-color: var(--color-surface);
+  }
+
+  .focus-main {
+    min-height: 100dvh;
+    min-height: 100vh;
   }
 </style>

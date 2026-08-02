@@ -1,6 +1,6 @@
 ---
 import Layout from "../../../layouts/Layout.astro";
-import SearchBar from "../../../components/SearchBar.astro";
+import GameFocusChrome from "../../../components/GameFocusChrome.astro";
 import GameRewardPanel from "../../../components/GameRewardPanel.astro";
 import { resolveVersionId } from "../../../lib/bible";
 import { getVersion } from "../../../lib/versions";
@@ -28,24 +28,15 @@ const payload = {
 };
 ---
 
-<Layout title={`Fill the blank · ${meta.shortLabel}`} version={version}>
-  <SearchBar slot="header" version={version} />
-
+<Layout title={`Fill the blank · ${meta.shortLabel}`} version={version} focus showFooter={false}>
   <script type="application/json" id="verse-game-payload" set:html={jsonForScript(payload)} />
 
   <div class="page-stack measure" x-data="verseFillGame()" x-init="boot()">
-    <header class="border-b border-[var(--color-line)] pb-5">
-      <p class="text-sm text-[var(--color-ink-muted)]">
-        <a href={`/${version}/play`} class="hover:underline" data-astro-prefetch>← Games</a>
+    <GameFocusChrome version={version} title="Fill the blank" vibe="Memory">
+      <p class="mt-2 text-sm leading-relaxed text-[var(--color-ink-muted)]">
+        Choose your level — one verse at a time.
       </p>
-      <p class="eyebrow mt-5">Play</p>
-      <h1 class="font-scripture mt-1.5 text-3xl font-semibold tracking-tight sm:text-4xl">
-        Fill the blank
-      </h1>
-      <p class="mt-2 text-sm leading-relaxed text-[var(--color-ink-muted)] sm:text-base">
-        Choose your level and grow — one verse at a time.
-      </p>
-    </header>
+    </GameFocusChrome>
 
     <p class="text-sm text-[var(--color-ink-muted)]" x-show="verses.length === 0" x-cloak>
       No verses available for this version today.

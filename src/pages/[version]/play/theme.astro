@@ -1,6 +1,6 @@
 ---
 import Layout from "../../../layouts/Layout.astro";
-import SearchBar from "../../../components/SearchBar.astro";
+import GameFocusChrome from "../../../components/GameFocusChrome.astro";
 import GameRewardPanel from "../../../components/GameRewardPanel.astro";
 import { resolveVersionId } from "../../../lib/bible";
 import { getVersion } from "../../../lib/versions";
@@ -24,23 +24,15 @@ const verses = resolveGameVerses(version, maxGameVerseCount()).map((v) => ({
 const payload = { version, verses, labels: THEME_LABELS };
 ---
 
-<Layout title={`Heart compass · ${meta.shortLabel}`} version={version}>
-  <SearchBar slot="header" version={version} />
+<Layout title={`Heart compass · ${meta.shortLabel}`} version={version} focus showFooter={false}>
   <script type="application/json" id="theme-payload" set:html={jsonForScript(payload)} />
 
   <div class="page-stack measure" x-data="heartCompassGame()" x-init="boot()">
-    <header class="border-b border-[var(--color-line)] pb-5">
-      <p class="text-sm text-[var(--color-ink-muted)]">
-        <a href={`/${version}/play`} class="hover:underline" data-astro-prefetch>← Games</a>
-      </p>
-      <p class="eyebrow mt-5">Discern</p>
-      <h1 class="font-scripture mt-1.5 text-3xl font-semibold tracking-tight sm:text-4xl">
-        Heart compass
-      </h1>
+    <GameFocusChrome version={version} title="Heart compass" vibe="Discern">
       <p class="mt-2 text-sm text-[var(--color-ink-muted)]">
-        Not trivia — listen for the heart of the verse, then point the compass.
+        Listen for the heart of the verse, then choose.
       </p>
-    </header>
+    </GameFocusChrome>
 
     <p class="text-sm text-[var(--color-ink-muted)]" x-show="phase === 'empty'" x-cloak>
       Not enough themed verses in this version yet. Try another game.

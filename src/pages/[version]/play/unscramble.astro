@@ -1,6 +1,6 @@
 ---
 import Layout from "../../../layouts/Layout.astro";
-import SearchBar from "../../../components/SearchBar.astro";
+import GameFocusChrome from "../../../components/GameFocusChrome.astro";
 import GameRewardPanel from "../../../components/GameRewardPanel.astro";
 import { resolveVersionId } from "../../../lib/bible";
 import { getVersion } from "../../../lib/versions";
@@ -23,23 +23,15 @@ const verses = resolveGameVerses(version, maxGameVerseCount()).map((v) => ({
 const payload = { version, verses };
 ---
 
-<Layout title={`Word river · ${meta.shortLabel}`} version={version}>
-  <SearchBar slot="header" version={version} />
+<Layout title={`Word river · ${meta.shortLabel}`} version={version} focus showFooter={false}>
   <script type="application/json" id="unscramble-payload" set:html={jsonForScript(payload)} />
 
   <div class="page-stack measure" x-data="wordRiverGame()" x-init="boot()">
-    <header class="border-b border-[var(--color-line)] pb-5">
-      <p class="text-sm text-[var(--color-ink-muted)]">
-        <a href={`/${version}/play`} class="hover:underline" data-astro-prefetch>← Games</a>
-      </p>
-      <p class="eyebrow mt-5">Order</p>
-      <h1 class="font-scripture mt-1.5 text-3xl font-semibold tracking-tight sm:text-4xl">
-        Word river
-      </h1>
+    <GameFocusChrome version={version} title="Word river" vibe="Order">
       <p class="mt-2 text-sm text-[var(--color-ink-muted)]">
-        Tap words downstream in the true order. Wrong current? Pull one back.
+        Tap words in the true order. Wrong? Pull one back.
       </p>
-    </header>
+    </GameFocusChrome>
 
     <p class="text-sm text-[var(--color-ink-muted)]" x-show="!verses.length" x-cloak>
       No verses available for this version. Try another game.
