@@ -638,6 +638,71 @@ export default (Alpine: Alpine) => {
     },
   }));
 
+  Alpine.data("homePrayerWall", () => ({
+    items: [] as WallRequest[],
+    loading: true,
+    busy: false,
+    status: "",
+    version: "",
+
+    async boot() {
+      try {
+        const path = window.location.pathname.replace(/\/+$/, "") || "/";
+        const seg = path.split("/").filter(Boolean)[0];
+        if (seg && seg in VERSIONS) this.version = seg;
+      } catch {
+        /* ignore */
+      }
+      this.loading = true;
+      try {
+        const all = await listWallRequests();
+        this.items = all.slice(0, 6).map((item) => ({
+          ...item,
+          commentsOpen: false,
+        }));
+      } catch {
+        this.items = [];
+        this.status = "Couldn’t load the wall right now.";
+      } finally {
+        this.loading = false;
+      }
+    },
+
+    formatDate(iso: string) {
+      try {
+        const d = new Date(iso);
+        return d.toLocaleDateString(undefined, {
+          month: "short",
+          day: "numeric",
+        });
+      } catch {
+        return "";
+      }
+    },
+
+    hasReaction(item: WallRequest, type: ReactionType) {
+      return item.myReactions.includes(type);
+    },
+
+    async react(requestId: string, type: ReactionType) {
+      if (this.busy) return;
+      this.busy = true;
+      this.status = "";
+      try {
+        const all = await toggleReaction(requestId, type);
+        const openMap = new Map(this.items.map((i) => [i.id, Boolean(i.commentsOpen)]));
+        this.items = all.slice(0, 6).map((item) => ({
+          ...item,
+          commentsOpen: openMap.get(item.id) ?? false,
+        }));
+      } catch {
+        this.status = "Couldn’t update that reaction. Try again.";
+      } finally {
+        this.busy = false;
+      }
+    },
+  }));
+
   Alpine.data("todayPanel", (version: string, challengeId: string) => ({
     version,
     challengeId,

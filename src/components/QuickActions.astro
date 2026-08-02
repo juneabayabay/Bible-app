@@ -1,16 +1,18 @@
 ---
 /**
- * Compact next steps — Continue + Saved only (no streak/dashboard clutter).
+ * Compact next steps — Continue + Saved only.
  */
 ---
 
 <section aria-label="Your next step">
-  <div class="flex flex-col gap-3 rounded-2xl border border-[var(--color-line)] bg-[var(--color-surface-elevated)]/80 p-4 sm:flex-row sm:items-center sm:justify-between sm:gap-4 sm:p-5">
-    <p class="text-sm leading-relaxed text-[var(--color-ink-muted)]" x-text="welcome"></p>
+  <div
+    class="flex flex-col gap-3 rounded-2xl border border-[var(--color-line)] bg-[var(--color-surface-elevated)]/80 p-4 sm:flex-row sm:items-center sm:justify-between sm:gap-4 sm:p-5"
+  >
+    <p class="min-w-0 text-sm leading-relaxed text-[var(--color-ink-muted)]" x-text="welcome"></p>
 
-    <div class="flex w-full flex-col gap-2 sm:w-auto sm:flex-row sm:flex-wrap">
+    <div class="flex w-full flex-col gap-2 sm:w-auto sm:flex-row">
       <a
-        class="btn-primary !min-h-11 w-full !px-4 text-sm sm:w-auto"
+        class="btn-primary !min-h-11 w-full touch-manipulation !px-4 text-sm sm:w-auto"
         :href="continueUrl || '#books'"
         data-astro-prefetch
       >
@@ -21,23 +23,7 @@
       </a>
 
       <a
-        class="btn-secondary !min-h-11 w-full !px-4 text-sm sm:w-auto"
-        :href="`/${version}/play`"
-        data-astro-prefetch
-      >
-        Play
-      </a>
-
-      <a
-        class="btn-secondary !min-h-11 w-full !px-4 text-sm sm:w-auto"
-        :href="`/${version}/prayer`"
-        data-astro-prefetch
-      >
-        Prayer
-      </a>
-
-      <a
-        class="btn-secondary !min-h-11 w-full !px-4 text-sm sm:w-auto"
+        class="btn-secondary !min-h-11 w-full touch-manipulation !px-4 text-sm sm:w-auto"
         href="/saved"
         data-astro-prefetch="tap"
       >

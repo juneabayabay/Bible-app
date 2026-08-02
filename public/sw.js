@@ -1,5 +1,5 @@
 /* Bible app — offline shell cache + daily reminder scheduling */
-const CACHE = "bible-shell-v5";
+const CACHE = "bible-shell-v6";
 const PRECACHE = [
   "/",
   "/manifest.webmanifest",

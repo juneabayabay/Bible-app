@@ -6,6 +6,7 @@ import QuickActions from "../../components/QuickActions.astro";
 import HomePaths from "../../components/HomePaths.astro";
 import BookIndex from "../../components/BookIndex.astro";
 import GiveBanner from "../../components/GiveBanner.astro";
+import HomePrayerWall from "../../components/HomePrayerWall.astro";
 import { getBookCatalog, resolveVersionId } from "../../lib/bible";
 import { getVersion } from "../../lib/versions";
 import { isOldTestament } from "../../lib/books";
@@ -47,6 +48,7 @@ const startHref =
 
     <div class="page-stack mt-8 sm:mt-10">
       <QuickActions />
+      <HomePrayerWall version={version} />
       <BookIndex
         version={version}
         books={books}

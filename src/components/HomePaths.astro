@@ -11,39 +11,63 @@ const links = [
   {
     href: `/${version}/prayer`,
     label: "Prayer",
-    hint: "Public wall & private journal",
-  },
-  {
-    href: `/${version}/play`,
-    label: "Play",
-    hint: "Scripture games",
+    hint: "Wall & private journal",
+    icon: "prayer",
   },
   {
     href: `/${version}/devotionals`,
     label: "Devotionals",
     hint: "Themes for the heart",
-  },
-  {
-    href: `/${version}/plans`,
-    label: "Plans",
-    hint: "Guided reading",
+    icon: "devotionals",
   },
   {
     href: `/${version}/journey`,
     label: "Journey",
     hint: "Streak & progress",
+    icon: "journey",
   },
   {
-    href: `/${version}/feedback`,
-    label: "Feedback",
-    hint: "Help improve the app",
+    href: `/${version}/plans`,
+    label: "Plans",
+    hint: "Guided reading",
+    icon: "plans",
+  },
+  {
+    href: `/${version}/play`,
+    label: "Play",
+    hint: "Scripture games",
+    icon: "play",
   },
   {
     href: "/saved",
     label: "Saved",
     hint: "Highlights & notes",
+    icon: "saved",
+  },
+  {
+    href: `/${version}/feedback`,
+    label: "Feedback",
+    hint: "Help improve the app",
+    icon: "feedback",
   },
 ] as const;
+
+const iconPaths: Record<(typeof links)[number]["icon"], string> = {
+  prayer:
+    "M12 21c-4.2-2.8-7-6.1-7-9.5A4.5 4.5 0 0 1 12 7a4.5 4.5 0 0 1 7 4.5c0 3.4-2.8 6.7-7 9.5z",
+  devotionals:
+    "M6 4h9a3 3 0 0 1 3 3v13l-4.5-2.5L9 20V7a1 1 0 0 0-1-1H6zm0 0H5a1 1 0 0 0-1 1v12",
+  journey:
+    "M4 19h16M7 16l3-8 3 5 3-7 3 10",
+  plans:
+    "M8 5h11v14H8zm0 0H6a1 1 0 0 0-1 1v13m4-10h7m-7 4h7m-7 4h4",
+  play:
+    "M8 6.5v11l9-5.5-9-5.5z",
+  saved:
+    "M7 4h10v16l-5-3-5 3V4z",
+  feedback:
+    "M5 6h14v9H9l-4 3V6z",
+};
 ---
 
 <section class="section-rule scroll-mt-28" aria-labelledby="path-heading">
@@ -56,7 +80,7 @@ const links = [
       When you’re ready
     </h2>
     <p class="mt-2 text-sm leading-relaxed text-[var(--color-ink-muted)] sm:text-base">
-      Optional ways to grow — open only what you need today.
+      Optional paths — open only what you need today.
     </p>
   </header>
 
@@ -66,11 +90,29 @@ const links = [
         <li>
           <a
             href={link.href}
-            class="ui-card flex h-full flex-col p-4 sm:p-5"
+            class="ui-card group flex h-full items-start gap-3.5 p-4 transition hover:border-[var(--color-primary)]/40 sm:p-5"
             data-astro-prefetch="tap"
           >
-            <span class="font-semibold text-[var(--color-ink)]">{link.label}</span>
-            <span class="mt-1 text-sm text-[var(--color-ink-muted)]">{link.hint}</span>
+            <span
+              class="inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-xl border border-[var(--color-line)] bg-[color-mix(in_srgb,var(--color-primary)_8%,var(--color-surface))] text-[var(--color-primary)] transition group-hover:border-[var(--color-primary)]/35"
+              aria-hidden="true"
+            >
+              <svg
+                class="h-5 w-5"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="1.75"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              >
+                <path d={iconPaths[link.icon]} />
+              </svg>
+            </span>
+            <span class="min-w-0">
+              <span class="block font-semibold text-[var(--color-ink)]">{link.label}</span>
+              <span class="mt-1 block text-sm text-[var(--color-ink-muted)]">{link.hint}</span>
+            </span>
           </a>
         </li>
       ))
