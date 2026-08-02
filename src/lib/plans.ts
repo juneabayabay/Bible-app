@@ -15,6 +15,25 @@ export type ReadingPlan = {
   days: PlanDay[];
 };
 
+function daysFromChapters(
+  book: string,
+  slug: string,
+  chapters: number[],
+  labelFn?: (chapter: number, day: number) => string,
+): PlanDay[] {
+  return chapters.map((chapter, i) => ({
+    day: i + 1,
+    book,
+    slug,
+    chapter,
+    label: labelFn?.(chapter, i + 1) ?? `${book} ${chapter}`,
+  }));
+}
+
+function range(from: number, to: number): number[] {
+  return Array.from({ length: to - from + 1 }, (_, i) => from + i);
+}
+
 function gospelDays(): PlanDay[] {
   const seq: Array<{ book: string; slug: string; chapter: number }> = [
     ...Array.from({ length: 7 }, (_, i) => ({
@@ -46,12 +65,30 @@ function gospelDays(): PlanDay[] {
 }
 
 function psalmDays(): PlanDay[] {
-  return Array.from({ length: 30 }, (_, i) => ({
+  return daysFromChapters("Psalms", "psalms", range(1, 30), (c) => `Psalm ${c}`);
+}
+
+function epistleSurveyDays(): PlanDay[] {
+  const seq: Array<{ book: string; slug: string; chapter: number }> = [
+    { book: "James", slug: "james", chapter: 1 },
+    { book: "James", slug: "james", chapter: 2 },
+    { book: "James", slug: "james", chapter: 3 },
+    { book: "1 Peter", slug: "1-peter", chapter: 1 },
+    { book: "1 Peter", slug: "1-peter", chapter: 2 },
+    { book: "1 John", slug: "1-john", chapter: 1 },
+    { book: "1 John", slug: "1-john", chapter: 3 },
+    { book: "1 John", slug: "1-john", chapter: 4 },
+    { book: "Philippians", slug: "philippians", chapter: 1 },
+    { book: "Philippians", slug: "philippians", chapter: 2 },
+    { book: "Philippians", slug: "philippians", chapter: 3 },
+    { book: "Philippians", slug: "philippians", chapter: 4 },
+    { book: "Colossians", slug: "colossians", chapter: 1 },
+    { book: "Colossians", slug: "colossians", chapter: 3 },
+  ];
+  return seq.map((item, i) => ({
     day: i + 1,
-    book: "Psalms",
-    slug: "psalms",
-    chapter: i + 1,
-    label: `Psalm ${i + 1}`,
+    ...item,
+    label: `${item.book} ${item.chapter}`,
   }));
 }
 
@@ -71,6 +108,54 @@ export const READING_PLANS: ReadingPlan[] = [
     image: "/images/plans/psalms-30.png",
     imageAlt: "Quiet hillside at dusk, suggesting the Psalms",
     days: psalmDays(),
+  },
+  {
+    id: "john-21",
+    title: "John in 21 days",
+    summary: "Read the whole Gospel of John—one chapter a day, from beginning to end.",
+    image: "/images/themes/hope.png",
+    imageAlt: "Soft light suggesting the Gospel of John",
+    days: daysFromChapters("John", "john", range(1, 21)),
+  },
+  {
+    id: "proverbs-31",
+    title: "Proverbs in 31 days",
+    summary: "Daily wisdom for the heart—one chapter of Proverbs each day of the month.",
+    image: "/images/themes/humility.png",
+    imageAlt: "Quiet path suggesting wisdom from Proverbs",
+    days: daysFromChapters("Proverbs", "proverbs", range(1, 31)),
+  },
+  {
+    id: "romans-16",
+    title: "Romans in 16 days",
+    summary: "The foundation of the gospel—walk through Romans, one chapter a day.",
+    image: "/images/themes/grace.png",
+    imageAlt: "Warm light suggesting the letter to the Romans",
+    days: daysFromChapters("Romans", "romans", range(1, 16)),
+  },
+  {
+    id: "acts-28",
+    title: "Acts in 28 days",
+    summary: "Follow the early church from Jerusalem to the ends of the earth.",
+    image: "/images/themes/faith.png",
+    imageAlt: "Open road suggesting the book of Acts",
+    days: daysFromChapters("Acts", "acts", range(1, 28)),
+  },
+  {
+    id: "genesis-14",
+    title: "Genesis beginnings",
+    summary: "Creation, promise, and the first steps of faith—Genesis 1–14.",
+    image: "/images/themes/peace.png",
+    imageAlt: "Morning landscape suggesting Genesis beginnings",
+    days: daysFromChapters("Genesis", "genesis", range(1, 14)),
+  },
+  {
+    id: "epistles-14",
+    title: "Letters for life",
+    summary: "Fourteen days in James, Peter, John, Philippians, and Colossians.",
+    image: "/images/themes/kindness.png",
+    imageAlt: "Quiet desk light suggesting the New Testament letters",
+    days: epistleSurveyDays(),
   },
 ];
 
