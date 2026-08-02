@@ -19,9 +19,10 @@ import { getDeviceId } from "../lib/deviceId";
 /** Register prayer Alpine components (lazy-loaded on home + /prayer). */
 export function registerPrayer(Alpine: Alpine) {
   Alpine.data("homePrayerWall", () => ({
-    items: [] as WallRequest[],
+    item: null as WallRequest | null,
+    latestComment: null as WallComment | null,
+    commentCount: 0,
     loading: true,
-    busy: false,
     status: "",
     version: "",
 
@@ -36,12 +37,15 @@ export function registerPrayer(Alpine: Alpine) {
       this.loading = true;
       try {
         const all = await listWallRequests();
-        this.items = all.slice(0, 3).map((item) => ({
-          ...item,
-          commentsOpen: false,
-        }));
+        const latest = all[0] ?? null;
+        this.item = latest;
+        const comments = latest?.comments ?? [];
+        this.commentCount = comments.length;
+        this.latestComment = comments.length ? comments[comments.length - 1]! : null;
       } catch {
-        this.items = [];
+        this.item = null;
+        this.latestComment = null;
+        this.commentCount = 0;
         this.status = "Couldn’t load the wall right now.";
       } finally {
         this.loading = false;
@@ -57,28 +61,6 @@ export function registerPrayer(Alpine: Alpine) {
         });
       } catch {
         return "";
-      }
-    },
-
-    hasReaction(item: WallRequest, type: ReactionType) {
-      return item.myReactions.includes(type);
-    },
-
-    async react(requestId: string, type: ReactionType) {
-      if (this.busy) return;
-      this.busy = true;
-      this.status = "";
-      try {
-        const all = await toggleReaction(requestId, type);
-        const openMap = new Map(this.items.map((i) => [i.id, Boolean(i.commentsOpen)]));
-        this.items = all.slice(0, 3).map((item) => ({
-          ...item,
-          commentsOpen: openMap.get(item.id) ?? false,
-        }));
-      } catch {
-        this.status = "Couldn’t update that reaction. Try again.";
-      } finally {
-        this.busy = false;
       }
     },
   }));
