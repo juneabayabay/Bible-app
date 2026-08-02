@@ -241,9 +241,26 @@ function bindReminderVisibility() {
   });
 }
 
+/** Wait until OneSignal SDK is ready (loaded deferred on Journey). */
+export async function waitForOneSignal(timeoutMs = 8000): Promise<boolean> {
+  if (!isOneSignalConfigured() || typeof window === "undefined") return false;
+  const start = Date.now();
+  while (Date.now() - start < timeoutMs) {
+    const w = window as Window & {
+      OneSignal?: { User?: { PushSubscription?: unknown } };
+      OneSignalDeferred?: unknown[];
+    };
+    if (w.OneSignal?.User?.PushSubscription) return true;
+    await new Promise((r) => setTimeout(r, 200));
+  }
+  return false;
+}
+
 /** Push reminder preference tags to OneSignal (for dashboard / Journey scheduling). */
 export async function syncOneSignalReminderTags(prefs: ReminderPrefs): Promise<boolean> {
   if (!isOneSignalConfigured() || typeof window === "undefined") return false;
+  const ready = await waitForOneSignal();
+  if (!ready) return false;
   const w = window as Window & {
     OneSignal?: {
       User?: {

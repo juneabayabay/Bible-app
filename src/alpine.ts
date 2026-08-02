@@ -43,7 +43,6 @@ import {
   isQuizDone,
 } from "./lib/progress";
 import { syncJourneyUnlocks } from "./lib/syncUnlocks";
-import { addPrayer, loadPrayers, removePrayer, type PrayerEntry } from "./lib/prayers";
 import {
   bindInstallPromptCapture,
   browserMaySupportInstallPrompt,
@@ -60,19 +59,6 @@ import {
   waitForDeferredInstallPrompt,
   type InstallPlatform,
 } from "./lib/installApp";
-import {
-  addWallComment,
-  checkWallLive,
-  createWallRequest,
-  isWallLive,
-  listWallRequests,
-  removeOwnComment,
-  removeOwnRequest,
-  toggleReaction,
-  type ReactionType,
-  type WallComment,
-  type WallRequest,
-} from "./lib/prayerWall";
 import { getChallengeForDate } from "./lib/challenges";
 import { getPlan, nextPlanDay } from "./lib/plans";
 import {
@@ -87,52 +73,13 @@ import {
   syncOneSignalReminderTags,
   syncReminderSchedule,
 } from "./lib/reminders";
-import {
-  buildFillBlankRounds,
-  DIFFICULTIES,
-  getDifficultyConfig,
-  isVerseGameDoneToday,
-  loadSavedDifficulty,
-  markVerseGameDoneToday,
-  saveDifficulty,
-  type Difficulty,
-  type DifficultyConfig,
-  type FillBlankRound,
-  type GameVerse,
-} from "./lib/verseGame";
-import {
-  buildMatchRounds,
-  buildNextRounds,
-  buildSprintRounds,
-  buildThemeRounds,
-  buildUnscrambleRounds,
-  markAnyGameDone,
-  THEME_LABELS,
-  type MatchRound,
-  type NextRound,
-  type ThemeId,
-  type ThemeRound,
-  type UnscrambleRound,
-} from "./lib/gamePacks";
-import {
-  getRecentCites,
-  profileSnapshot,
-  recordGameRun,
-  sessionSeed,
-  type GameId,
-  type RewardSnapshot,
-} from "./lib/gameRewards";
 import { getDeviceId } from "./lib/deviceId";
 import { isFeedbackLive, submitFeedback } from "./lib/feedback";
 import {
-  chromeSpeechLikelyBroken,
-  hasBrowserSpeech,
-  hasMicrophone,
-  startLocalRecording,
-  warmLocalVoice,
-  VOICE_ENGINE,
-  type LocalVoiceSession,
-} from "./lib/localVoice";
+  deferAlpineStart,
+  pathNeedsGames,
+  pathNeedsPrayer,
+} from "./alpine/deferStart";
 
 type SearchDoc = {
   id: string;
@@ -194,6 +141,22 @@ function titleCaseSlug(slug: string) {
 
 export default (Alpine: Alpine) => {
   bindInstallPromptCapture();
+
+  const path = typeof window !== "undefined" ? window.location.pathname : "";
+  const needGames = pathNeedsGames(path);
+  const needPrayer = pathNeedsPrayer(path);
+  if (needGames || needPrayer) {
+    deferAlpineStart(Alpine, async () => {
+      const jobs: Promise<unknown>[] = [];
+      if (needGames) {
+        jobs.push(import("./alpine/games").then((m) => m.registerGames(Alpine)));
+      }
+      if (needPrayer) {
+        jobs.push(import("./alpine/prayer").then((m) => m.registerPrayer(Alpine)));
+      }
+      await Promise.all(jobs);
+    });
+  }
 
   Alpine.store("theme", {
     dark: false,
@@ -642,70 +605,6 @@ export default (Alpine: Alpine) => {
     },
   }));
 
-  Alpine.data("homePrayerWall", () => ({
-    items: [] as WallRequest[],
-    loading: true,
-    busy: false,
-    status: "",
-    version: "",
-
-    async boot() {
-      try {
-        const path = window.location.pathname.replace(/\/+$/, "") || "/";
-        const seg = path.split("/").filter(Boolean)[0];
-        if (seg && seg in VERSIONS) this.version = seg;
-      } catch {
-        /* ignore */
-      }
-      this.loading = true;
-      try {
-        const all = await listWallRequests();
-        this.items = all.slice(0, 3).map((item) => ({
-          ...item,
-          commentsOpen: false,
-        }));
-      } catch {
-        this.items = [];
-        this.status = "Couldn’t load the wall right now.";
-      } finally {
-        this.loading = false;
-      }
-    },
-
-    formatDate(iso: string) {
-      try {
-        const d = new Date(iso);
-        return d.toLocaleDateString(undefined, {
-          month: "short",
-          day: "numeric",
-        });
-      } catch {
-        return "";
-      }
-    },
-
-    hasReaction(item: WallRequest, type: ReactionType) {
-      return item.myReactions.includes(type);
-    },
-
-    async react(requestId: string, type: ReactionType) {
-      if (this.busy) return;
-      this.busy = true;
-      this.status = "";
-      try {
-        const all = await toggleReaction(requestId, type);
-        const openMap = new Map(this.items.map((i) => [i.id, Boolean(i.commentsOpen)]));
-        this.items = all.slice(0, 3).map((item) => ({
-          ...item,
-          commentsOpen: openMap.get(item.id) ?? false,
-        }));
-      } catch {
-        this.status = "Couldn’t update that reaction. Try again.";
-      } finally {
-        this.busy = false;
-      }
-    },
-  }));
 
   Alpine.data("todayPanel", (version: string, challengeId: string) => ({
     version,
@@ -896,832 +795,6 @@ export default (Alpine: Alpine) => {
     },
   }));
 
-  Alpine.data("verseFillGame", () => ({
-    version: "web",
-    verses: [] as GameVerse[],
-    difficulties: DIFFICULTIES as DifficultyConfig[],
-    difficulty: "medium" as Difficulty,
-    rounds: [] as FillBlankRound[],
-    phase: "choose" as "choose" | "study" | "play" | "done",
-    roundIndex: 0,
-    activeBlank: 0,
-    filled: {} as Record<number, string>,
-    feedback: "",
-    lastCorrect: false,
-    score: 0,
-    totalBlanks: 0,
-    alreadyDone: false,
-    studySecondsLeft: 0,
-    firstLetterHint: false,
-    reward: null as RewardSnapshot | null,
-    _studyTimer: null as ReturnType<typeof setInterval> | null,
-
-    get current(): FillBlankRound {
-      return this.rounds[this.roundIndex] ?? {
-        id: 0,
-        cite: "",
-        url: "",
-        fullText: "",
-        segments: [],
-        answers: [],
-        choices: [],
-      };
-    },
-
-    get difficultyLabel() {
-      return getDifficultyConfig(this.difficulty).label;
-    },
-
-    get studyHint() {
-      const cfg = getDifficultyConfig(this.difficulty);
-      if (cfg.studySeconds > 0) {
-        return `Memorize this verse — it hides after ${cfg.studySeconds}s (or tap ready sooner).`;
-      }
-      return "Read this verse, then fill the blank.";
-    },
-
-    get activeAnswer() {
-      return this.current.answers[this.activeBlank] ?? "";
-    },
-
-    get roundComplete() {
-      return this.current.answers.every((_, i) => Boolean(this.filled[i]));
-    },
-
-    get availableChoices() {
-      const locked = new Set<string>();
-      this.current.answers.forEach((answer, i) => {
-        const filled = this.filled[i];
-        if (
-          filled &&
-          filled.toLowerCase() === answer.toLowerCase() &&
-          i !== this.activeBlank
-        ) {
-          locked.add(answer.toLowerCase());
-        }
-      });
-      return this.current.choices.filter((c) => !locked.has(c.toLowerCase()));
-    },
-
-    boot() {
-      try {
-        const el = document.getElementById("verse-game-payload");
-        if (el?.textContent) {
-          const data = JSON.parse(el.textContent) as {
-            version: string;
-            verses: GameVerse[];
-            difficulties: DifficultyConfig[];
-          };
-          this.version = data.version;
-          this.verses = data.verses ?? [];
-          this.difficulties = data.difficulties?.length
-            ? data.difficulties
-            : DIFFICULTIES;
-        }
-      } catch {
-        this.verses = [];
-      }
-      this.difficulty = loadSavedDifficulty();
-      this.alreadyDone = isVerseGameDoneToday();
-      this.phase = "choose";
-    },
-
-    selectDifficulty(id: Difficulty) {
-      this.difficulty = id;
-      saveDifficulty(id);
-    },
-
-    clearStudyTimer() {
-      if (this._studyTimer) {
-        clearInterval(this._studyTimer);
-        this._studyTimer = null;
-      }
-      this.studySecondsLeft = 0;
-    },
-
-    begin() {
-      if (!this.verses.length) return;
-      this.reward = null;
-      this.rounds = buildFillBlankRounds(this.verses, this.difficulty, {
-        seed: sessionSeed(17),
-        avoidCites: getRecentCites(),
-      });
-      if (!this.rounds.length) {
-        this.phase = "choose";
-        return;
-      }
-      this.score = 0;
-      this.totalBlanks = this.rounds.reduce((n, r) => n + r.answers.length, 0);
-      this.roundIndex = 0;
-      const cfg = getDifficultyConfig(this.difficulty);
-      this.firstLetterHint = cfg.firstLetterHint;
-      this.enterStudy();
-    },
-
-    enterStudy() {
-      this.clearStudyTimer();
-      this.resetRoundState();
-      const cfg = getDifficultyConfig(this.difficulty);
-      this.phase = "study";
-      if (cfg.studySeconds > 0) {
-        this.studySecondsLeft = cfg.studySeconds;
-        this._studyTimer = setInterval(() => {
-          this.studySecondsLeft -= 1;
-          if (this.studySecondsLeft <= 0) {
-            this.clearStudyTimer();
-            this.startPlay();
-          }
-        }, 1000);
-      }
-    },
-
-    backToChoose() {
-      this.clearStudyTimer();
-      this.phase = "choose";
-      this.feedback = "";
-      this.filled = {};
-    },
-
-    startPlay() {
-      this.clearStudyTimer();
-      this.phase = "play";
-      this.resetRoundState();
-    },
-
-    resetRoundState() {
-      this.activeBlank = 0;
-      this.filled = {};
-      this.feedback = "";
-      this.lastCorrect = false;
-    },
-
-    blankDisplay(seg: { type: string; text: string; answer?: string; blankId?: number }) {
-      if (seg.type !== "blank") return seg.text;
-      const id = seg.blankId ?? 0;
-      if (this.filled[id]) return this.filled[id];
-      if (this.firstLetterHint && id === this.activeBlank && this.activeAnswer) {
-        return `${this.activeAnswer[0]}___`;
-      }
-      return "____";
-    },
-
-    blankClass(seg: { type: string; blankId?: number }) {
-      const id = seg.blankId ?? 0;
-      if (this.filled[id]) {
-        const ok =
-          this.filled[id].toLowerCase() ===
-          (this.current.answers[id] ?? "").toLowerCase();
-        return ok
-          ? "border-[var(--color-gold)] text-[var(--color-success)]"
-          : "border-red-400/70 text-red-600 dark:text-red-400";
-      }
-      if (id === this.activeBlank) {
-        return "border-[var(--color-gold)] text-[var(--color-ink-subtle)]";
-      }
-      return "border-[var(--color-line)] text-[var(--color-ink-subtle)]";
-    },
-
-    choiceClass(choice: string) {
-      const answer = this.activeAnswer;
-      if (this.filled[this.activeBlank]) {
-        if (choice.toLowerCase() === answer.toLowerCase()) {
-          return "border-[var(--color-gold)] bg-[var(--color-highlight)] text-[var(--color-ink)]";
-        }
-        if (
-          choice === this.filled[this.activeBlank] &&
-          choice.toLowerCase() !== answer.toLowerCase()
-        ) {
-          return "border-red-400/60 text-[var(--color-ink-muted)] opacity-70";
-        }
-      }
-      return "border-[var(--color-line)] text-[var(--color-ink)] hover:border-[var(--color-gold)] hover:bg-[var(--color-highlight)]/50";
-    },
-
-    pick(choice: string) {
-      if (this.filled[this.activeBlank]) return;
-      const blank = this.activeBlank;
-      const answer = this.current.answers[blank] ?? "";
-      const ok = choice.toLowerCase() === answer.toLowerCase();
-      this.lastCorrect = ok;
-      if (ok) {
-        this.filled = { ...this.filled, [blank]: choice };
-        this.score += 1;
-        this.feedback = "Yes — locked in.";
-      } else {
-        this.filled = { ...this.filled, [blank]: answer };
-        this.feedback = `Not quite — it’s “${answer}.”`;
-      }
-      if (blank + 1 < this.current.answers.length) {
-        this.activeBlank = blank + 1;
-      }
-    },
-
-    next() {
-      if (this.roundIndex + 1 < this.rounds.length) {
-        this.roundIndex += 1;
-        this.enterStudy();
-        return;
-      }
-      applyRunReward(this, {
-        gameId: "fill",
-        score: this.score,
-        total: this.totalBlanks,
-        cites: this.rounds.map((r) => r.cite),
-        difficulty: this.difficulty,
-      });
-      this.alreadyDone = true;
-      this.phase = "done";
-    },
-
-    replay() {
-      this.begin();
-    },
-
-    destroy() {
-      this.clearStudyTimer();
-    },
-  }));
-
-  function finishGameGrow() {
-    markAnyGameDone();
-    markVerseGameDoneToday();
-    markGrow();
-  }
-
-  function applyRunReward(
-    target: { reward: RewardSnapshot | null },
-    result: {
-      gameId: GameId;
-      score: number;
-      total: number;
-      cites: string[];
-      difficulty?: Difficulty;
-      bestStreak?: number;
-    },
-  ) {
-    finishGameGrow();
-    const reward = recordGameRun(result);
-    const unlocked = syncJourneyUnlocks();
-    target.reward = {
-      ...reward,
-      newMedals: unlocked.newlyUnlocked.map((t) => ({
-        id: t.id,
-        emoji: t.emoji,
-        title: t.title,
-        description: t.description,
-      })),
-    };
-  }
-
-  Alpine.data("playRankPanel", () => ({
-    rank: null as ReturnType<typeof profileSnapshot> | null,
-    boot() {
-      this.rank = profileSnapshot();
-    },
-  }));
-
-  Alpine.data("wordRiverGame", () => ({
-    phase: "choose" as "choose" | "play" | "done",
-    verses: [] as GameVerse[],
-    rounds: [] as UnscrambleRound[],
-    roundIndex: 0,
-    bank: [] as Array<{ word: string; used: boolean }>,
-    built: [] as string[],
-    locked: false,
-    ok: false,
-    feedback: "",
-    score: 0,
-    reward: null as RewardSnapshot | null,
-
-    get current(): UnscrambleRound {
-      return this.rounds[this.roundIndex] ?? {
-        id: 0,
-        cite: "",
-        url: "",
-        fullText: "",
-        answer: [],
-        bank: [],
-        hard: false,
-      };
-    },
-
-    boot() {
-      try {
-        const el = document.getElementById("unscramble-payload");
-        if (el?.textContent) {
-          const data = JSON.parse(el.textContent) as { verses: GameVerse[] };
-          this.verses = data.verses ?? [];
-        }
-      } catch {
-        this.verses = [];
-      }
-    },
-
-    start(hardMode: boolean) {
-      this.reward = null;
-      this.rounds = buildUnscrambleRounds(
-        this.verses,
-        hardMode ? 50 : 40,
-        hardMode,
-        { seed: sessionSeed(hardMode ? 3 : 2), avoidCites: getRecentCites() },
-      );
-      if (!this.rounds.length) {
-        this.phase = "choose";
-        return;
-      }
-      this.roundIndex = 0;
-      this.score = 0;
-      this.loadRound();
-      this.phase = "play";
-    },
-
-    loadRound() {
-      this.built = [];
-      this.locked = false;
-      this.ok = false;
-      this.feedback = "";
-      this.bank = this.current.bank.map((word) => ({ word, used: false }));
-    },
-
-    pushWord(i: number) {
-      if (this.locked || this.bank[i]?.used) return;
-      this.bank[i].used = true;
-      this.built.push(this.bank[i].word);
-      this.checkLine();
-    },
-
-    popBuilt(i: number) {
-      if (this.locked) return;
-      const word = this.built[i];
-      this.built.splice(i, 1);
-      const chip = this.bank.find((c) => c.word === word && c.used);
-      if (chip) chip.used = false;
-      this.feedback = "";
-    },
-
-    checkLine() {
-      if (this.built.length !== this.current.answer.length) return;
-      const ok =
-        this.built.join(" ").toLowerCase() ===
-        this.current.answer.join(" ").toLowerCase();
-      this.locked = true;
-      this.ok = ok;
-      if (ok) {
-        this.score += 1;
-        this.feedback = "Current true — verse rebuilt.";
-      } else {
-        this.feedback = `Drifted. True line: “${this.current.answer.join(" ")}”`;
-        this.built = [...this.current.answer];
-      }
-    },
-
-    next() {
-      if (this.roundIndex + 1 < this.rounds.length) {
-        this.roundIndex += 1;
-        this.loadRound();
-        return;
-      }
-      applyRunReward(this, {
-        gameId: "unscramble",
-        score: this.score,
-        total: this.rounds.length,
-        cites: this.rounds.map((r) => r.cite),
-      });
-      this.phase = "done";
-    },
-  }));
-
-  Alpine.data("citeSnapGame", () => ({
-    phase: "play" as "play" | "done",
-    verses: [] as GameVerse[],
-    rounds: [] as MatchRound[],
-    roundIndex: 0,
-    locked: false,
-    ok: false,
-    feedback: "",
-    score: 0,
-    streak: 0,
-    bestStreak: 0,
-    picked: "",
-    reward: null as RewardSnapshot | null,
-
-    get current(): MatchRound {
-      return this.rounds[this.roundIndex] ?? {
-        id: 0,
-        snippet: "",
-        cite: "",
-        url: "",
-        fullText: "",
-        choices: [],
-      };
-    },
-
-    rebuild() {
-      this.rounds = buildMatchRounds(this.verses, 50, {
-        seed: sessionSeed(5),
-        avoidCites: getRecentCites(),
-      });
-    },
-
-    boot() {
-      try {
-        const el = document.getElementById("match-payload");
-        if (el?.textContent) {
-          const data = JSON.parse(el.textContent) as { verses: GameVerse[] };
-          this.verses = data.verses ?? [];
-        }
-      } catch {
-        this.verses = [];
-      }
-      this.rebuild();
-    },
-
-    choiceClass(c: string) {
-      if (!this.locked) {
-        return "border-[var(--color-line)] text-[var(--color-ink)] hover:border-[var(--color-gold)]";
-      }
-      if (c === this.current.cite) {
-        return "border-[var(--color-gold)] bg-[var(--color-highlight)] text-[var(--color-ink)]";
-      }
-      if (c === this.picked && !this.ok) {
-        return "border-red-400/50 text-[var(--color-ink-muted)] opacity-70";
-      }
-      return "border-[var(--color-line)] text-[var(--color-ink-subtle)] opacity-50";
-    },
-
-    pick(c: string) {
-      if (this.locked) return;
-      this.picked = c;
-      this.locked = true;
-      this.ok = c === this.current.cite;
-      if (this.ok) {
-        this.score += 1;
-        this.streak += 1;
-        this.bestStreak = Math.max(this.bestStreak, this.streak);
-        this.feedback = this.streak > 1 ? `Snap · streak ${this.streak}` : "Snap — true cite.";
-      } else {
-        this.streak = 0;
-        this.feedback = `Near miss. True cite: ${this.current.cite}`;
-      }
-    },
-
-    next() {
-      if (this.roundIndex + 1 < this.rounds.length) {
-        this.roundIndex += 1;
-        this.locked = false;
-        this.feedback = "";
-        this.picked = "";
-        return;
-      }
-      applyRunReward(this, {
-        gameId: "match",
-        score: this.score,
-        total: this.rounds.length,
-        cites: this.rounds.map((r) => r.cite),
-        bestStreak: this.bestStreak,
-      });
-      this.phase = "done";
-    },
-
-    restart() {
-      this.reward = null;
-      this.rebuild();
-      this.roundIndex = 0;
-      this.score = 0;
-      this.streak = 0;
-      this.bestStreak = 0;
-      this.locked = false;
-      this.feedback = "";
-      this.picked = "";
-      this.phase = "play";
-    },
-  }));
-
-  Alpine.data("finishLineGame", () => ({
-    phase: "play" as "play" | "done",
-    verses: [] as GameVerse[],
-    rounds: [] as NextRound[],
-    roundIndex: 0,
-    locked: false,
-    ok: false,
-    feedback: "",
-    score: 0,
-    picked: "",
-    reward: null as RewardSnapshot | null,
-
-    get current(): NextRound {
-      return this.rounds[this.roundIndex] ?? {
-        id: 0,
-        lead: "",
-        cite: "",
-        url: "",
-        fullText: "",
-        answer: "",
-        choices: [],
-      };
-    },
-
-    rebuild() {
-      this.rounds = buildNextRounds(this.verses, 50, {
-        seed: sessionSeed(7),
-        avoidCites: getRecentCites(),
-      });
-    },
-
-    boot() {
-      try {
-        const el = document.getElementById("next-payload");
-        if (el?.textContent) {
-          const data = JSON.parse(el.textContent) as { verses: GameVerse[] };
-          this.verses = data.verses ?? [];
-        }
-      } catch {
-        this.verses = [];
-      }
-      this.rebuild();
-    },
-
-    choiceClass(c: string) {
-      if (!this.locked) {
-        return "border-[var(--color-line)] text-[var(--color-ink)] hover:border-[var(--color-gold)]";
-      }
-      if (c === this.current.answer) {
-        return "border-[var(--color-gold)] bg-[var(--color-highlight)] text-[var(--color-ink)]";
-      }
-      if (c === this.picked && !this.ok) {
-        return "border-red-400/50 opacity-70";
-      }
-      return "border-[var(--color-line)] opacity-50";
-    },
-
-    pick(c: string) {
-      if (this.locked) return;
-      this.picked = c;
-      this.locked = true;
-      this.ok = c === this.current.answer;
-      if (this.ok) {
-        this.score += 1;
-        this.feedback = "Echo holds — ending true.";
-      } else {
-        this.feedback = "That ending drifts. See the gold line.";
-      }
-    },
-
-    next() {
-      if (this.roundIndex + 1 < this.rounds.length) {
-        this.roundIndex += 1;
-        this.locked = false;
-        this.feedback = "";
-        this.picked = "";
-        return;
-      }
-      applyRunReward(this, {
-        gameId: "next",
-        score: this.score,
-        total: this.rounds.length,
-        cites: this.rounds.map((r) => r.cite),
-      });
-      this.phase = "done";
-    },
-
-    restart() {
-      this.reward = null;
-      this.rebuild();
-      this.roundIndex = 0;
-      this.score = 0;
-      this.locked = false;
-      this.feedback = "";
-      this.picked = "";
-      this.phase = "play";
-    },
-  }));
-
-  Alpine.data("heartCompassGame", () => ({
-    phase: "play" as "play" | "done" | "empty",
-    verses: [] as GameVerse[],
-    rounds: [] as ThemeRound[],
-    labels: THEME_LABELS as Record<ThemeId, string>,
-    roundIndex: 0,
-    locked: false,
-    ok: false,
-    feedback: "",
-    score: 0,
-    picked: "" as ThemeId | "",
-    reward: null as RewardSnapshot | null,
-
-    get current(): ThemeRound {
-      return this.rounds[this.roundIndex] ?? {
-        id: 0,
-        cite: "",
-        url: "",
-        fullText: "",
-        theme: "hope",
-        choices: [],
-      };
-    },
-
-    rebuild() {
-      this.rounds = buildThemeRounds(this.verses, 50, {
-        seed: sessionSeed(11),
-        avoidCites: getRecentCites(),
-      });
-    },
-
-    boot() {
-      try {
-        const el = document.getElementById("theme-payload");
-        if (el?.textContent) {
-          const data = JSON.parse(el.textContent) as {
-            verses: GameVerse[];
-            labels: Record<ThemeId, string>;
-          };
-          this.verses = data.verses ?? [];
-          if (data.labels) this.labels = data.labels;
-        }
-      } catch {
-        this.verses = [];
-      }
-      this.rebuild();
-      this.phase = this.rounds.length ? "play" : "empty";
-    },
-
-    themeClass(t: ThemeId) {
-      if (!this.locked) {
-        return "border-[var(--color-line)] text-[var(--color-ink)] hover:border-[var(--color-gold)]";
-      }
-      if (t === this.current.theme) {
-        return "border-[var(--color-gold)] bg-[var(--color-highlight)] text-[var(--color-ink)]";
-      }
-      if (t === this.picked && !this.ok) {
-        return "border-red-400/50 opacity-70";
-      }
-      return "border-[var(--color-line)] opacity-45";
-    },
-
-    pick(t: ThemeId) {
-      if (this.locked) return;
-      this.picked = t;
-      this.locked = true;
-      this.ok = t === this.current.theme;
-      if (this.ok) {
-        this.score += 1;
-        this.feedback = `True north: ${this.labels[t]}.`;
-      } else {
-        this.feedback = `Closer to ${this.labels[this.current.theme]}.`;
-      }
-    },
-
-    next() {
-      if (this.roundIndex + 1 < this.rounds.length) {
-        this.roundIndex += 1;
-        this.locked = false;
-        this.feedback = "";
-        this.picked = "";
-        return;
-      }
-      applyRunReward(this, {
-        gameId: "theme",
-        score: this.score,
-        total: this.rounds.length,
-        cites: this.rounds.map((r) => r.cite),
-      });
-      this.phase = "done";
-    },
-
-    restart() {
-      this.reward = null;
-      this.rebuild();
-      this.roundIndex = 0;
-      this.score = 0;
-      this.locked = false;
-      this.feedback = "";
-      this.picked = "";
-      this.phase = this.rounds.length ? "play" : "empty";
-    },
-  }));
-
-  Alpine.data("breathSprintGame", () => ({
-    phase: "ready" as "ready" | "play" | "done",
-    verses: [] as GameVerse[],
-    rounds: [] as FillBlankRound[],
-    roundIndex: 0,
-    totalTime: 60,
-    timeLeft: 60,
-    score: 0,
-    streak: 0,
-    bestStreak: 0,
-    filled: "",
-    attempted: 0,
-    reward: null as RewardSnapshot | null,
-    _timer: null as ReturnType<typeof setInterval> | null,
-
-    get current(): FillBlankRound {
-      return this.rounds[this.roundIndex] ?? {
-        id: 0,
-        cite: "",
-        url: "",
-        fullText: "",
-        segments: [],
-        answers: [],
-        choices: [],
-      };
-    },
-
-    boot() {
-      try {
-        const el = document.getElementById("sprint-payload");
-        if (el?.textContent) {
-          const data = JSON.parse(el.textContent) as {
-            verses: GameVerse[];
-            seconds: number;
-          };
-          this.verses = data.verses ?? [];
-          this.totalTime = data.seconds ?? 60;
-          this.timeLeft = this.totalTime;
-        }
-      } catch {
-        this.verses = [];
-      }
-    },
-
-    clearTimer() {
-      if (this._timer) {
-        clearInterval(this._timer);
-        this._timer = null;
-      }
-    },
-
-    start() {
-      this.reward = null;
-      this.rounds = buildSprintRounds(this.verses, {
-        seed: sessionSeed(13),
-        avoidCites: getRecentCites(),
-      }).map((r, id) => ({ ...r, id }));
-      if (!this.rounds.length) return;
-      this.clearTimer();
-      this.roundIndex = 0;
-      this.score = 0;
-      this.streak = 0;
-      this.bestStreak = 0;
-      this.attempted = 0;
-      this.filled = "";
-      this.timeLeft = this.totalTime;
-      this.phase = "play";
-      this._timer = setInterval(() => {
-        this.timeLeft -= 1;
-        if (this.timeLeft <= 0) {
-          this.endRun();
-        }
-      }, 1000);
-    },
-
-    pick(c: string) {
-      if (this.phase !== "play") return;
-      const answer = this.current.answers[0] ?? "";
-      const ok = c.toLowerCase() === answer.toLowerCase();
-      this.filled = ok ? c : answer;
-      this.attempted += 1;
-      if (ok) {
-        this.score += 1;
-        this.streak += 1;
-        this.bestStreak = Math.max(this.bestStreak, this.streak);
-        if (this.streak > 0 && this.streak % 3 === 0) {
-          this.timeLeft = Math.min(this.totalTime, this.timeLeft + 2);
-        }
-      } else {
-        this.streak = 0;
-      }
-      window.setTimeout(() => this.advance(), ok ? 280 : 520);
-    },
-
-    advance() {
-      if (this.phase !== "play") return;
-      this.filled = "";
-      if (this.roundIndex + 1 < this.rounds.length) {
-        this.roundIndex += 1;
-      } else {
-        this.roundIndex = 0;
-      }
-    },
-
-    endRun() {
-      this.clearTimer();
-      this.timeLeft = 0;
-      applyRunReward(this, {
-        gameId: "speed",
-        score: this.score,
-        total: Math.max(this.attempted, this.score),
-        cites: this.rounds.slice(0, Math.max(this.attempted, 1)).map((r) => r.cite),
-        bestStreak: this.bestStreak,
-      });
-      this.phase = "done";
-    },
-
-    destroy() {
-      this.clearTimer();
-    },
-  }));
-
   Alpine.data("reminderSettings", () => ({
     enabled: false,
     timeValue: "07:00",
@@ -1745,10 +818,10 @@ export default (Alpine: Alpine) => {
       if (!notificationsSupported()) {
         return "Notifications are not available in this browser.";
       }
-      const onesignal = isOneSignalConfigured()
-        ? " Push is also connected for alerts when the app is closed (if OneSignal is set up)."
-        : "";
-      return `You’ll get a notification at your chosen time while using the app or installed PWA. Allow notifications when asked.${onesignal}`;
+      if (isOneSignalConfigured()) {
+        return "You’ll be notified at your chosen time while the app is open. With OneSignal set up, you can also receive alerts when the app is closed (configure a Journey using reminder_hour / reminder_minute tags).";
+      }
+      return "You’ll get a notification at your chosen time while using the app or installed PWA. Allow notifications when asked.";
     },
 
     flash(message: string) {
@@ -1797,17 +870,18 @@ export default (Alpine: Alpine) => {
         const { hour, minute } = this.parseTime();
         const prefs = { enabled: true, hour, minute };
         saveReminderPrefs(prefs);
-        const result = await syncReminderSchedule(prefs);
-        await syncOneSignalReminderTags(prefs);
+        const when = formatReminderTime(hour, minute);
+        const pushReady = await syncOneSignalReminderTags(prefs);
         if (!result.ok) {
           this.enabled = false;
           saveReminderPrefs({ ...prefs, enabled: false });
           this.error = result.reason;
           return;
         }
-        const when = formatReminderTime(hour, minute);
         if (result.mode === "scheduled") {
           this.flash(`Reminder set for ${when}.`);
+        } else if (pushReady) {
+          this.flash(`Reminder on for ${when}. Push tags synced for closed-app alerts.`);
         } else {
           this.flash(`Reminder on for ${when}. You’ll be notified at that time.`);
         }
@@ -2407,261 +1481,6 @@ export default (Alpine: Alpine) => {
     },
   }));
 
-  Alpine.data("prayerHub", () => ({
-    tab: "wall" as "wall" | "journal",
-    wallLive: false,
-    wallLiveDetail: "" as string,
-    wallItems: [] as WallRequest[],
-    wallName: "",
-    wallBody: "",
-    wallStatus: "" as string,
-    wallLoading: false,
-    wallBusy: false,
-    wallReactBusy: false,
-    wallError: "" as string,
-    deviceId: "",
-    items: [] as PrayerEntry[],
-    forWhom: "",
-    note: "",
-    status: "" as string,
-    _statusTimer: null as ReturnType<typeof setTimeout> | null,
-    _wallStatusTimer: null as ReturnType<typeof setTimeout> | null,
-    _wallPoll: null as ReturnType<typeof setInterval> | null,
-
-    setTab(next: "wall" | "journal") {
-      this.tab = next;
-      try {
-        const url = new URL(window.location.href);
-        url.hash = next === "journal" ? "journal" : "wall";
-        history.replaceState(null, "", url);
-      } catch {
-        /* ignore */
-      }
-    },
-
-    async init() {
-      const hash = window.location.hash.replace(/^#/, "").toLowerCase();
-      if (hash === "journal") this.tab = "journal";
-      else if (hash === "wall") this.tab = "wall";
-      // Optimistic: env present → show live until probe says otherwise (avoids flicker).
-      this.wallLive = isWallLive();
-      this.deviceId = getDeviceId();
-      this.items = loadPrayers();
-      await this.verifyWall();
-      await this.refreshWall();
-      this.startWallPoll();
-    },
-
-    destroy() {
-      if (this._wallPoll) {
-        clearInterval(this._wallPoll);
-        this._wallPoll = null;
-      }
-      if (this._statusTimer) clearTimeout(this._statusTimer);
-      if (this._wallStatusTimer) clearTimeout(this._wallStatusTimer);
-    },
-
-    async verifyWall() {
-      const check = await checkWallLive();
-      this.wallLive = check.live;
-      this.wallLiveDetail = check.detail ?? "";
-      if (!check.live && isWallLive()) {
-        // Configured in env but DB unreachable — do not pretend it is shared.
-        this.wallError =
-          check.detail ||
-          "Prayer wall couldn’t connect. Please try again in a moment.";
-      }
-    },
-
-    startWallPoll() {
-      if (this._wallPoll) clearInterval(this._wallPoll);
-      if (!this.wallLive) return;
-      this._wallPoll = setInterval(() => {
-        if (this.tab === "wall" && !this.wallBusy && document.visibilityState === "visible") {
-          void this.refreshWall(true);
-        }
-      }, 12_000);
-    },
-
-    flash(message: string) {
-      this.status = message;
-      if (this._statusTimer) clearTimeout(this._statusTimer);
-      this._statusTimer = setTimeout(() => {
-        this.status = "";
-      }, 2200);
-    },
-
-    flashWall(message: string) {
-      this.wallStatus = message;
-      if (this._wallStatusTimer) clearTimeout(this._wallStatusTimer);
-      this._wallStatusTimer = setTimeout(() => {
-        this.wallStatus = "";
-      }, 2200);
-    },
-
-    formatDate(iso: string) {
-      try {
-        return new Date(iso).toLocaleString(undefined, {
-          dateStyle: "medium",
-          timeStyle: "short",
-        });
-      } catch {
-        return iso;
-      }
-    },
-
-    isMine(item: WallRequest) {
-      return item.deviceId === this.deviceId;
-    },
-
-    isMyComment(comment: WallComment) {
-      return Boolean(comment.deviceId) && comment.deviceId === this.deviceId;
-    },
-
-    hasReaction(item: WallRequest, type: ReactionType) {
-      return item.myReactions.includes(type);
-    },
-
-    mergeWallUi(next: WallRequest[]) {
-      const prev = new Map(this.wallItems.map((item) => [item.id, item]));
-      return next.map((item) => {
-        const old = prev.get(item.id);
-        return {
-          ...item,
-          commentsOpen: old?.commentsOpen ?? false,
-          commentDraft: old?.commentDraft ?? "",
-          commentName: old?.commentName ?? "",
-        };
-      });
-    },
-
-    async refreshWall(quiet = false) {
-      if (!quiet) this.wallLoading = true;
-      if (!quiet) this.wallError = "";
-      try {
-        this.wallItems = this.mergeWallUi(await listWallRequests());
-      } catch (err) {
-        this.wallError =
-          err instanceof Error ? err.message : "Could not load the prayer wall.";
-        if (!quiet) this.wallItems = [];
-      } finally {
-        if (!quiet) this.wallLoading = false;
-      }
-    },
-
-    async submitRequest() {
-      if (!this.wallBody.trim() || this.wallBusy) return;
-      this.wallBusy = true;
-      this.wallError = "";
-      try {
-        if (!this.wallLive) await this.verifyWall();
-        this.wallItems = this.mergeWallUi(
-          await createWallRequest(this.wallName, this.wallBody),
-        );
-        this.wallBody = "";
-        this.wallBody = "";
-        if (isWallLive()) {
-          this.wallLive = true;
-          this.wallLiveDetail = "";
-          this.startWallPoll();
-          this.flashWall("Shared with everyone");
-        } else {
-          this.flashWall("Saved on this device only");
-        }
-      } catch (err) {
-        this.wallError =
-          err instanceof Error ? err.message : "Could not share your request.";
-      } finally {
-        this.wallBusy = false;
-      }
-    },
-
-    async react(requestId: string, type: ReactionType) {
-      if (this.wallReactBusy) return;
-      this.wallReactBusy = true;
-      try {
-        this.wallItems = this.mergeWallUi(await toggleReaction(requestId, type));
-      } catch (err) {
-        this.wallError =
-          err instanceof Error ? err.message : "Could not save reaction.";
-      } finally {
-        this.wallReactBusy = false;
-      }
-    },
-
-    async submitComment(item: WallRequest) {
-      const draft = (item.commentDraft ?? "").trim();
-      if (!draft) return;
-      try {
-        const openId = item.id;
-        this.wallItems = this.mergeWallUi(
-          await addWallComment(item.id, item.commentName ?? "", draft),
-        );
-        const next = this.wallItems.find((r) => r.id === openId);
-        if (next) next.commentsOpen = true;
-      } catch (err) {
-        this.wallError =
-          err instanceof Error ? err.message : "Could not post comment.";
-      }
-    },
-
-    async removeRequest(id: string) {
-      try {
-        this.wallItems = this.mergeWallUi(await removeOwnRequest(id));
-      } catch (err) {
-        this.wallError =
-          err instanceof Error ? err.message : "Could not remove request.";
-      }
-    },
-
-    async removeComment(commentId: string, requestId: string) {
-      try {
-        this.wallItems = this.mergeWallUi(await removeOwnComment(commentId));
-        const next = this.wallItems.find((r) => r.id === requestId);
-        if (next) next.commentsOpen = true;
-      } catch (err) {
-        this.wallError =
-          err instanceof Error ? err.message : "Could not remove comment.";
-      }
-    },
-
-    addJournal() {
-      if (!this.forWhom.trim()) return;
-      this.items = addPrayer(this.forWhom, this.note);
-      this.forWhom = "";
-      this.note = "";
-      this.flash("Saved");
-    },
-
-    removeJournal(id: string) {
-      this.items = removePrayer(id);
-    },
-
-    exportList() {
-      if (!this.items.length) {
-        this.flash("Nothing to export");
-        return;
-      }
-      const stamp = new Date().toISOString().slice(0, 10);
-      const lines = this.items.map((item) => {
-        const when = this.formatDate(item.createdAt);
-        const note = item.note.trim() ? `\n${item.note.trim()}` : "";
-        return `${item.forWhom}\n${when}${note}`;
-      });
-      const blob = new Blob(
-        [`Prayer journal · ${stamp}\n\n${lines.join("\n\n---\n\n")}\n`],
-        { type: "text/plain;charset=utf-8" },
-      );
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement("a");
-      a.href = url;
-      a.download = `prayer-journal-${stamp}.txt`;
-      a.click();
-      URL.revokeObjectURL(url);
-      this.flash("Exported");
-    },
-  }));
-
   Alpine.data("feedbackForm", () => ({
     live: false,
     message: "",
@@ -2717,7 +1536,7 @@ export default (Alpine: Alpine) => {
     voiceSupported: false,
     voiceHint: "",
     _voiceSeq: 0,
-    _localSession: null as LocalVoiceSession | null,
+    _localSession: null as null | { stop: () => Promise<string>; cancel: () => void },
     _localBusy: false,
     loadPromise: null as Promise<void> | null,
     worker: null as Worker | null,
@@ -2748,10 +1567,10 @@ export default (Alpine: Alpine) => {
           /* ignore */
         }
       }
-      const hasSpeech = hasBrowserSpeech();
-      const hasMic = hasMicrophone();
+      const hasSpeech = this.getSpeechRecognition() != null;
+      const hasMic =
+        typeof navigator !== "undefined" && !!navigator.mediaDevices?.getUserMedia;
       this.voiceSupported = hasSpeech || hasMic;
-      // Do not warm Whisper here — keeps pages light; model loads only if mic needs it.
     },
 
     getSpeechRecognition() {
@@ -2813,6 +1632,7 @@ export default (Alpine: Alpine) => {
       }
 
       // Cursor / VS Code preview can’t use Google speech — use on-device Whisper.
+      const { chromeSpeechLikelyBroken } = await import("./lib/localVoice");
       if (chromeSpeechLikelyBroken() || !this.getSpeechRecognition()) {
         await this.startLocalVoice();
         return;
@@ -2823,7 +1643,7 @@ export default (Alpine: Alpine) => {
       const seq = ++this._voiceSeq;
       const langCode = VERSIONS[this.version]?.language || "en";
       const example = micExamplePhrase(langCode);
-      this.voiceHint = `Listening… say a verse, like “${example}” (${VOICE_ENGINE})`;
+      this.voiceHint = `Listening… say a verse, like “${example}”`;
 
       const SR = this.getSpeechRecognition()!;
       const recognition = new SR();
@@ -2942,12 +1762,13 @@ export default (Alpine: Alpine) => {
       this.stopVoice(true);
       this.error = "";
       const seq = ++this._voiceSeq;
-      this.voiceHint = `Starting voice ${VOICE_ENGINE}… first time may download a small model`;
-      warmLocalVoice();
+      const voice = await import("./lib/localVoice");
+      this.voiceHint = `Starting voice ${voice.VOICE_ENGINE}… first time may download a small model`;
+      voice.warmLocalVoice();
 
       try {
-        let session!: LocalVoiceSession;
-        session = await startLocalRecording(
+        let session!: Awaited<ReturnType<typeof voice.startLocalRecording>>;
+        session = await voice.startLocalRecording(
           () => {
             if (seq !== this._voiceSeq) return;
             this.listening = true;
