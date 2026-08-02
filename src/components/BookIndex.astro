@@ -34,18 +34,29 @@ if (ntOther.length) nt.push({ id: "other-nt", label: "Other", books: ntOther });
 <section
   id="books"
   class="scroll-mt-28"
-  x-data={`{ tab: '${defaultTab}' }`}
+  x-data={`{ open: false, tab: '${defaultTab}' }`}
 >
-  <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between sm:gap-4">
-    <div>
-      <h2 class="font-scripture text-2xl font-semibold tracking-tight text-[var(--color-ink)] sm:text-3xl">
-        Books
-      </h2>
-      <p class="mt-1 text-sm text-[var(--color-ink-muted)]">
+  <button
+    type="button"
+    class="flex w-full min-h-[4rem] touch-manipulation items-center justify-between gap-4 rounded-2xl border border-[var(--color-line)] bg-[var(--color-surface-elevated)] px-5 py-4 text-left transition hover:border-[var(--color-primary)]/45"
+    @click="open = !open"
+    :aria-expanded="open.toString()"
+  >
+    <span>
+      <span class="block font-scripture text-2xl font-semibold tracking-tight text-[var(--color-ink)]">
+        Open Bible
+      </span>
+      <span class="mt-1 block text-sm text-[var(--color-ink-muted)]" x-show="!open">
         Book → chapter → read
-      </p>
-    </div>
+      </span>
+    </span>
+    <span
+      class="inline-flex h-9 shrink-0 items-center rounded-full border border-[var(--color-line)] px-3.5 text-sm font-medium text-[var(--color-ink-muted)]"
+      x-text="open ? 'Close' : 'Open'"
+    ></span>
+  </button>
 
+  <div class="mt-4 space-y-5" x-show="open" x-cloak>
     {
       showTabs && (
         <div
@@ -56,45 +67,45 @@ if (ntOther.length) nt.push({ id: "other-nt", label: "Other", books: ntOther });
           <button
             type="button"
             role="tab"
-            class="min-h-9 touch-manipulation rounded-md px-3.5 text-sm font-medium transition"
+            class="min-h-9 touch-manipulation rounded-md px-4 text-sm font-medium transition"
             :class="tab === 'ot' ? 'bg-[var(--color-primary)] text-[var(--color-on-primary)]' : 'text-[var(--color-ink-muted)]'"
             @click="tab = 'ot'"
             :aria-selected="(tab === 'ot').toString()"
           >
-            Old
+            Old Testament
           </button>
           <button
             type="button"
             role="tab"
-            class="min-h-9 touch-manipulation rounded-md px-3.5 text-sm font-medium transition"
+            class="min-h-9 touch-manipulation rounded-md px-4 text-sm font-medium transition"
             :class="tab === 'nt' ? 'bg-[var(--color-primary)] text-[var(--color-on-primary)]' : 'text-[var(--color-ink-muted)]'"
             @click="tab = 'nt'"
             :aria-selected="(tab === 'nt').toString()"
           >
-            New
+            New Testament
           </button>
         </div>
       )
     }
-  </div>
 
-  <div class="mt-5" x-show="tab === 'ot'" {...(defaultTab === "nt" ? { "x-cloak": true } : {})}>
-    {
-      ot.length === 0 ? (
-        <p class="text-sm text-[var(--color-ink-subtle)]">No Old Testament books here.</p>
-      ) : (
-        <BookAccordion version={version} sections={ot} />
-      )
-    }
-  </div>
+    <div x-show="tab === 'ot'" {...(defaultTab === "nt" ? { "x-cloak": true } : {})}>
+      {
+        ot.length === 0 ? (
+          <p class="text-sm text-[var(--color-ink-subtle)]">No Old Testament books here.</p>
+        ) : (
+          <BookAccordion version={version} sections={ot} />
+        )
+      }
+    </div>
 
-  <div class="mt-5" x-show="tab === 'nt'" {...(defaultTab === "ot" ? { "x-cloak": true } : {})}>
-    {
-      nt.length === 0 ? (
-        <p class="text-sm text-[var(--color-ink-subtle)]">No New Testament books here.</p>
-      ) : (
-        <BookAccordion version={version} sections={nt} />
-      )
-    }
+    <div x-show="tab === 'nt'" {...(defaultTab === "ot" ? { "x-cloak": true } : {})}>
+      {
+        nt.length === 0 ? (
+          <p class="text-sm text-[var(--color-ink-subtle)]">No New Testament books here.</p>
+        ) : (
+          <BookAccordion version={version} sections={nt} />
+        )
+      }
+    </div>
   </div>
 </section>

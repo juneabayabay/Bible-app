@@ -7,66 +7,67 @@ interface Props {
 }
 
 const { version, sections } = Astro.props;
-
-function chaptersOf(book: BookLike): number[] {
-  return book.chapters ?? [];
-}
 ---
 
-<div class="space-y-7">
+<div class="space-y-6" x-data="{ book: '' }">
   {
     sections.map((section) => (
       <div>
-        <h3 class="mb-2 text-xs font-medium text-[var(--color-ink-subtle)]">
+        <p class="mb-2 text-[0.7rem] font-semibold uppercase tracking-[0.12em] text-[var(--color-ink-subtle)]">
           {section.label}
-        </h3>
-        <ul class="overflow-hidden rounded-xl border border-[var(--color-line)] bg-[var(--color-surface-elevated)]">
-          {section.books.map((book) => {
-            const chs = chaptersOf(book);
-            return (
-              <li class="border-b border-[var(--color-line)] last:border-b-0">
-                <details class="group book-row">
-                  <summary class="flex min-h-12 cursor-pointer list-none touch-manipulation items-center justify-between gap-3 px-4 py-3 text-left [&::-webkit-details-marker]:hidden">
-                    <span class="font-scripture text-[1.05rem] font-semibold text-[var(--color-ink)]">
-                      {book.name}
-                    </span>
-                    <span
-                      class="text-xs text-[var(--color-ink-subtle)] transition group-open:rotate-180"
-                      aria-hidden="true"
-                    >
-                      ▾
-                    </span>
-                  </summary>
-                  <div class="px-4 pb-4">
-                    <ul class="grid grid-cols-7 gap-1.5 sm:grid-cols-10 md:grid-cols-12">
-                      {chs.map((n) => (
-                        <li>
-                          <a
-                            class="inline-flex h-9 w-full touch-manipulation items-center justify-center rounded-md bg-[var(--color-surface)] text-sm tabular-nums text-[var(--color-ink)] ring-1 ring-[var(--color-line)] transition hover:text-[var(--color-primary)] hover:ring-[var(--color-primary)] active:scale-[0.96]"
-                            href={`/${version}/chapter/${book.slug}/${n}`}
-                            data-astro-prefetch="tap"
-                          >
-                            {n}
-                          </a>
-                        </li>
-                      ))}
-                    </ul>
-                  </div>
-                </details>
-              </li>
-            );
-          })}
+        </p>
+        <ul class="grid grid-cols-2 gap-2 sm:grid-cols-3 md:grid-cols-4">
+          {section.books.map((b) => (
+            <li>
+              <button
+                type="button"
+                class="flex min-h-11 w-full touch-manipulation items-center justify-center rounded-xl border px-2 text-center text-sm font-medium leading-snug transition"
+                :class={`book === '${b.slug}'
+                  ? 'border-[var(--color-primary)] bg-[var(--color-primary)] text-[var(--color-on-primary)]'
+                  : 'border-[var(--color-line)] bg-[var(--color-surface-elevated)] text-[var(--color-ink)] hover:border-[var(--color-ink-subtle)]'`}
+                @click={`book = book === '${b.slug}' ? '' : '${b.slug}'`}
+              >
+                {b.name}
+              </button>
+            </li>
+          ))}
         </ul>
+
+        {section.books.map((b) => {
+          const chs = b.chapters ?? [];
+          return (
+            <div
+              class="mt-3 rounded-xl border border-[var(--color-line)] bg-[var(--color-surface)] p-4"
+              x-show={`book === '${b.slug}'`}
+              x-cloak
+            >
+              <p class="mb-3 font-scripture text-lg font-semibold text-[var(--color-ink)]">
+                {b.name}
+                <span class="ml-2 text-sm font-sans font-normal text-[var(--color-ink-subtle)]">
+                  · pick a chapter
+                </span>
+              </p>
+              <ul class="grid grid-cols-6 gap-1.5 sm:grid-cols-9 md:grid-cols-12">
+                {chs.map((n) => (
+                  <li>
+                    <a
+                      class="inline-flex h-9 w-full touch-manipulation items-center justify-center rounded-md border border-[var(--color-line)] bg-[var(--color-surface-elevated)] text-sm font-medium tabular-nums text-[var(--color-ink)] transition hover:border-[var(--color-primary)] hover:text-[var(--color-primary)] active:scale-[0.96]"
+                      href={`/${version}/chapter/${b.slug}/${n}`}
+                      data-astro-prefetch="tap"
+                    >
+                      {n}
+                    </a>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          );
+        })}
       </div>
     ))
   }
-</div>
 
-<style>
-  .book-row summary {
-    outline: none;
-  }
-  .book-row summary:focus-visible {
-    box-shadow: inset 0 0 0 2px var(--color-primary);
-  }
-</style>
+  <p class="text-sm text-[var(--color-ink-subtle)]" x-show="!book" x-cloak>
+    Tap a book to see chapters.
+  </p>
+</div>
