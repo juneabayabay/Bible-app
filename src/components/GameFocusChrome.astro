@@ -1,4 +1,6 @@
 ---
+import SectionFocusChrome from "./SectionFocusChrome.astro";
+
 interface Props {
   version: string;
   title: string;
@@ -8,32 +10,12 @@ interface Props {
 const { version, title, vibe } = Astro.props;
 ---
 
-<header class="mb-6 border-b border-[var(--color-line)] pb-4">
-  <div class="flex items-center justify-between gap-3">
-    <a
-      href={`/${version}/play`}
-      class="inline-flex min-h-10 items-center rounded-full border border-[var(--color-line)] bg-[var(--color-surface-elevated)] px-3.5 text-sm font-medium text-[var(--color-ink)] transition hover:border-[var(--color-primary)]/40"
-      data-astro-prefetch
-    >
-      ← Games
-    </a>
-    <a
-      href={`/${version}/`}
-      class="text-sm text-[var(--color-ink-subtle)] underline-offset-2 hover:text-[var(--color-ink)] hover:underline"
-      data-astro-prefetch
-    >
-      Home
-    </a>
-  </div>
-  {
-    vibe && (
-      <p class="mt-4 text-[0.65rem] font-semibold uppercase tracking-[0.14em] text-[var(--color-gold)]">
-        {vibe}
-      </p>
-    )
-  }
-  <h1 class="font-scripture mt-1.5 text-2xl font-semibold tracking-tight text-[var(--color-ink)] sm:text-3xl">
-    {title}
-  </h1>
+<SectionFocusChrome
+  version={version}
+  title={title}
+  eyebrow={vibe}
+  backHref={`/${version}/play`}
+  backLabel="Games"
+>
   <slot />
-</header>
+</SectionFocusChrome>

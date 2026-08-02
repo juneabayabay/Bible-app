@@ -1,6 +1,6 @@
 ---
 import Layout from "../../layouts/Layout.astro";
-import SearchBar from "../../components/SearchBar.astro";
+import SectionFocusChrome from "../../components/SectionFocusChrome.astro";
 import MedalRow from "../../components/MedalRow.astro";
 import RemindersCard from "../../components/RemindersCard.astro";
 import { resolveVersionId } from "../../lib/bible";
@@ -16,22 +16,13 @@ const version = resolveVersionId(Astro.params.version);
 const meta = getVersion(version);
 ---
 
-<Layout title={`Journey · ${meta.shortLabel}`} version={version}>
-  <SearchBar slot="header" version={version} />
-
+<Layout title={`Journey · ${meta.shortLabel}`} version={version} focus showFooter={false}>
   <div class="page-stack measure" x-data="journeyPanel" x-init="refresh()">
-    <header class="page-header border-b border-[var(--color-line)] pb-5">
-      <p class="text-sm text-[var(--color-ink-muted)]">
-        <a href={`/${version}/`} class="hover:underline" data-astro-prefetch>← Home</a>
+    <SectionFocusChrome version={version} title="Journey" eyebrow="Progress">
+      <p class="mt-2 text-sm leading-relaxed text-[var(--color-ink-muted)]">
+        Streak and medals — earned by returning each day.
       </p>
-      <p class="eyebrow mt-5">Journey</p>
-      <h1 class="font-scripture mt-1.5 text-3xl font-semibold tracking-tight sm:text-4xl">
-        Your progress
-      </h1>
-      <p class="mt-2 text-sm leading-relaxed text-[var(--color-ink-muted)] sm:text-base">
-        Streak and medals — earned by returning each day and finishing small steps.
-      </p>
-    </header>
+    </SectionFocusChrome>
 
     <section aria-labelledby="snapshot-heading" class="space-y-4">
       <h2 id="snapshot-heading" class="sr-only">Snapshot</h2>

@@ -66,9 +66,11 @@ import {
   createWallRequest,
   isWallLive,
   listWallRequests,
+  removeOwnComment,
   removeOwnRequest,
   toggleReaction,
   type ReactionType,
+  type WallComment,
   type WallRequest,
 } from "./lib/prayerWall";
 import { getChallengeForDate } from "./lib/challenges";
@@ -715,7 +717,7 @@ export default (Alpine: Alpine) => {
     complete: false,
     continueUrl: "",
     planUrl: "",
-    booksUrl: `/${version}/#books`,
+    booksUrl: `/${version}/books`,
     readNote: "Open any chapter to check this off.",
     reflection: "",
 
@@ -2535,6 +2537,10 @@ export default (Alpine: Alpine) => {
       return item.deviceId === this.deviceId;
     },
 
+    isMyComment(comment: WallComment) {
+      return Boolean(comment.deviceId) && comment.deviceId === this.deviceId;
+    },
+
     hasReaction(item: WallRequest, type: ReactionType) {
       return item.myReactions.includes(type);
     },
@@ -2628,6 +2634,17 @@ export default (Alpine: Alpine) => {
       } catch (err) {
         this.wallError =
           err instanceof Error ? err.message : "Could not remove request.";
+      }
+    },
+
+    async removeComment(commentId: string, requestId: string) {
+      try {
+        this.wallItems = this.mergeWallUi(await removeOwnComment(commentId));
+        const next = this.wallItems.find((r) => r.id === requestId);
+        if (next) next.commentsOpen = true;
+      } catch (err) {
+        this.wallError =
+          err instanceof Error ? err.message : "Could not remove comment.";
       }
     },
 

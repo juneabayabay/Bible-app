@@ -1,6 +1,6 @@
 ---
 import Layout from "../../layouts/Layout.astro";
-import SearchBar from "../../components/SearchBar.astro";
+import SectionFocusChrome from "../../components/SectionFocusChrome.astro";
 import { resolveVersionId } from "../../lib/bible";
 import { getVersion } from "../../lib/versions";
 import { getVersionHomePaths } from "../../lib/staticPaths";
@@ -15,26 +15,17 @@ const meta = getVersion(version);
 const wallLive = isSupabaseConfigured();
 ---
 
-<Layout title={`Prayer · ${meta.shortLabel}`} version={version}>
-  <SearchBar slot="header" version={version} />
-
+<Layout title={`Prayer · ${meta.shortLabel}`} version={version} focus showFooter={false}>
   <div
     class="page-stack measure"
     x-data="prayerHub"
     data-wall-live={wallLive ? "true" : "false"}
   >
-    <header class="border-b border-[var(--color-line)] pb-5">
-      <p class="text-sm text-[var(--color-ink-muted)]">
-        <a href={`/${version}/`} class="hover:underline" data-astro-prefetch>← Home</a>
+    <SectionFocusChrome version={version} title="Prayer" eyebrow="Together">
+      <p class="mt-2 text-sm leading-relaxed text-[var(--color-ink-muted)]">
+        Public wall or private journal — choose below.
       </p>
-      <p class="eyebrow mt-5">Prayer</p>
-      <h1 class="font-scripture mt-1.5 text-3xl font-semibold tracking-tight sm:text-4xl">
-        Come as you are
-      </h1>
-      <p class="mt-2 text-sm leading-relaxed text-[var(--color-ink-muted)] sm:text-base">
-        Two spaces — choose one below.
-      </p>
-    </header>
+    </SectionFocusChrome>
 
     <!-- Clear choice: Public vs Private -->
     <div class="grid gap-3 sm:grid-cols-2" role="tablist" aria-label="Prayer spaces">
@@ -299,9 +290,20 @@ const wallLive = isSupabaseConfigured();
               <div class="mt-4 space-y-3" x-show="item.commentsOpen" x-cloak>
                 <ul class="space-y-2.5" x-show="item.comments.length > 0">
                   <template x-for="c in item.comments" :key="c.id">
-                    <li class="border-l-2 border-[var(--color-line)] pl-3">
-                      <p class="text-xs font-medium text-[var(--color-ink)]" x-text="c.displayName"></p>
-                      <p class="mt-0.5 text-sm break-words text-[var(--color-ink-muted)]" x-text="c.body"></p>
+                    <li class="flex items-start justify-between gap-3 border-l-2 border-[var(--color-line)] pl-3">
+                      <div class="min-w-0">
+                        <p class="text-xs font-medium text-[var(--color-ink)]" x-text="c.displayName"></p>
+                        <p class="mt-0.5 text-sm break-words text-[var(--color-ink-muted)]" x-text="c.body"></p>
+                      </div>
+                      <button
+                        type="button"
+                        class="shrink-0 min-h-9 px-1.5 text-xs text-[var(--color-ink-subtle)] transition hover:text-red-600 dark:hover:text-red-400"
+                        x-show="isMyComment(c)"
+                        x-cloak
+                        @click="removeComment(c.id, item.id)"
+                      >
+                        Remove
+                      </button>
                     </li>
                   </template>
                 </ul>

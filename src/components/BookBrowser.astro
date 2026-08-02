@@ -1,0 +1,81 @@
+---
+import { groupBooks, isOldTestament, type BookLike } from "../lib/books";
+import BookAccordion from "./BookAccordion.astro";
+
+interface Props {
+  version: string;
+  books: BookLike[];
+  defaultTab: "ot" | "nt";
+  showTabs: boolean;
+}
+
+const { version, books, defaultTab, showTabs } = Astro.props;
+const sections = groupBooks(books);
+
+const OT_IDS = new Set([
+  "law",
+  "history",
+  "poetry",
+  "major-prophets",
+  "minor-prophets",
+]);
+const NT_IDS = new Set(["gospels", "acts", "paul", "general", "revelation"]);
+
+const ot = sections.filter((s) => OT_IDS.has(s.id));
+const nt = sections.filter((s) => NT_IDS.has(s.id));
+const otherBooks = sections.find((s) => s.id === "other")?.books ?? [];
+const otOther = otherBooks.filter((b) => isOldTestament(b.slug));
+const ntOther = otherBooks.filter((b) => !isOldTestament(b.slug));
+
+if (otOther.length) ot.push({ id: "other-ot", label: "Other", books: otOther });
+if (ntOther.length) nt.push({ id: "other-nt", label: "Other", books: ntOther });
+---
+
+<div class="space-y-5" x-data={`{ tab: '${defaultTab}' }`}>
+  {
+    showTabs && (
+      <div class="segment" role="tablist" aria-label="Testament">
+        <button
+          type="button"
+          role="tab"
+          class="segment-btn"
+          :class="tab === 'ot' ? 'is-active' : ''"
+          @click="tab = 'ot'"
+          :aria-selected="(tab === 'ot').toString()"
+        >
+          Old Testament
+        </button>
+        <button
+          type="button"
+          role="tab"
+          class="segment-btn"
+          :class="tab === 'nt' ? 'is-active' : ''"
+          @click="tab = 'nt'"
+          :aria-selected="(tab === 'nt').toString()"
+        >
+          New Testament
+        </button>
+      </div>
+    )
+  }
+
+  <div x-show="tab === 'ot'" {...(defaultTab === "nt" ? { "x-cloak": true } : {})}>
+    {
+      ot.length === 0 ? (
+        <p class="text-sm text-[var(--color-ink-subtle)]">No books here.</p>
+      ) : (
+        <BookAccordion version={version} sections={ot} />
+      )
+    }
+  </div>
+
+  <div x-show="tab === 'nt'" {...(defaultTab === "ot" ? { "x-cloak": true } : {})}>
+    {
+      nt.length === 0 ? (
+        <p class="text-sm text-[var(--color-ink-subtle)]">No books here.</p>
+      ) : (
+        <BookAccordion version={version} sections={nt} />
+      )
+    }
+  </div>
+</div>

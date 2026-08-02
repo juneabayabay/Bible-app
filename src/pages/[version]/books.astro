@@ -1,0 +1,39 @@
+---
+import Layout from "../../layouts/Layout.astro";
+import BookBrowser from "../../components/BookBrowser.astro";
+import SectionFocusChrome from "../../components/SectionFocusChrome.astro";
+import { getBookCatalog, resolveVersionId } from "../../lib/bible";
+import { getVersion } from "../../lib/versions";
+import { isOldTestament } from "../../lib/books";
+import { getVersionHomePaths } from "../../lib/staticPaths";
+
+export function getStaticPaths() {
+  return getVersionHomePaths();
+}
+
+const version = resolveVersionId(Astro.params.version);
+const meta = getVersion(version);
+const books = getBookCatalog(version);
+
+const otCount = books.filter((b) => isOldTestament(b.slug)).length;
+const ntCount = books.length - otCount;
+const showTabs = otCount > 0 && ntCount > 0;
+const defaultTab = otCount > 0 ? "ot" : "nt";
+---
+
+<Layout title={`Bible · ${meta.shortLabel}`} version={version} focus showFooter={false} width="wide">
+  <div class="mx-auto w-full max-w-3xl">
+    <SectionFocusChrome version={version} title="Bible">
+      <p class="mt-1 text-sm text-[var(--color-ink-muted)]">
+        Pick a book, then a chapter.
+      </p>
+    </SectionFocusChrome>
+
+    <BookBrowser
+      version={version}
+      books={books}
+      defaultTab={defaultTab}
+      showTabs={showTabs}
+    />
+  </div>
+</Layout>

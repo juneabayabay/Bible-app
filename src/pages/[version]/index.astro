@@ -8,7 +8,6 @@ import BookIndex from "../../components/BookIndex.astro";
 import HomePrayerWall from "../../components/HomePrayerWall.astro";
 import { getBookCatalog, resolveVersionId } from "../../lib/bible";
 import { getVersion } from "../../lib/versions";
-import { isOldTestament } from "../../lib/books";
 import { resolveDailyVerse } from "../../lib/resolveDailyVerse";
 import { getVersionHomePaths } from "../../lib/staticPaths";
 
@@ -21,16 +20,11 @@ const meta = getVersion(version);
 const books = getBookCatalog(version);
 const daily = resolveDailyVerse(version);
 
-const otCount = books.filter((b) => isOldTestament(b.slug)).length;
-const ntCount = books.length - otCount;
-const showTabs = otCount > 0 && ntCount > 0;
-const defaultTab = otCount > 0 ? "ot" : "nt";
-
 const startHref =
   daily?.url ??
   (books[0]?.chapters?.[0]
     ? `/${version}/chapter/${books[0].slug}/${books[0].chapters[0]}`
-    : "#books");
+    : `/${version}/books`);
 ---
 
 <Layout title={`Bible · ${meta.shortLabel}`} version={version} width="wide" flushHero>
@@ -42,7 +36,7 @@ const startHref =
       subcopy="Today’s verse, continue reading, or open any book."
       ctaHref={startHref}
       ctaLabel={daily ? "Today’s chapter" : "Start reading"}
-      booksHref="#books"
+      booksHref={`/${version}/books`}
       verseText={daily?.text}
       verseCite={daily ? `${daily.book} ${daily.chapter}:${daily.verse} · ${meta.shortLabel}` : undefined}
       verseUrl={daily?.url}
@@ -50,12 +44,7 @@ const startHref =
 
     <div class="page-stack mt-6 sm:mt-8">
       <QuickActions />
-      <BookIndex
-        version={version}
-        books={books}
-        defaultTab={defaultTab}
-        showTabs={showTabs}
-      />
+      <BookIndex version={version} />
       <HomePrayerWall version={version} />
       <HomePaths version={version} />
     </div>

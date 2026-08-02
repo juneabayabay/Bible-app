@@ -1,6 +1,6 @@
 ---
 import Layout from "../../../layouts/Layout.astro";
-import SearchBar from "../../../components/SearchBar.astro";
+import SectionFocusChrome from "../../../components/SectionFocusChrome.astro";
 import GameRewardPanel from "../../../components/GameRewardPanel.astro";
 import { resolveVersionId } from "../../../lib/bible";
 import { getVersion } from "../../../lib/versions";
@@ -17,21 +17,13 @@ const live = GAMES.filter((g) => g.status === "live" && g.slug);
 const soon = GAMES.filter((g) => g.status !== "live");
 ---
 
-<Layout title={`Play · ${meta.shortLabel}`} version={version}>
-  <SearchBar slot="header" version={version} />
-
+<Layout title={`Play · ${meta.shortLabel}`} version={version} focus showFooter={false}>
   <div class="page-stack measure">
-    <header>
-      <p class="text-sm text-[var(--color-ink-muted)]">
-        <a href={`/${version}/`} class="hover:underline" data-astro-prefetch>← Home</a>
-      </p>
-      <h1 class="font-scripture mt-4 text-3xl font-semibold tracking-tight sm:text-4xl">
-        Games
-      </h1>
+    <SectionFocusChrome version={version} title="Games" eyebrow="Play">
       <p class="mt-2 max-w-lg text-sm leading-relaxed text-[var(--color-ink-muted)]">
         Pick a game. Score points. Unlock medals on Journey.
       </p>
-    </header>
+    </SectionFocusChrome>
 
     <div x-data="playRankPanel()" x-init="boot()">
       <GameRewardPanel mode="hub" />

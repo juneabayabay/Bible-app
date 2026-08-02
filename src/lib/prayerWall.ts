@@ -332,6 +332,27 @@ export async function addWallComment(
   return listRemote();
 }
 
+export async function removeOwnComment(commentId: string): Promise<WallRequest[]> {
+  const deviceId = getDeviceId();
+
+  if (!isWallLive()) {
+    const store = loadLocal();
+    const mine = store.comments.find((c) => c.id === commentId && c.deviceId === deviceId);
+    if (!mine) return listLocal();
+    store.comments = store.comments.filter((c) => c.id !== commentId);
+    saveLocal(store);
+    return listLocal();
+  }
+
+  const sb = getSupabase()!;
+  const { error } = await sb.rpc("delete_own_prayer_comment", {
+    p_id: commentId,
+    p_device_id: deviceId,
+  });
+  if (error) throw error;
+  return listRemote();
+}
+
 export async function removeOwnRequest(requestId: string): Promise<WallRequest[]> {
   const deviceId = getDeviceId();
 

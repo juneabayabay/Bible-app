@@ -1,6 +1,6 @@
 ---
 import Layout from "../../../layouts/Layout.astro";
-import SearchBar from "../../../components/SearchBar.astro";
+import SectionFocusChrome from "../../../components/SectionFocusChrome.astro";
 import { resolveVersionId } from "../../../lib/bible";
 import { getVersion } from "../../../lib/versions";
 import { getVersionHomePaths } from "../../../lib/staticPaths";
@@ -15,98 +15,50 @@ const meta = getVersion(version);
 const themes = getDevotionThemes();
 ---
 
-<Layout title={`Devotionals · ${meta.shortLabel}`} version={version} width="wide" flushHero>
-  <SearchBar slot="header" version={version} />
-
+<Layout title={`Devotionals · ${meta.shortLabel}`} version={version} width="wide" focus showFooter={false}>
   <div class="page-stack" x-data="journeyPanel" x-init="refresh()">
-    <section
-      class="full-bleed overflow-hidden"
-      aria-labelledby="devotionals-heading"
-    >
-      <div class="absolute inset-0">
-        <img
-          src="/images/devotionals-hero.png"
-          alt=""
-          width="1920"
-          height="1080"
-          class="h-full min-h-[18rem] w-full object-cover object-[center_40%] sm:min-h-[22rem] lg:min-h-[24rem]"
-          fetchpriority="high"
-        />
-        <div class="hero-scrim" aria-hidden="true"></div>
-        <div class="hero-scrim-soft" aria-hidden="true"></div>
-        <div class="hero-fade" aria-hidden="true"></div>
-      </div>
+    <SectionFocusChrome version={version} title="Devotionals" eyebrow="Themes">
+      <p class="mt-2 max-w-xl text-sm leading-relaxed text-[var(--color-ink-muted)] sm:text-base">
+        Choose a theme — love, hope, grace, and more.
+      </p>
+      <p class="mt-2 text-sm text-[var(--color-ink-subtle)]">
+        Progress: <span class="text-[var(--color-gold)]" x-text="devotionDone"></span> guided readings completed
+      </p>
+    </SectionFocusChrome>
 
-      <div class="relative mx-auto w-full max-w-6xl px-4 pb-12 pt-10 sm:px-6 sm:pb-14 sm:pt-14 lg:max-w-7xl lg:px-8">
-        <p class="animate-soft-rise hero-ink-subtle text-sm">
-          <a href={`/${version}/`} class="hero-ink hover:underline" data-astro-prefetch>
-            ← Home
-          </a>
-          <span class="mx-2 opacity-40">·</span>
-          <a href={`/${version}/journey`} class="hero-ink hover:underline" data-astro-prefetch>
-            Journey
-          </a>
-        </p>
-
-        <div class="animate-soft-rise mt-8 max-w-2xl" style="animation-delay: 60ms">
-          <p class="hero-gold text-xs font-semibold uppercase tracking-[0.14em]">
-            Devotionals
-          </p>
-          <h1
-            id="devotionals-heading"
-            class="font-scripture hero-ink mt-3 text-3xl font-semibold tracking-tight sm:text-4xl lg:text-[2.75rem] lg:leading-tight"
+    <div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+      {
+        themes.map((theme) => (
+          <a
+            class="group flex flex-col overflow-hidden rounded-2xl border border-[var(--color-line)] bg-[var(--color-surface-elevated)] transition hover:border-[var(--color-primary)]/45"
+            href={`/${version}/devotionals/${theme.slug}`}
+            data-astro-prefetch
           >
-            Themes for the heart
-          </h1>
-          <p class="hero-ink-muted mt-4 max-w-xl text-base leading-relaxed sm:text-lg">
-            Choose a theme—love, kindness, humility, grace, sacrifice, and more.
-            Each theme has related verses you can pick, plus short guided readings.
-          </p>
-          <p class="hero-ink-subtle mt-5 text-sm">
-            Progress: <span class="hero-gold" x-text="devotionDone"></span> guided readings completed
-          </p>
-        </div>
-      </div>
-    </section>
-
-    <div class="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
-      {themes.map((theme) => (
-        <a
-          class="ui-card group flex flex-col overflow-hidden p-0 transition hover:border-[var(--color-gold)]"
-          href={`/${version}/devotionals/${theme.slug}`}
-          data-astro-prefetch
-        >
-          <div class="relative aspect-[16/10] overflow-hidden bg-[var(--color-surface-elevated)]">
-            <img
-              src={theme.image}
-              alt={theme.imageAlt}
-              width="640"
-              height="400"
-              loading="lazy"
-              class="h-full w-full object-cover transition duration-500 group-hover:scale-[1.03]"
-            />
-            <div
-              class="absolute inset-0 bg-gradient-to-t from-[var(--color-surface)]/80 via-transparent to-transparent"
-              aria-hidden="true"
-            ></div>
-          </div>
-          <div class="flex flex-1 flex-col p-5 sm:p-6">
-            <h2 class="font-scripture text-2xl font-semibold text-[var(--color-ink)] group-hover:text-[var(--color-primary)]">
-              {theme.title}
-            </h2>
-            <p class="mt-2 flex-1 text-sm leading-relaxed text-[var(--color-ink-muted)]">
-              {theme.summary}
-            </p>
-            <p class="mt-4 text-xs font-medium uppercase tracking-wide text-[var(--color-ink-subtle)]">
-              {theme.focus}
-            </p>
-            <p class="mt-3 text-sm text-[var(--color-gold)]">
-              {theme.relatedVerses.length} verses · {theme.entries.length}{" "}
-              {theme.entries.length === 1 ? "reading" : "readings"} →
-            </p>
-          </div>
-        </a>
-      ))}
+            <div class="relative aspect-[16/10] overflow-hidden bg-[var(--color-surface)]">
+              <img
+                src={theme.image}
+                alt={theme.imageAlt}
+                width="640"
+                height="400"
+                loading="lazy"
+                class="h-full w-full object-cover transition duration-500 group-hover:scale-[1.03]"
+              />
+            </div>
+            <div class="flex flex-1 flex-col p-4 sm:p-5">
+              <h2 class="font-scripture text-xl font-semibold text-[var(--color-ink)] group-hover:text-[var(--color-primary)]">
+                {theme.title}
+              </h2>
+              <p class="mt-1.5 flex-1 text-sm leading-relaxed text-[var(--color-ink-muted)]">
+                {theme.summary}
+              </p>
+              <p class="mt-3 text-sm font-medium text-[var(--color-primary)]">
+                {theme.relatedVerses.length} verses · {theme.entries.length}{" "}
+                {theme.entries.length === 1 ? "reading" : "readings"} →
+              </p>
+            </div>
+          </a>
+        ))
+      }
     </div>
   </div>
 </Layout>

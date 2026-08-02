@@ -1,0 +1,68 @@
+---
+/**
+ * Slim chrome for focus-mode pages (site header hidden).
+ */
+interface Props {
+  version: string;
+  title: string;
+  /** Optional small label above the title */
+  eyebrow?: string;
+  /** Defaults to home */
+  backHref?: string;
+  backLabel?: string;
+  /** Show Home link when back is not home */
+  showHomeLink?: boolean;
+}
+
+const {
+  version,
+  title,
+  eyebrow,
+  backHref,
+  backLabel = "Home",
+  showHomeLink = true,
+} = Astro.props;
+
+const homeHref = `/${version}/`;
+const back = backHref ?? homeHref;
+const backIsHome = back.replace(/\/+$/, "") === homeHref.replace(/\/+$/, "");
+---
+
+<header class="mb-6 border-b border-[var(--color-line)] pb-4">
+  <div class="flex items-center justify-between gap-3">
+    <a
+      href={back}
+      class="inline-flex min-h-10 items-center rounded-full border border-[var(--color-line)] bg-[var(--color-surface-elevated)] px-3.5 text-sm font-medium text-[var(--color-ink)] transition hover:border-[var(--color-primary)]/40"
+      data-astro-prefetch
+    >
+      ← {backLabel}
+    </a>
+    {
+      showHomeLink && !backIsHome && (
+        <a
+          href={homeHref}
+          class="text-sm text-[var(--color-ink-subtle)] underline-offset-2 hover:text-[var(--color-ink)] hover:underline"
+          data-astro-prefetch
+        >
+          Home
+        </a>
+      )
+    }
+  </div>
+  {
+    eyebrow && (
+      <p class="mt-4 text-[0.65rem] font-semibold uppercase tracking-[0.14em] text-[var(--color-gold)]">
+        {eyebrow}
+      </p>
+    )
+  }
+  <h1
+    class:list={[
+      "font-scripture text-2xl font-semibold tracking-tight text-[var(--color-ink)] sm:text-3xl",
+      eyebrow ? "mt-1.5" : "mt-4",
+    ]}
+  >
+    {title}
+  </h1>
+  <slot />
+</header>
