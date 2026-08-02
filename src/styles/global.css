@@ -623,6 +623,21 @@ button.ui-card:hover {
   padding: 1rem 1.1rem;
 }
 
+/* Focused play surface — stronger contrast while in a round */
+.play-arena {
+  border-radius: 1rem;
+  border: 1px solid color-mix(in srgb, var(--color-gold) 35%, var(--color-line));
+  background: color-mix(in srgb, var(--color-surface-elevated) 88%, var(--color-gold) 4%);
+  padding: 1.15rem 1.1rem;
+  box-shadow: 0 0 0 1px color-mix(in srgb, var(--color-gold) 12%, transparent);
+}
+
+@media (min-width: 640px) {
+  .play-arena {
+    padding: 1.35rem 1.35rem;
+  }
+}
+
 .rank-border-linen {
   border-color: color-mix(in srgb, var(--color-line) 85%, var(--color-ink-subtle));
   box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--color-surface) 70%, transparent);

@@ -16,7 +16,7 @@ export const GAMES: GameCard[] = [
   {
     id: "fill",
     title: "Fill the blank",
-    blurb: "Lock in missing words. Easy, medium, or hard.",
+    blurb: "Missing words. Easy to hard.",
     status: "live",
     slug: "fill",
     vibe: "Memory",
@@ -24,7 +24,7 @@ export const GAMES: GameCard[] = [
   {
     id: "unscramble",
     title: "Word river",
-    blurb: "Tap words in the right current — rebuild the verse before it drifts.",
+    blurb: "Tap words in the right order.",
     status: "live",
     slug: "unscramble",
     vibe: "Order",
@@ -32,7 +32,7 @@ export const GAMES: GameCard[] = [
   {
     id: "match",
     title: "Cite snap",
-    blurb: "A verse flashes. Snap the true reference — near-misses from the same book.",
+    blurb: "Match the verse to its reference.",
     status: "live",
     slug: "match",
     vibe: "Focus",
@@ -40,7 +40,7 @@ export const GAMES: GameCard[] = [
   {
     id: "next",
     title: "Finish the line",
-    blurb: "Half the verse is given. Which ending keeps the Word true?",
+    blurb: "Pick the true ending of the verse.",
     status: "live",
     slug: "next",
     vibe: "Echo",
@@ -48,7 +48,7 @@ export const GAMES: GameCard[] = [
   {
     id: "theme",
     title: "Heart compass",
-    blurb: "Read the verse. Point the compass: hope, peace, love, faith, or courage.",
+    blurb: "Name the heart of the verse.",
     status: "live",
     slug: "theme",
     vibe: "Discern",
@@ -56,7 +56,7 @@ export const GAMES: GameCard[] = [
   {
     id: "speed",
     title: "Breath sprint",
-    blurb: "Sixty seconds. Fill blanks as verses shift — calm speed, not chaos.",
+    blurb: "60 seconds. Fill blanks fast.",
     status: "live",
     slug: "speed",
     vibe: "Tempo",

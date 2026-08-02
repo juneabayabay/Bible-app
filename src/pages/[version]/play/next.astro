@@ -45,7 +45,7 @@ const payload = { version, verses };
       No verses available for this version. Try another game.
     </p>
 
-    <div x-show="phase === 'play' && rounds.length" class="space-y-5" x-cloak>
+    <div x-show="phase === 'play' && rounds.length" class="play-arena space-y-5" x-cloak>
       <p class="text-sm text-[var(--color-ink-muted)]">
         Keep the echo · <span x-text="score"></span> true
       </p>
