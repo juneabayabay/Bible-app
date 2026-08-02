@@ -14,6 +14,12 @@ import { DEFAULT_VERSION, VERSIONS, languageBadge, type VersionId } from "./lib/
 import { loadLastRead, loadStreak, saveLastRead } from "./lib/reading";
 import { parseReference, normalizeSpokenReference } from "./lib/parseReference";
 import {
+  speakBibleChapter,
+  speakBibleVerse,
+  warmSpeechVoices,
+  type SpeakHandle,
+} from "./lib/speakBible";
+import {
   completeDevotion,
   journeyProgress,
   loadJourney,
@@ -1870,8 +1876,10 @@ export default (Alpine: Alpine) => {
       _statusTimer: null as ReturnType<typeof setTimeout> | null,
       speaking: false,
       speakingVerse: null as number | null,
+      _speakHandle: null as SpeakHandle | null,
 
       init() {
+        warmSpeechVoices();
         this.annotations = loadAnnotations();
         try {
           this.showTip = localStorage.getItem("bible-tip-press-seen") !== "1";
@@ -2171,6 +2179,12 @@ export default (Alpine: Alpine) => {
 
       stopSpeaking() {
         try {
+          this._speakHandle?.cancel();
+        } catch {
+          /* ignore */
+        }
+        this._speakHandle = null;
+        try {
           window.speechSynthesis?.cancel();
         } catch {
           /* ignore */
@@ -2186,22 +2200,22 @@ export default (Alpine: Alpine) => {
           return;
         }
         this.stopSpeaking();
-        const label = `${this.bookName || titleCaseSlug(this.bookSlug)} ${this.chapter}:${verse}`;
-        const utter = new SpeechSynthesisUtterance(`${label}. ${text}`);
-        utter.rate = 0.92;
-        utter.onend = () => {
-          this.speaking = false;
-          this.speakingVerse = null;
-        };
-        utter.onerror = () => {
-          this.speaking = false;
-          this.speakingVerse = null;
-        };
+        const bookName = this.bookName || titleCaseSlug(this.bookSlug);
         this.speaking = true;
         this.speakingVerse = verse;
         this.closeMenu();
         this.flashStatus("Listening…");
-        window.speechSynthesis.speak(utter);
+        this._speakHandle = speakBibleVerse({
+          bookName,
+          chapter: this.chapter,
+          verse,
+          text,
+          onDone: () => {
+            this.speaking = false;
+            this.speakingVerse = null;
+            this._speakHandle = null;
+          },
+        });
       },
 
       speakChapter(texts: Array<{ number: number; text: string }>) {
@@ -2214,30 +2228,21 @@ export default (Alpine: Alpine) => {
         this.speaking = true;
         this.speakingVerse = null;
         this.flashStatus("Listening to chapter…");
-
-        const book = this.bookName || titleCaseSlug(this.bookSlug);
-        let i = 0;
-        const speakNext = () => {
-          if (i >= texts.length) {
+        const bookName = this.bookName || titleCaseSlug(this.bookSlug);
+        this._speakHandle = speakBibleChapter({
+          bookName,
+          chapter: this.chapter,
+          verses: texts,
+          onVerse: (n) => {
+            this.speakingVerse = n;
+          },
+          onDone: () => {
             this.speaking = false;
             this.speakingVerse = null;
+            this._speakHandle = null;
             this.flashStatus("Finished listening");
-            return;
-          }
-          const v = texts[i++];
-          this.speakingVerse = v.number;
-          const utter = new SpeechSynthesisUtterance(
-            `${book} ${this.chapter}:${v.number}. ${v.text}`,
-          );
-          utter.rate = 0.92;
-          utter.onend = speakNext;
-          utter.onerror = () => {
-            this.speaking = false;
-            this.speakingVerse = null;
-          };
-          window.speechSynthesis.speak(utter);
-        };
-        speakNext();
+          },
+        });
       },
     }),
   );
