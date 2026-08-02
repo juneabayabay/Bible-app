@@ -39,19 +39,6 @@ const meta = getVersion(version);
     <form class="space-y-4" @submit.prevent="submit()">
       <label class="block">
         <span class="text-xs font-semibold uppercase tracking-[0.08em] text-[var(--color-ink-subtle)]">
-          Your name <span class="font-normal normal-case tracking-normal">(optional)</span>
-        </span>
-        <input
-          type="text"
-          class="mt-1.5 w-full min-h-11 rounded-xl border border-[var(--color-line)] bg-[var(--color-surface-elevated)] px-3.5 py-2.5 text-base text-[var(--color-ink)] outline-none ring-[var(--color-primary)] placeholder:text-[var(--color-ink-subtle)] focus:ring-2 sm:text-sm"
-          placeholder="Name or leave blank"
-          x-model="name"
-          maxlength="40"
-        />
-      </label>
-
-      <label class="block">
-        <span class="text-xs font-semibold uppercase tracking-[0.08em] text-[var(--color-ink-subtle)]">
           Your feedback
         </span>
         <textarea

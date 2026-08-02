@@ -2687,7 +2687,6 @@ export default (Alpine: Alpine) => {
 
   Alpine.data("feedbackForm", () => ({
     live: false,
-    name: "",
     message: "",
     busy: false,
     status: "",
@@ -2708,7 +2707,7 @@ export default (Alpine: Alpine) => {
       this.error = "";
       this.status = "";
       try {
-        const result = await submitFeedback(this.name, this.message, getDeviceId());
+        const result = await submitFeedback("", this.message, getDeviceId());
         this.message = "";
         this.status = result.remote
           ? "Thank you — feedback sent."

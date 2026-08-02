@@ -9,19 +9,22 @@ const { version } = Astro.props;
 <section id="books" class="section-rule scroll-mt-28">
   <a
     href={`/${version}/books`}
-    class="group flex w-full touch-manipulation items-center justify-between gap-4 rounded-xl border border-[var(--color-line)] bg-[var(--color-surface-elevated)] px-4 py-4 transition hover:border-[var(--color-primary)]/45 active:scale-[0.99] sm:px-5"
+    class="group flex w-full touch-manipulation items-center gap-4 rounded-xl border border-[var(--color-line)] bg-[var(--color-surface-elevated)] px-4 py-4 transition hover:border-[var(--color-primary)]/40 active:scale-[0.99] sm:px-5 sm:py-5"
     data-astro-prefetch
   >
-    <span class="min-w-0">
-      <span class="block font-scripture text-xl font-semibold tracking-tight text-[var(--color-ink)] group-hover:text-[var(--color-primary)] sm:text-2xl">
-        Bible
+    <span class="min-w-0 flex-1">
+      <span class="block text-xs font-semibold uppercase tracking-[0.12em] text-[var(--color-ink-subtle)]">
+        Read
       </span>
-      <span class="mt-0.5 block text-sm text-[var(--color-ink-muted)]">
-        Book → chapter → read
+      <span class="mt-1 block font-scripture text-xl font-semibold tracking-tight text-[var(--color-ink)] sm:text-2xl">
+        Scripture
+      </span>
+      <span class="mt-1 block text-sm text-[var(--color-ink-muted)]">
+        Choose a book and chapter
       </span>
     </span>
     <span
-      class="inline-flex h-9 shrink-0 items-center text-sm font-semibold text-[var(--color-primary)]"
+      class="shrink-0 text-[var(--color-ink-subtle)] transition group-hover:translate-x-0.5 group-hover:text-[var(--color-primary)]"
       aria-hidden="true"
     >
       →
