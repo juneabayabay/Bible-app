@@ -1,6 +1,6 @@
 ---
 /**
- * Home prayer preview — fitted, professional feed.
+ * Home prayer preview — simple, clean feed.
  */
 interface Props {
   version: string;
@@ -16,115 +16,98 @@ const { version } = Astro.props;
   x-data="homePrayerWall()"
   x-init="boot()"
 >
-  <div class="overflow-hidden rounded-2xl border border-[var(--color-line)] bg-[var(--color-surface-elevated)]">
-    <div class="relative h-24 overflow-hidden sm:h-28">
-      <img
-        src="/images/more/more-give.jpg"
-        alt=""
-        width="900"
-        height="560"
-        class="h-full w-full object-cover object-center"
-        loading="lazy"
-        decoding="async"
-      />
-      <div
-        class="absolute inset-0 bg-gradient-to-r from-[var(--color-surface-elevated)] via-[var(--color-surface-elevated)]/88 to-[var(--color-surface-elevated)]/40"
-        aria-hidden="true"
-      ></div>
-      <div class="absolute inset-0 flex items-end justify-between gap-3 px-4 pb-4 sm:px-5">
-        <div>
-          <h2 id="home-prayer-heading" class="font-scripture text-2xl font-semibold tracking-tight text-[var(--color-ink)] sm:text-[1.75rem]">
-            Prayer
-          </h2>
-          <p class="mt-0.5 text-sm text-[var(--color-ink-muted)]">Live requests from others</p>
-        </div>
-        <a
-          class="shrink-0 rounded-full border border-[var(--color-line)] bg-[var(--color-surface-elevated)]/90 px-3.5 py-2 text-sm font-medium text-[var(--color-ink)] backdrop-blur-sm transition hover:border-[var(--color-primary)]/45"
-          href={`/${version}/prayer`}
-          data-astro-prefetch="tap"
-        >
-          View all
-        </a>
-      </div>
+  <div class="mb-4 flex items-end justify-between gap-3">
+    <div>
+      <h2 id="home-prayer-heading" class="section-title">Prayer</h2>
+      <p class="mt-1 text-sm text-[var(--color-ink-muted)]">Live requests from others</p>
     </div>
-
-    <p class="px-4 pt-3 text-xs text-[var(--color-ink-subtle)] sm:px-5" x-show="status" x-text="status" x-cloak></p>
-    <p class="px-4 py-8 text-center text-sm text-[var(--color-ink-subtle)] sm:px-5" x-show="loading" x-cloak>Loading…</p>
-
-    <p
-      class="px-4 py-8 text-center text-sm text-[var(--color-ink-muted)] sm:px-5"
-      x-show="!loading && items.length === 0"
-      x-cloak
+    <a
+      class="shrink-0 text-sm font-medium text-[var(--color-primary)] underline-offset-2 hover:underline"
+      href={`/${version}/prayer`}
+      data-astro-prefetch="tap"
     >
-      No requests yet.
-      <a
-        class="font-medium text-[var(--color-ink)] underline-offset-2 hover:underline"
-        href={`/${version}/prayer`}
-        data-astro-prefetch="tap"
-      >
-        Share one
-      </a>
-    </p>
-
-    <ul x-show="!loading && items.length > 0" x-cloak>
-      <template x-for="item in items" :key="item.id">
-        <li class="border-t border-[var(--color-line)] px-4 py-4 sm:px-5 sm:py-4">
-          <div class="max-w-2xl">
-            <p class="text-xs text-[var(--color-ink-subtle)]">
-              <span class="font-medium text-[var(--color-ink-muted)]" x-text="item.displayName"></span>
-              <span aria-hidden="true"> · </span>
-              <span x-text="formatDate(item.createdAt)"></span>
-            </p>
-            <p
-              class="mt-1.5 font-scripture text-[1.05rem] leading-snug text-[var(--color-ink)] sm:text-lg"
-              x-text="item.body"
-            ></p>
-
-            <div class="mt-3 flex flex-wrap items-center gap-2">
-              <button
-                type="button"
-                class="inline-flex min-h-8 touch-manipulation items-center rounded-full border px-3 text-xs font-medium transition sm:text-sm"
-                :class="hasReaction(item, 'prayed')
-                  ? 'border-[var(--color-primary)]/35 bg-[color-mix(in_srgb,var(--color-primary)_12%,transparent)] text-[var(--color-ink)]'
-                  : 'border-[var(--color-line)] text-[var(--color-ink-muted)] hover:border-[var(--color-ink-subtle)]'"
-                :disabled="busy"
-                @click="react(item.id, 'prayed')"
-              >
-                Pray<span class="ml-1 tabular-nums opacity-70" x-show="item.reactionCounts.prayed" x-text="item.reactionCounts.prayed" x-cloak></span>
-              </button>
-              <button
-                type="button"
-                class="inline-flex min-h-8 touch-manipulation items-center rounded-full border px-3 text-xs font-medium transition sm:text-sm"
-                :class="hasReaction(item, 'amen')
-                  ? 'border-[var(--color-primary)]/35 bg-[color-mix(in_srgb,var(--color-primary)_12%,transparent)] text-[var(--color-ink)]'
-                  : 'border-[var(--color-line)] text-[var(--color-ink-muted)] hover:border-[var(--color-ink-subtle)]'"
-                :disabled="busy"
-                @click="react(item.id, 'amen')"
-              >
-                Amen<span class="ml-1 tabular-nums opacity-70" x-show="item.reactionCounts.amen" x-text="item.reactionCounts.amen" x-cloak></span>
-              </button>
-              <button
-                type="button"
-                class="inline-flex min-h-8 touch-manipulation items-center rounded-full border px-3 text-xs font-medium transition sm:text-sm"
-                :class="hasReaction(item, 'heart')
-                  ? 'border-[var(--color-primary)]/35 bg-[color-mix(in_srgb,var(--color-primary)_12%,transparent)] text-[var(--color-ink)]'
-                  : 'border-[var(--color-line)] text-[var(--color-ink-muted)] hover:border-[var(--color-ink-subtle)]'"
-                :disabled="busy"
-                @click="react(item.id, 'heart')"
-              >
-                Love<span class="ml-1 tabular-nums opacity-70" x-show="item.reactionCounts.heart" x-text="item.reactionCounts.heart" x-cloak></span>
-              </button>
-              <a
-                class="ml-auto inline-flex min-h-8 items-center text-xs font-medium text-[var(--color-ink-subtle)] underline-offset-2 hover:text-[var(--color-primary)] hover:underline sm:text-sm"
-                href={`/${version}/prayer#wall`}
-                data-astro-prefetch="tap"
-              >
-                <span x-text="item.comments.length ? `Comments (${item.comments.length})` : 'Comment'"></span>
-              </a>
-            </div>
-          </div>
-        </li>
-      </template>
-    </ul>
+      View all
+    </a>
   </div>
+
+  <p class="mb-3 text-xs text-[var(--color-ink-subtle)]" x-show="status" x-text="status" x-cloak></p>
+  <p class="py-6 text-center text-sm text-[var(--color-ink-subtle)]" x-show="loading" x-cloak>Loading…</p>
+
+  <p
+    class="rounded-xl border border-dashed border-[var(--color-line)] px-4 py-6 text-center text-sm text-[var(--color-ink-muted)]"
+    x-show="!loading && items.length === 0"
+    x-cloak
+  >
+    No requests yet.
+    <a
+      class="font-medium text-[var(--color-ink)] underline-offset-2 hover:underline"
+      href={`/${version}/prayer`}
+      data-astro-prefetch="tap"
+    >
+      Share one
+    </a>
+  </p>
+
+  <ul
+    class="divide-y divide-[var(--color-line)] overflow-hidden rounded-xl border border-[var(--color-line)] bg-[var(--color-surface-elevated)]"
+    x-show="!loading && items.length > 0"
+    x-cloak
+  >
+    <template x-for="item in items" :key="item.id">
+      <li class="px-4 py-4 sm:px-5">
+        <p class="text-xs text-[var(--color-ink-subtle)]">
+          <span class="font-medium text-[var(--color-ink-muted)]" x-text="item.displayName"></span>
+          <span aria-hidden="true"> · </span>
+          <span x-text="formatDate(item.createdAt)"></span>
+        </p>
+        <p
+          class="mt-1.5 max-w-2xl text-[0.95rem] leading-relaxed text-[var(--color-ink)] sm:text-base"
+          x-text="item.body"
+        ></p>
+
+        <div class="mt-3 flex flex-wrap items-center gap-2">
+          <button
+            type="button"
+            class="inline-flex min-h-8 touch-manipulation items-center rounded-md px-2 text-xs font-medium transition sm:text-sm"
+            :class="hasReaction(item, 'prayed')
+              ? 'text-[var(--color-primary)]'
+              : 'text-[var(--color-ink-muted)] hover:text-[var(--color-ink)]'"
+            :disabled="busy"
+            @click="react(item.id, 'prayed')"
+          >
+            Pray<span class="ml-1 tabular-nums opacity-70" x-show="item.reactionCounts.prayed" x-text="item.reactionCounts.prayed" x-cloak></span>
+          </button>
+          <button
+            type="button"
+            class="inline-flex min-h-8 touch-manipulation items-center rounded-md px-2 text-xs font-medium transition sm:text-sm"
+            :class="hasReaction(item, 'amen')
+              ? 'text-[var(--color-primary)]'
+              : 'text-[var(--color-ink-muted)] hover:text-[var(--color-ink)]'"
+            :disabled="busy"
+            @click="react(item.id, 'amen')"
+          >
+            Amen<span class="ml-1 tabular-nums opacity-70" x-show="item.reactionCounts.amen" x-text="item.reactionCounts.amen" x-cloak></span>
+          </button>
+          <button
+            type="button"
+            class="inline-flex min-h-8 touch-manipulation items-center rounded-md px-2 text-xs font-medium transition sm:text-sm"
+            :class="hasReaction(item, 'heart')
+              ? 'text-[var(--color-primary)]'
+              : 'text-[var(--color-ink-muted)] hover:text-[var(--color-ink)]'"
+            :disabled="busy"
+            @click="react(item.id, 'heart')"
+          >
+            Love<span class="ml-1 tabular-nums opacity-70" x-show="item.reactionCounts.heart" x-text="item.reactionCounts.heart" x-cloak></span>
+          </button>
+          <a
+            class="ml-auto inline-flex min-h-8 items-center text-xs font-medium text-[var(--color-ink-subtle)] underline-offset-2 hover:text-[var(--color-primary)] hover:underline sm:text-sm"
+            href={`/${version}/prayer#wall`}
+            data-astro-prefetch="tap"
+          >
+            <span x-text="item.comments.length ? `Comments (${item.comments.length})` : 'Comment'"></span>
+          </a>
+        </div>
+      </li>
+    </template>
+  </ul>
 </section>
