@@ -78,6 +78,27 @@ const oneSignalAppId = getOneSignalAppId();
         }
       })();
     </script>
+    <!-- Capture install prompt ASAP (before Alpine loads) so Android 1-tap works -->
+    <script is:inline>
+      (() => {
+        try {
+          window.__bibleDeferredInstall = null;
+          window.addEventListener("beforeinstallprompt", (event) => {
+            event.preventDefault();
+            window.__bibleDeferredInstall = event;
+            window.dispatchEvent(new CustomEvent("bible-install-available"));
+          });
+          window.addEventListener("appinstalled", () => {
+            window.__bibleDeferredInstall = null;
+            try {
+              localStorage.setItem("bible-install-dismissed", "1");
+              sessionStorage.setItem("bible-install-just-done", "1");
+            } catch (_) {}
+            window.dispatchEvent(new CustomEvent("bible-app-installed"));
+          });
+        } catch (_) {}
+      })();
+    </script>
     <script is:inline>
       if ("serviceWorker" in navigator) {
         window.addEventListener("load", () => {
@@ -99,6 +120,8 @@ const oneSignalAppId = getOneSignalAppId();
             OneSignalDeferred.push(async function (OneSignal) {
               await OneSignal.init({
                 appId: oneSignalAppId,
+                serviceWorkerPath: "sw.js",
+                serviceWorkerParam: { scope: "/" },
                 notifyButton: { enable: false },
                 promptOptions: { slidedown: { enabled: false } },
                 allowLocalhostAsSecureOrigin: true,

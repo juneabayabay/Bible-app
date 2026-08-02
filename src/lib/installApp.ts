@@ -129,12 +129,57 @@ export function dismissInstallPrompt() {
   }
 }
 
+/** Call once at app boot so Chrome’s install event is not lost. */
+export function bindInstallPromptCapture() {
+  if (typeof window === "undefined" || listenersBound) return;
+  listenersBound = true;
+
+  // Pick up prompt captured by the early <head> script (before Alpine loads).
+  const early = (window as unknown as { __bibleDeferredInstall?: BeforeInstallPromptEvent | null })
+    .__bibleDeferredInstall;
+  if (early) {
+    deferredPrompt = early;
+  }
+
+  window.addEventListener("beforeinstallprompt", (event) => {
+    event.preventDefault();
+    deferredPrompt = event as BeforeInstallPromptEvent;
+    (
+      window as unknown as { __bibleDeferredInstall?: BeforeInstallPromptEvent | null }
+    ).__bibleDeferredInstall = deferredPrompt;
+    window.dispatchEvent(new CustomEvent("bible-install-available"));
+  });
+
+  window.addEventListener("appinstalled", () => {
+    deferredPrompt = null;
+    (
+      window as unknown as { __bibleDeferredInstall?: BeforeInstallPromptEvent | null }
+    ).__bibleDeferredInstall = null;
+    markJustInstalled();
+    dismissInstallPrompt();
+    window.dispatchEvent(new CustomEvent("bible-app-installed"));
+  });
+}
+
 export function getDeferredInstallPrompt(): BeforeInstallPromptEvent | null {
-  return deferredPrompt;
+  if (deferredPrompt) return deferredPrompt;
+  if (typeof window === "undefined") return null;
+  const early = (window as unknown as { __bibleDeferredInstall?: BeforeInstallPromptEvent | null })
+    .__bibleDeferredInstall;
+  if (early) {
+    deferredPrompt = early;
+    return early;
+  }
+  return null;
 }
 
 export function clearDeferredInstallPrompt() {
   deferredPrompt = null;
+  if (typeof window !== "undefined") {
+    (
+      window as unknown as { __bibleDeferredInstall?: BeforeInstallPromptEvent | null }
+    ).__bibleDeferredInstall = null;
+  }
 }
 
 /** Wait until Chrome fires beforeinstallprompt (or timeout). */
@@ -155,25 +200,6 @@ export function waitForDeferredInstallPrompt(timeoutMs = 2800): Promise<BeforeIn
     const onAvail = () => finish();
     const timer = window.setTimeout(finish, timeoutMs);
     window.addEventListener("bible-install-available", onAvail);
-  });
-}
-
-/** Call once at app boot so Chrome’s install event is not lost. */
-export function bindInstallPromptCapture() {
-  if (typeof window === "undefined" || listenersBound) return;
-  listenersBound = true;
-
-  window.addEventListener("beforeinstallprompt", (event) => {
-    event.preventDefault();
-    deferredPrompt = event as BeforeInstallPromptEvent;
-    window.dispatchEvent(new CustomEvent("bible-install-available"));
-  });
-
-  window.addEventListener("appinstalled", () => {
-    deferredPrompt = null;
-    markJustInstalled();
-    dismissInstallPrompt();
-    window.dispatchEvent(new CustomEvent("bible-app-installed"));
   });
 }
 

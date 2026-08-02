@@ -1,7 +1,15 @@
 /* Bible app — offline shell cache + daily reminder scheduling */
-const CACHE = "bible-shell-v6";
+/* OneSignal push (when configured in dashboard) shares this worker. */
+try {
+  importScripts("https://cdn.onesignal.com/sdks/web/v16/OneSignalSDK.sw.js");
+} catch (_) {
+  /* OneSignal optional — app SW still runs without it */
+}
+
+const CACHE = "bible-shell-v7";
 const PRECACHE = [
   "/",
+  "/web/",
   "/manifest.webmanifest",
   "/icons/icon.svg",
   "/icons/icon-192.png",
@@ -10,6 +18,7 @@ const PRECACHE = [
   "/favicon.svg",
 ];
 const REMINDER_TAG = "bible-daily-reminder";
+const NOTIF_ICON = "/icons/icon-192.png";
 
 self.addEventListener("install", (event) => {
   event.waitUntil(
@@ -112,10 +121,10 @@ async function scheduleReminder(payload) {
   const options = {
     tag: REMINDER_TAG,
     body: body || "A quiet moment is waiting.",
-    icon: "/icons/icon.svg",
-    badge: "/icons/icon.svg",
+    icon: NOTIF_ICON,
+    badge: NOTIF_ICON,
     data: {
-      url: url || "/",
+      url: url || "/web/",
       title: title || "Time with the Word",
       body: body || "A quiet moment is waiting.",
       hour,
@@ -130,10 +139,11 @@ async function scheduleReminder(payload) {
     return { ok: true, mode: "scheduled" };
   }
 
+  // Chrome no longer supports Notification Triggers — page timer handles firing.
   return {
     ok: true,
     mode: "deferred",
-    reason: "This browser schedules reminders when you open the app.",
+    reason: "Local timer active while the app is open.",
   };
 }
 
@@ -234,7 +244,8 @@ self.addEventListener("push", (event) => {
   event.waitUntil(
     self.registration.showNotification(title, {
       body,
-      icon: "/icons/icon.svg",
+      icon: NOTIF_ICON,
+      badge: NOTIF_ICON,
       tag: REMINDER_TAG,
       data: { url },
     }),

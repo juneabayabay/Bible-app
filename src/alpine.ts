@@ -76,6 +76,7 @@ import {
 import { getChallengeForDate } from "./lib/challenges";
 import { getPlan, nextPlanDay } from "./lib/plans";
 import {
+  catchUpReminderIfNeeded,
   formatReminderTime,
   isOneSignalConfigured,
   loadReminderPrefs,
@@ -83,6 +84,7 @@ import {
   notificationsSupported,
   requestNotificationPermission,
   saveReminderPrefs,
+  syncOneSignalReminderTags,
   syncReminderSchedule,
 } from "./lib/reminders";
 import {
@@ -213,13 +215,13 @@ export default (Alpine: Alpine) => {
     },
   });
 
-  // Keep daily reminder scheduled when the user returns to the app
+  // Keep daily reminder armed when the user returns to the app
   if (typeof window !== "undefined") {
     window.addEventListener("load", () => {
       const prefs = loadReminderPrefs();
       if (!prefs.enabled) return;
       if (notificationPermission() !== "granted") return;
-      void navigator.serviceWorker?.ready.then(() => syncReminderSchedule(prefs));
+      void syncReminderSchedule(prefs).then(() => catchUpReminderIfNeeded(prefs));
     });
   }
 
@@ -1744,9 +1746,9 @@ export default (Alpine: Alpine) => {
         return "Notifications are not available in this browser.";
       }
       const onesignal = isOneSignalConfigured()
-        ? " OneSignal is connected for broader push support."
+        ? " Push is also connected for alerts when the app is closed (if OneSignal is set up)."
         : "";
-      return `Works best on Chrome, Edge, or an installed app (PWA). Open the app occasionally so the next reminder can be scheduled.${onesignal}`;
+      return `You’ll get a notification at your chosen time while using the app or installed PWA. Allow notifications when asked.${onesignal}`;
     },
 
     flash(message: string) {
@@ -1796,8 +1798,10 @@ export default (Alpine: Alpine) => {
         const prefs = { enabled: true, hour, minute };
         saveReminderPrefs(prefs);
         const result = await syncReminderSchedule(prefs);
-        await this.optInOneSignal();
+        await syncOneSignalReminderTags(prefs);
         if (!result.ok) {
+          this.enabled = false;
+          saveReminderPrefs({ ...prefs, enabled: false });
           this.error = result.reason;
           return;
         }
@@ -1805,9 +1809,7 @@ export default (Alpine: Alpine) => {
         if (result.mode === "scheduled") {
           this.flash(`Reminder set for ${when}.`);
         } else {
-          this.flash(
-            `Reminder saved for ${when}. We’ll keep it scheduled when you open the app.`,
-          );
+          this.flash(`Reminder on for ${when}. You’ll be notified at that time.`);
         }
       } finally {
         this.busy = false;
@@ -1823,7 +1825,7 @@ export default (Alpine: Alpine) => {
         const prefs = { enabled: false, hour, minute };
         saveReminderPrefs(prefs);
         await syncReminderSchedule(prefs);
-        await this.optOutOneSignal();
+        await syncOneSignalReminderTags(prefs);
         this.flash("Reminders turned off.");
       } finally {
         this.busy = false;
@@ -1839,6 +1841,7 @@ export default (Alpine: Alpine) => {
         const prefs = { enabled: true, hour, minute };
         saveReminderPrefs(prefs);
         const result = await syncReminderSchedule(prefs);
+        await syncOneSignalReminderTags(prefs);
         if (!result.ok) {
           this.error = result.reason;
           return;
@@ -1856,32 +1859,6 @@ export default (Alpine: Alpine) => {
       const result = await syncReminderSchedule(prefs);
       if (showStatus && result.ok) {
         this.flash(`Next reminder around ${formatReminderTime(prefs.hour, prefs.minute)}.`);
-      }
-    },
-
-    async optInOneSignal() {
-      const w = window as Window & {
-        OneSignal?: { User: { PushSubscription: { optIn: () => Promise<void> } } };
-      };
-      try {
-        if (w.OneSignal?.User?.PushSubscription) {
-          await w.OneSignal.User.PushSubscription.optIn();
-        }
-      } catch {
-        /* optional */
-      }
-    },
-
-    async optOutOneSignal() {
-      const w = window as Window & {
-        OneSignal?: { User: { PushSubscription: { optOut: () => Promise<void> } } };
-      };
-      try {
-        if (w.OneSignal?.User?.PushSubscription) {
-          await w.OneSignal.User.PushSubscription.optOut();
-        }
-      } catch {
-        /* optional */
       }
     },
   }));
@@ -2774,9 +2751,7 @@ export default (Alpine: Alpine) => {
       const hasSpeech = hasBrowserSpeech();
       const hasMic = hasMicrophone();
       this.voiceSupported = hasSpeech || hasMic;
-      // Prefetch Whisper when browser speech won’t work (preview shells).
-      // Installed PWAs on Chrome use fast SpeechRecognition and skip this.
-      if (chromeSpeechLikelyBroken() && hasMic) warmLocalVoice();
+      // Do not warm Whisper here — keeps pages light; model loads only if mic needs it.
     },
 
     getSpeechRecognition() {

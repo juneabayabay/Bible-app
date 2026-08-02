@@ -1,7 +1,7 @@
 ---
 /**
  * Optional daily reminder — off by default.
- * Uses Notification Triggers via the service worker when the browser supports them.
+ * Uses an in-app timer + notifications; OneSignal tags when configured.
  */
 ---
 
@@ -23,7 +23,7 @@
         A gentle nudge at the time you choose. Off by default — turn on only if you want it.
       </p>
     </div>
-    <label class="inline-flex cursor-pointer items-center gap-2 pt-1">
+    <label class="inline-flex min-h-11 cursor-pointer items-center gap-2 py-1 pl-2 touch-manipulation">
       <span class="text-sm text-[var(--color-ink-muted)]" x-text="enabled ? 'On' : 'Off'"></span>
       <input
         type="checkbox"
@@ -33,13 +33,13 @@
         :disabled="busy"
       />
       <span
-        class="relative h-7 w-12 rounded-full border border-[var(--color-line)] bg-[var(--color-surface)] transition peer-focus-visible:ring-2 peer-focus-visible:ring-[var(--color-primary)]"
+        class="relative h-8 w-14 rounded-full border border-[var(--color-line)] bg-[var(--color-surface)] transition peer-focus-visible:ring-2 peer-focus-visible:ring-[var(--color-primary)]"
         :class="enabled ? 'border-[var(--color-gold)] bg-[var(--color-highlight)]' : ''"
         aria-hidden="true"
       >
         <span
-          class="absolute top-0.5 left-0.5 h-5 w-5 rounded-full bg-[var(--color-ink-subtle)] transition"
-          :class="enabled ? 'translate-x-5 bg-[var(--color-gold)]' : ''"
+          class="absolute top-1 left-1 h-6 w-6 rounded-full bg-[var(--color-ink-subtle)] transition"
+          :class="enabled ? 'translate-x-6 bg-[var(--color-gold)]' : ''"
         ></span>
       </span>
     </label>
@@ -52,7 +52,7 @@
       </span>
       <input
         type="time"
-        class="mt-1.5 w-full rounded-xl border border-[var(--color-line)] bg-[var(--color-surface)] px-3 py-2.5 text-base text-[var(--color-ink)] outline-none ring-[var(--color-primary)] focus:ring-2"
+        class="mt-1.5 min-h-11 w-full rounded-xl border border-[var(--color-line)] bg-[var(--color-surface)] px-3 py-2.5 text-base text-[var(--color-ink)] outline-none ring-[var(--color-primary)] focus:ring-2"
         x-model="timeValue"
         @change="saveTime()"
         :disabled="busy"
