@@ -36,63 +36,62 @@ if (ntOther.length) nt.push({ id: "other-nt", label: "Other", books: ntOther });
   class="scroll-mt-28"
   x-data={`{ tab: '${defaultTab}' }`}
 >
-  <div class="flex flex-col gap-4 border-b border-[var(--color-line)] pb-5 sm:flex-row sm:items-end sm:justify-between sm:gap-6">
-    <div class="max-w-lg">
-      <p class="eyebrow">Scripture</p>
-      <h2 class="font-scripture mt-1.5 text-2xl font-semibold tracking-tight text-[var(--color-ink)] sm:text-3xl">
+  <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between sm:gap-4">
+    <div>
+      <h2 class="font-scripture text-2xl font-semibold tracking-tight text-[var(--color-ink)] sm:text-3xl">
         Books
       </h2>
-      <p class="mt-2 text-sm leading-relaxed text-[var(--color-ink-muted)]">
-        Tap Start reading once — every chapter in that section opens here.
+      <p class="mt-1 text-sm text-[var(--color-ink-muted)]">
+        Book → chapter → read
       </p>
     </div>
 
     {
       showTabs && (
         <div
-          class="inline-flex max-w-full overflow-x-auto rounded-full border border-[var(--color-line)] bg-[var(--color-surface-elevated)] p-1"
+          class="inline-flex rounded-lg border border-[var(--color-line)] bg-[var(--color-surface-elevated)] p-0.5"
           role="tablist"
           aria-label="Testament"
         >
           <button
             type="button"
             role="tab"
-            class="min-h-9 shrink-0 touch-manipulation rounded-full px-4 text-sm font-medium transition"
-            :class="tab === 'ot' ? 'bg-[var(--color-primary)] text-[var(--color-on-primary)]' : 'text-[var(--color-ink-muted)] hover:text-[var(--color-ink)]'"
+            class="min-h-9 touch-manipulation rounded-md px-3.5 text-sm font-medium transition"
+            :class="tab === 'ot' ? 'bg-[var(--color-primary)] text-[var(--color-on-primary)]' : 'text-[var(--color-ink-muted)]'"
             @click="tab = 'ot'"
             :aria-selected="(tab === 'ot').toString()"
           >
-            Old Testament
+            Old
           </button>
           <button
             type="button"
             role="tab"
-            class="min-h-9 shrink-0 touch-manipulation rounded-full px-4 text-sm font-medium transition"
-            :class="tab === 'nt' ? 'bg-[var(--color-primary)] text-[var(--color-on-primary)]' : 'text-[var(--color-ink-muted)] hover:text-[var(--color-ink)]'"
+            class="min-h-9 touch-manipulation rounded-md px-3.5 text-sm font-medium transition"
+            :class="tab === 'nt' ? 'bg-[var(--color-primary)] text-[var(--color-on-primary)]' : 'text-[var(--color-ink-muted)]'"
             @click="tab = 'nt'"
             :aria-selected="(tab === 'nt').toString()"
           >
-            New Testament
+            New
           </button>
         </div>
       )
     }
   </div>
 
-  <div class="mt-6" x-show="tab === 'ot'" {...(defaultTab === "nt" ? { "x-cloak": true } : {})}>
+  <div class="mt-5" x-show="tab === 'ot'" {...(defaultTab === "nt" ? { "x-cloak": true } : {})}>
     {
       ot.length === 0 ? (
-        <p class="text-sm text-[var(--color-ink-subtle)]">No Old Testament books in this edition.</p>
+        <p class="text-sm text-[var(--color-ink-subtle)]">No Old Testament books here.</p>
       ) : (
         <BookAccordion version={version} sections={ot} />
       )
     }
   </div>
 
-  <div class="mt-6" x-show="tab === 'nt'" {...(defaultTab === "ot" ? { "x-cloak": true } : {})}>
+  <div class="mt-5" x-show="tab === 'nt'" {...(defaultTab === "ot" ? { "x-cloak": true } : {})}>
     {
       nt.length === 0 ? (
-        <p class="text-sm text-[var(--color-ink-subtle)]">No New Testament books in this edition.</p>
+        <p class="text-sm text-[var(--color-ink-subtle)]">No New Testament books here.</p>
       ) : (
         <BookAccordion version={version} sections={nt} />
       )
