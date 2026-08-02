@@ -2270,12 +2270,19 @@ export default (Alpine: Alpine) => {
     items: [] as Array<{
       key: string;
       version: string;
+      versionId: string;
+      book: string;
+      slug: string;
+      chapter: number;
+      verse: number;
       reference: string;
       url: string;
       highlighted: boolean;
       highlightColor: HighlightColorId | null;
       note: string;
     }>,
+    query: "",
+    filter: "all" as "all" | "notes" | "highlights",
 
     init() {
       this.refresh();
@@ -2291,6 +2298,11 @@ export default (Alpine: Alpine) => {
           return {
             key,
             version: versionLabel(parsed.version),
+            versionId: parsed.version,
+            book: bookLabel,
+            slug: parsed.slug,
+            chapter: parsed.chapter,
+            verse: parsed.verse,
             reference: `${bookLabel} ${parsed.chapter}:${parsed.verse}`,
             url: `/${parsed.version}/chapter/${parsed.slug}/${parsed.chapter}#v${parsed.verse}`,
             highlighted: Boolean(value.highlightColor),
@@ -2299,9 +2311,48 @@ export default (Alpine: Alpine) => {
           };
         })
         .filter((item): item is NonNullable<typeof item> => item !== null)
-        .sort((a, b) =>
-          `${a.version} ${a.reference}`.localeCompare(`${b.version} ${b.reference}`),
+        .sort((a, b) => {
+          const bookCmp = a.book.localeCompare(b.book);
+          if (bookCmp !== 0) return bookCmp;
+          if (a.chapter !== b.chapter) return a.chapter - b.chapter;
+          if (a.verse !== b.verse) return a.verse - b.verse;
+          return a.version.localeCompare(b.version);
+        });
+    },
+
+    get filtered() {
+      const q = this.query.trim().toLowerCase();
+      return this.items.filter((item) => {
+        if (this.filter === "notes" && !item.note.trim()) return false;
+        if (this.filter === "highlights" && !item.highlighted) return false;
+        if (!q) return true;
+        return (
+          item.reference.toLowerCase().includes(q) ||
+          item.book.toLowerCase().includes(q) ||
+          item.note.toLowerCase().includes(q) ||
+          item.version.toLowerCase().includes(q)
         );
+      });
+    },
+
+    get groups() {
+      type SavedItem = (typeof this.items)[number];
+      const map = new Map<string, { book: string; items: SavedItem[] }>();
+      for (const item of this.filtered) {
+        const existing = map.get(item.book);
+        if (existing) existing.items.push(item);
+        else map.set(item.book, { book: item.book, items: [item] });
+      }
+      return [...map.values()];
+    },
+
+    get filteredCount() {
+      return this.filtered.length;
+    },
+
+    clearFilters() {
+      this.query = "";
+      this.filter = "all";
     },
 
     remove(key: string) {

@@ -4,13 +4,7 @@ import SearchBar from "../../components/SearchBar.astro";
 import { resolveVersionId } from "../../lib/bible";
 import { getVersion } from "../../lib/versions";
 import { getVersionHomePaths } from "../../lib/staticPaths";
-import {
-  getFeedbackFormUrl,
-  getGiveMethods,
-  hasFeedbackForm,
-  hasWalletNumbers,
-  SUPPORT_WALLET,
-} from "../../lib/support";
+import { getFeedbackFormUrl, hasFeedbackForm } from "../../lib/support";
 
 export function getStaticPaths() {
   return getVersionHomePaths();
@@ -20,92 +14,57 @@ const version = resolveVersionId(Astro.params.version);
 const meta = getVersion(version);
 const feedbackUrl = getFeedbackFormUrl();
 const showFeedback = hasFeedbackForm();
-const walletReady = hasWalletNumbers();
-const methods = getGiveMethods();
-const accountName = SUPPORT_WALLET.accountName;
 ---
 
 <Layout title={`Support · ${meta.shortLabel}`} version={version}>
   <SearchBar slot="header" version={version} />
 
-  <div class="page-stack measure" x-data="supportPage" x-init="init()">
-    <header class="page-header border-b border-[var(--color-line)] pb-5">
+  <div class="page-stack measure">
+    <header class="page-header border-b border-[var(--color-line)] pb-6">
       <p class="text-sm text-[var(--color-ink-muted)]">
         <a href={`/${version}/`} class="hover:underline" data-astro-prefetch>← Home</a>
       </p>
-      <p class="eyebrow mt-5">Support</p>
-      <h1 class="font-scripture mt-1.5 text-3xl font-semibold tracking-tight sm:text-4xl">
-        Help keep this free
+      <h1 class="font-scripture mt-6 text-[1.75rem] font-semibold tracking-tight sm:text-3xl">
+        Support
       </h1>
-      <p class="mt-2 text-sm leading-relaxed text-[var(--color-ink-muted)] sm:text-base">
-        Optional gift or a short note — both help. No pressure.
+      <p class="mt-3 max-w-lg text-[0.9375rem] leading-relaxed text-[var(--color-ink-muted)] sm:text-base">
+        Share a thought to help us improve, or give toward keeping the app online — only if you wish.
+        Both are optional.
       </p>
     </header>
 
-    <section id="give" aria-labelledby="give-heading" class="scroll-mt-24">
-      <div class="flex flex-wrap items-end justify-between gap-3">
-        <div>
-          <h2 id="give-heading" class="font-scripture text-xl font-semibold">
-            Give
-          </h2>
-          <p class="mt-2 text-sm leading-relaxed text-[var(--color-ink-muted)] sm:text-base">
-            Send any amount via GCash or GoTyme. Numbers only — copy and paste in your wallet app.
-          </p>
-        </div>
-        <a class="btn-secondary !min-h-10 text-sm" href={`/${version}/give`} data-astro-prefetch>
-          Open Give page
-        </a>
-      </div>
-
-      {
-        walletReady ? (
-          <ul class="mt-6 space-y-3">
-            <p class="text-sm text-[var(--color-ink-muted)]">
-              Account name: <span class="font-medium text-[var(--color-ink)]">{accountName}</span>
-            </p>
-            {methods.map((method) => (
-              <li class="rounded-2xl border border-[var(--color-line)] bg-[var(--color-surface-elevated)] p-4">
-                <p class="text-[0.7rem] font-semibold uppercase tracking-[0.14em] text-[var(--color-primary)]">
-                  {method.label}
-                </p>
-                <p class="mt-2 font-mono text-xl font-semibold tabular-nums text-[var(--color-ink)] sm:text-2xl">
-                  {method.number}
-                </p>
-                <button
-                  type="button"
-                  class="btn-primary mt-3 !min-h-10 !px-4 text-sm"
-                  data-number={method.number}
-                  data-which={method.id}
-                  @click="copyNumber($el.dataset.number, $el.dataset.which)"
-                >
-                  <span x-text={`copied === '${method.id}' ? 'Copied ✓' : 'Copy number'`}></span>
-                </button>
-              </li>
-            ))}
-          </ul>
-        ) : (
-          <p class="mt-6 text-sm text-[var(--color-ink-subtle)]">
-            Wallet details will appear here soon.
-          </p>
-        )
-      }
+    <section class="space-y-3" aria-labelledby="give-link-heading">
+      <h2 id="give-link-heading" class="font-scripture text-lg font-semibold text-[var(--color-ink)] sm:text-xl">
+        Give
+      </h2>
+      <p class="text-[0.9375rem] leading-relaxed text-[var(--color-ink-muted)] sm:text-base">
+        If you’d like to help with hosting costs, the Give page explains everything plainly — including
+        that nothing is required of you.
+      </p>
+      <a class="btn-secondary inline-flex !min-h-11 !px-5 text-sm" href={`/${version}/give`} data-astro-prefetch>
+        Read about giving
+      </a>
     </section>
 
-    <section id="feedback" aria-labelledby="feedback-heading" class="scroll-mt-24 border-t border-[var(--color-line)] pt-8">
-      <h2 id="feedback-heading" class="font-scripture text-xl font-semibold">
+    <section
+      id="feedback"
+      class="space-y-3 border-t border-[var(--color-line)] pt-7"
+      aria-labelledby="feedback-heading"
+    >
+      <h2 id="feedback-heading" class="font-scripture text-lg font-semibold text-[var(--color-ink)] sm:text-xl">
         Feedback
       </h2>
-      <p class="mt-2 text-sm leading-relaxed text-[var(--color-ink-muted)] sm:text-base">
-        What’s working? What’s hard? A few honest words help.
+      <p class="text-[0.9375rem] leading-relaxed text-[var(--color-ink-muted)] sm:text-base">
+        Tell us what’s working and what could be clearer.
       </p>
-      <p class="mt-5 flex flex-wrap gap-3">
-        <a class="btn-primary" href={`/${version}/feedback`} data-astro-prefetch>
+      <p class="flex flex-wrap gap-3">
+        <a class="btn-primary !min-h-11 !px-5 text-sm" href={`/${version}/feedback`} data-astro-prefetch>
           Send feedback
         </a>
         {
           showFeedback ? (
             <a
-              class="btn-secondary"
+              class="btn-secondary !min-h-11 !px-5 text-sm"
               href={feedbackUrl}
               target="_blank"
               rel="noopener noreferrer"

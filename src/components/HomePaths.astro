@@ -9,12 +9,6 @@ const { version } = Astro.props;
 
 const links = [
   {
-    href: `/${version}/give`,
-    label: "Give",
-    hint: "Optional gift · GCash / GoTyme",
-    featured: true,
-  },
-  {
     href: `/${version}/prayer`,
     label: "Prayer",
     hint: "Public wall & private journal",
@@ -69,14 +63,10 @@ const links = [
   <ul class="mt-7 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
     {
       links.map((link) => (
-        <li class={"featured" in link && link.featured ? "sm:col-span-2 lg:col-span-1" : ""}>
+        <li>
           <a
             href={link.href}
-            class:list={[
-              "ui-card flex h-full flex-col p-4 sm:p-5",
-              "featured" in link && link.featured &&
-                "border-[var(--color-primary)]/35 bg-[color-mix(in_srgb,var(--color-primary)_6%,var(--color-surface-elevated))]",
-            ]}
+            class="ui-card flex h-full flex-col p-4 sm:p-5"
             data-astro-prefetch="tap"
           >
             <span class="font-semibold text-[var(--color-ink)]">{link.label}</span>

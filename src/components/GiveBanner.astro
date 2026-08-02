@@ -1,6 +1,6 @@
 ---
 import type { VersionId } from "../lib/versions";
-import { hasWalletNumbers, SUPPORT_WALLET } from "../lib/support";
+import { hasWalletNumbers } from "../lib/support";
 
 interface Props {
   version: VersionId;
@@ -13,29 +13,24 @@ const ready = hasWalletNumbers();
 {
   ready ? (
     <aside
-      class="rounded-2xl border border-[var(--color-primary)]/30 bg-[color-mix(in_srgb,var(--color-primary)_7%,var(--color-surface))] px-4 py-4 sm:px-5 sm:py-5"
-      aria-label="Optional gift"
+      class="flex flex-col gap-3 rounded-xl border border-[var(--color-line)] bg-[var(--color-surface-elevated)] px-4 py-4 sm:flex-row sm:items-center sm:justify-between sm:px-5"
+      aria-label="Give"
     >
-      <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-        <div class="min-w-0">
-          <p class="text-[0.7rem] font-semibold uppercase tracking-[0.14em] text-[var(--color-primary)]">
-            Optional gift
-          </p>
-          <p class="mt-1 font-scripture text-lg font-semibold text-[var(--color-ink)]">
-            Help keep this Bible free
-          </p>
-          <p class="mt-1 text-sm text-[var(--color-ink-muted)]">
-            GCash / GoTyme · {SUPPORT_WALLET.accountName} · numbers only, easy to copy
-          </p>
-        </div>
-        <a
-          class="btn-primary inline-flex !min-h-11 shrink-0 items-center justify-center !px-5 text-sm"
-          href={`/${version}/give`}
-          data-astro-prefetch="tap"
-        >
-          Give
-        </a>
+      <div class="min-w-0">
+        <p class="font-scripture text-lg font-semibold text-[var(--color-ink)]">
+          A quiet way to help
+        </p>
+        <p class="mt-0.5 text-sm leading-relaxed text-[var(--color-ink-muted)]">
+          Optional. No pressure — only if this app has blessed you.
+        </p>
       </div>
+      <a
+        class="btn-secondary inline-flex !min-h-10 shrink-0 items-center justify-center !px-4 text-sm"
+        href={`/${version}/give`}
+        data-astro-prefetch="tap"
+      >
+        Learn more
+      </a>
     </aside>
   ) : null
 }

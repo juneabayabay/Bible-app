@@ -14,79 +14,154 @@ import { DEFAULT_VERSION, VERSION_IDS } from "../lib/versions";
         Saved
       </h1>
       <p class="mt-2 text-sm leading-relaxed text-[var(--color-ink-muted)] sm:text-base">
-        Your highlights and notes on this device.
+        Highlights and notes stay on this device.
       </p>
     </header>
 
     <div x-data="savedList" class="measure-wide">
       <p
-        class="text-sm text-[var(--color-ink-subtle)]"
+        class="text-sm leading-relaxed text-[var(--color-ink-muted)]"
         x-show="items.length === 0"
         x-cloak
       >
-        Nothing here yet. Open a chapter, press and hold a verse, then highlight it or add a note.
+        Nothing saved yet. Open a chapter, press and hold a verse, then highlight it or add a note.
       </p>
 
-      <div x-show="items.length > 0" x-cloak>
-        <p class="mb-4 text-sm text-[var(--color-ink-muted)]">
-          <span x-text="items.length"></span>
-          <span x-text="items.length === 1 ? ' verse' : ' verses'"></span>
+      <div x-show="items.length > 0" x-cloak class="space-y-5">
+        <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+          <p class="text-sm text-[var(--color-ink-muted)]">
+            <span x-text="filteredCount"></span>
+            <span x-text="filteredCount === 1 ? ' verse' : ' verses'"></span>
+            <span x-show="filteredCount !== items.length" x-cloak>
+              <span class="text-[var(--color-ink-subtle)]"> · </span>
+              <span x-text="items.length"></span> total
+            </span>
+          </p>
+          <button
+            type="button"
+            class="self-start text-xs text-[var(--color-ink-subtle)] underline-offset-2 hover:underline sm:self-auto"
+            x-show="query || filter !== 'all'"
+            x-cloak
+            @click="clearFilters()"
+          >
+            Clear filters
+          </button>
+        </div>
+
+        <div class="flex flex-col gap-3 sm:flex-row sm:items-center">
+          <label class="relative min-w-0 flex-1">
+            <span class="sr-only">Search saved verses</span>
+            <input
+              type="search"
+              x-model="query"
+              placeholder="Search book, verse, or note…"
+              class="w-full rounded-xl border border-[var(--color-line)] bg-[var(--color-surface-elevated)] px-3.5 py-2.5 text-sm text-[var(--color-ink)] placeholder:text-[var(--color-ink-subtle)] focus:border-[var(--color-primary)] focus:outline-none focus:ring-2 focus:ring-[var(--color-primary)]/25"
+            />
+          </label>
+          <div
+            class="inline-flex rounded-xl border border-[var(--color-line)] bg-[var(--color-surface-elevated)] p-1"
+            role="group"
+            aria-label="Filter saved verses"
+          >
+            <button
+              type="button"
+              class="min-h-9 rounded-lg px-3 text-xs font-medium transition sm:text-sm"
+              :class="filter === 'all' ? 'bg-[var(--color-primary)] text-[var(--color-on-primary)]' : 'text-[var(--color-ink-muted)] hover:text-[var(--color-ink)]'"
+              @click="filter = 'all'"
+            >
+              All
+            </button>
+            <button
+              type="button"
+              class="min-h-9 rounded-lg px-3 text-xs font-medium transition sm:text-sm"
+              :class="filter === 'highlights' ? 'bg-[var(--color-primary)] text-[var(--color-on-primary)]' : 'text-[var(--color-ink-muted)] hover:text-[var(--color-ink)]'"
+              @click="filter = 'highlights'"
+            >
+              Highlights
+            </button>
+            <button
+              type="button"
+              class="min-h-9 rounded-lg px-3 text-xs font-medium transition sm:text-sm"
+              :class="filter === 'notes' ? 'bg-[var(--color-primary)] text-[var(--color-on-primary)]' : 'text-[var(--color-ink-muted)] hover:text-[var(--color-ink)]'"
+              @click="filter = 'notes'"
+            >
+              Notes
+            </button>
+          </div>
+        </div>
+
+        <p
+          class="text-sm text-[var(--color-ink-subtle)]"
+          x-show="filteredCount === 0"
+          x-cloak
+        >
+          No matches. Try another search or filter.
         </p>
 
-        <ul class="divide-y divide-[var(--color-line)] border-y border-[var(--color-line)]">
-          <template x-for="item in items" :key="item.key">
-            <li class="py-4 sm:py-5">
-              <div class="flex items-start gap-3">
-                <span
-                  class="hl-swatch mt-1.5 !h-3 !w-3 shrink-0 !border"
-                  x-show="item.highlighted"
-                  :data-hl="item.highlightColor"
-                  aria-hidden="true"
-                ></span>
-                <span
-                  class="mt-1.5 h-3 w-3 shrink-0 rounded-full border border-[var(--color-line)]"
-                  x-show="!item.highlighted"
-                  aria-hidden="true"
-                ></span>
-
-                <div class="min-w-0 flex-1">
-                  <div class="flex flex-wrap items-baseline gap-x-2 gap-y-0.5">
-                    <span
-                      class="text-xs font-semibold uppercase tracking-wide text-[var(--color-ink-subtle)]"
-                      x-text="item.version"
-                    ></span>
-                    <a
-                      class="font-scripture text-lg font-semibold tracking-tight text-[var(--color-ink)] hover:text-[var(--color-primary)]"
-                      :href="item.url"
-                      x-text="item.reference"
-                    ></a>
-                  </div>
-
-                  <p
-                    class="mt-2 whitespace-pre-wrap text-sm leading-relaxed text-[var(--color-ink-muted)]"
-                    x-show="item.note"
-                    x-text="item.note"
-                  ></p>
-
-                  <p
-                    class="mt-2 text-xs text-[var(--color-ink-subtle)]"
-                    x-show="item.highlighted && !item.note"
-                  >
-                    Highlighted
-                  </p>
-                </div>
-
-                <button
-                  type="button"
-                  class="min-h-9 shrink-0 rounded-lg px-2 text-xs text-[var(--color-ink-subtle)] transition hover:bg-[var(--color-line)]/50 hover:text-red-600 dark:hover:text-red-400"
-                  @click="remove(item.key)"
-                >
-                  Remove
-                </button>
+        <div class="space-y-8" x-show="filteredCount > 0">
+          <template x-for="group in groups" :key="group.book">
+            <section>
+              <div class="mb-3 flex items-baseline justify-between gap-3 border-b border-[var(--color-line)] pb-2">
+                <h2
+                  class="font-scripture text-lg font-semibold text-[var(--color-ink)]"
+                  x-text="group.book"
+                ></h2>
+                <p class="text-xs tabular-nums text-[var(--color-ink-subtle)]">
+                  <span x-text="group.items.length"></span>
+                  <span x-text="group.items.length === 1 ? ' verse' : ' verses'"></span>
+                </p>
               </div>
-            </li>
+              <ul class="space-y-1">
+                <template x-for="item in group.items" :key="item.key">
+                  <li
+                    class="rounded-xl px-2 py-3 transition hover:bg-[color-mix(in_srgb,var(--color-primary)_4%,transparent)] sm:px-3"
+                  >
+                    <div class="flex items-start gap-3">
+                      <span
+                        class="hl-swatch mt-1.5 !h-2.5 !w-2.5 shrink-0 !border"
+                        x-show="item.highlighted"
+                        :data-hl="item.highlightColor"
+                        aria-hidden="true"
+                      ></span>
+                      <span
+                        class="mt-1.5 h-2.5 w-2.5 shrink-0 rounded-full border border-[var(--color-line)]"
+                        x-show="!item.highlighted"
+                        aria-hidden="true"
+                      ></span>
+
+                      <div class="min-w-0 flex-1">
+                        <div class="flex flex-wrap items-baseline gap-x-2 gap-y-0.5">
+                          <a
+                            class="font-scripture text-base font-semibold tracking-tight text-[var(--color-ink)] hover:text-[var(--color-primary)] sm:text-lg"
+                            :href="item.url"
+                            x-text="item.chapter + ':' + item.verse"
+                          ></a>
+                          <span
+                            class="text-xs text-[var(--color-ink-subtle)]"
+                            x-text="item.version"
+                          ></span>
+                        </div>
+                        <p
+                          class="mt-1.5 line-clamp-3 whitespace-pre-wrap text-sm leading-relaxed text-[var(--color-ink-muted)]"
+                          x-show="item.note"
+                          x-text="item.note"
+                        ></p>
+                      </div>
+
+                      <button
+                        type="button"
+                        class="min-h-9 shrink-0 rounded-lg px-2 text-xs text-[var(--color-ink-subtle)] transition hover:bg-[var(--color-line)]/50 hover:text-red-600 dark:hover:text-red-400"
+                        @click="remove(item.key)"
+                      >
+                        Remove
+                      </button>
+                    </div>
+                  </li>
+                </template>
+              </ul>
+            </section>
           </template>
-        </ul>
+        </div>
       </div>
     </div>
   </div>
