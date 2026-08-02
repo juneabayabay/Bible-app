@@ -1,11 +1,19 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" fill="none">
-  <rect width="512" height="512" rx="96" fill="#0a1628"/>
-  <!-- Gold outline cross — clear at small sizes -->
+  <rect width="512" height="512" rx="96" fill="#12151f"/>
+  <!-- Open book (gold outline) -->
   <path
     stroke="#c9a227"
-    stroke-width="36"
+    stroke-width="22"
     stroke-linecap="round"
     stroke-linejoin="round"
-    d="M256 118v276M170 214h172"
+    d="M256 168v196M256 168c-52-28-118-36-168-28v196c50-8 116 0 168 28M256 168c52-28 118-36 168-28v196c-50-8-116 0-168 28"
+  />
+  <!-- Cross -->
+  <path
+    stroke="#d4af37"
+    stroke-width="26"
+    stroke-linecap="round"
+    stroke-linejoin="round"
+    d="M256 148v140M210 210h92"
   />
 </svg>

@@ -28,12 +28,6 @@ const ntOther = otherBooks.filter((b) => !isOldTestament(b.slug));
 
 if (otOther.length) ot.push({ id: "other-ot", label: "Other", books: otOther });
 if (ntOther.length) nt.push({ id: "other-nt", label: "Other", books: ntOther });
-
-function chapterLabel(book: BookLike): string {
-  const n = book.chapters?.length ?? 0;
-  if (!n) return "";
-  return n === 1 ? "1 chapter" : `${n} chapters`;
-}
 ---
 
 <section id="books" class="scroll-mt-28" x-data={`{ tab: '${defaultTab}' }`}>
@@ -95,16 +89,11 @@ function chapterLabel(book: BookLike): string {
                 {section.books.map((book) => (
                   <li>
                     <a
-                      class="flex min-h-12 items-center justify-between gap-3 rounded-xl border border-[var(--color-line)] bg-[var(--color-surface-elevated)] px-3.5 py-2.5 transition hover:border-[var(--color-primary)] hover:bg-[color-mix(in_srgb,var(--color-primary)_6%,var(--color-surface-elevated))] active:scale-[0.99]"
+                      class="flex min-h-12 items-center rounded-xl border border-[var(--color-line)] bg-[var(--color-surface-elevated)] px-3.5 py-2.5 font-medium text-[var(--color-ink)] transition hover:border-[var(--color-primary)] hover:bg-[color-mix(in_srgb,var(--color-primary)_6%,var(--color-surface-elevated))] active:scale-[0.99]"
                       href={`/${version}/book/${book.slug}`}
                       data-astro-prefetch
                     >
-                      <span class="font-medium text-[var(--color-ink)]">{book.name}</span>
-                      {chapterLabel(book) ? (
-                        <span class="shrink-0 text-xs tabular-nums text-[var(--color-ink-subtle)]">
-                          {chapterLabel(book)}
-                        </span>
-                      ) : null}
+                      {book.name}
                     </a>
                   </li>
                 ))}
@@ -131,16 +120,11 @@ function chapterLabel(book: BookLike): string {
                 {section.books.map((book) => (
                   <li>
                     <a
-                      class="flex min-h-12 items-center justify-between gap-3 rounded-xl border border-[var(--color-line)] bg-[var(--color-surface-elevated)] px-3.5 py-2.5 transition hover:border-[var(--color-primary)] hover:bg-[color-mix(in_srgb,var(--color-primary)_6%,var(--color-surface-elevated))] active:scale-[0.99]"
+                      class="flex min-h-12 items-center rounded-xl border border-[var(--color-line)] bg-[var(--color-surface-elevated)] px-3.5 py-2.5 font-medium text-[var(--color-ink)] transition hover:border-[var(--color-primary)] hover:bg-[color-mix(in_srgb,var(--color-primary)_6%,var(--color-surface-elevated))] active:scale-[0.99]"
                       href={`/${version}/book/${book.slug}`}
                       data-astro-prefetch
                     >
-                      <span class="font-medium text-[var(--color-ink)]">{book.name}</span>
-                      {chapterLabel(book) ? (
-                        <span class="shrink-0 text-xs tabular-nums text-[var(--color-ink-subtle)]">
-                          {chapterLabel(book)}
-                        </span>
-                      ) : null}
+                      {book.name}
                     </a>
                   </li>
                 ))}
