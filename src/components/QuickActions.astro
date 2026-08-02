@@ -1,33 +1,28 @@
 ---
 /**
- * Compact next steps — Continue + Saved.
+ * Compact continue bar — no extra heading noise.
  */
 ---
 
-<section aria-label="Continue">
-  <div class="section-head mb-4">
-    <h2 class="section-title text-[1.35rem] sm:text-2xl">Your place</h2>
-    <p class="section-lead" x-text="welcome"></p>
-  </div>
-
-  <div class="flex flex-col gap-2 sm:flex-row sm:gap-3">
-    <a
-      class="btn-primary !min-h-11 w-full touch-manipulation !px-5 text-sm sm:w-auto"
-      :href="continueUrl || '#books'"
-      data-astro-prefetch
-    >
-      <span x-show="continueUrl" x-cloak>
-        Continue · <span class="font-medium" x-text="continueLabel"></span>
-      </span>
-      <span x-show="!continueUrl">Open Bible</span>
-    </a>
-
-    <a
-      class="btn-secondary !min-h-11 w-full touch-manipulation !px-5 text-sm sm:w-auto"
-      href="/saved"
-      data-astro-prefetch="tap"
-    >
-      <span x-text="savedCount > 0 ? `Saved · ${savedCount}` : 'Saved verses'"></span>
-    </a>
-  </div>
+<section
+  class="flex flex-col gap-2 rounded-xl border border-[var(--color-line)] bg-[var(--color-surface-elevated)] p-3 sm:flex-row sm:items-center sm:gap-3 sm:p-3.5"
+  aria-label="Continue"
+>
+  <a
+    class="btn-primary !min-h-11 w-full touch-manipulation !px-4 text-sm sm:flex-1"
+    :href="continueUrl || '#books'"
+    data-astro-prefetch
+  >
+    <span x-show="continueUrl" x-cloak>
+      Continue · <span x-text="continueLabel"></span>
+    </span>
+    <span x-show="!continueUrl">Open Bible</span>
+  </a>
+  <a
+    class="btn-secondary !min-h-11 w-full touch-manipulation !px-4 text-sm sm:w-auto"
+    href="/saved"
+    data-astro-prefetch="tap"
+  >
+    <span x-text="savedCount > 0 ? `Saved (${savedCount})` : 'Saved'"></span>
+  </a>
 </section>

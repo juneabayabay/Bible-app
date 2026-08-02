@@ -1,116 +1,37 @@
 ---
 import type { VersionId } from "../lib/versions";
+import { hasWalletNumbers } from "../lib/support";
 
 interface Props {
   version: VersionId;
 }
 
 const { version } = Astro.props;
+const showGive = hasWalletNumbers();
 
 const links = [
-  {
-    href: `/${version}/prayer`,
-    label: "Prayer",
-    hint: "Share requests and encourage others",
-    icon: "prayer",
-  },
-  {
-    href: `/${version}/devotionals`,
-    label: "Devotionals",
-    hint: "Short themes for quiet reflection",
-    icon: "devotionals",
-  },
-  {
-    href: `/${version}/plans`,
-    label: "Plans",
-    hint: "Day-by-day reading guides",
-    icon: "plans",
-  },
-  {
-    href: `/${version}/journey`,
-    label: "Journey",
-    hint: "Streak, progress, and milestones",
-    icon: "journey",
-  },
-  {
-    href: `/${version}/play`,
-    label: "Play",
-    hint: "Learn Scripture through games",
-    icon: "play",
-  },
-  {
-    href: "/saved",
-    label: "Saved",
-    hint: "Your highlights and notes",
-    icon: "saved",
-  },
-  {
-    href: `/${version}/feedback`,
-    label: "Feedback",
-    hint: "Tell us what to improve",
-    icon: "feedback",
-  },
+  { href: `/${version}/devotionals`, label: "Devotionals" },
+  { href: `/${version}/plans`, label: "Plans" },
+  { href: `/${version}/journey`, label: "Journey" },
+  { href: `/${version}/play`, label: "Play" },
+  { href: `/${version}/feedback`, label: "Feedback" },
+  ...(showGive ? [{ href: `/${version}/give`, label: "Give" }] : []),
 ] as const;
-
-const icons: Record<(typeof links)[number]["icon"], string> = {
-  prayer:
-    "M12 21c-4.2-2.8-7-6.1-7-9.5A4.5 4.5 0 0 1 12 7a4.5 4.5 0 0 1 7 4.5c0 3.4-2.8 6.7-7 9.5z",
-  devotionals:
-    "M5 4h9a3 3 0 0 1 3 3v13l-4-2.2L9 20V7H5zm0 0H4a1 1 0 0 0-1 1v14",
-  journey: "M4 19h16M6 15l4-9 3 6 3-8 4 11",
-  plans: "M8 4h11v16H8zm0 0H6v16m3-11h7m-7 4h7m-7 4h5",
-  play: "M9 7.5v9l7.5-4.5L9 7.5z",
-  saved: "M8 3h8v18l-4-2.5L8 21V3z",
-  feedback: "M4 5h16v10H9l-5 4V5z",
-};
 ---
 
-<section class="section-rule scroll-mt-28" aria-labelledby="path-heading">
-  <div class="section-head mb-5">
-    <p class="eyebrow">Explore</p>
-    <h2 id="path-heading" class="section-title">More to do</h2>
-    <p class="section-lead">Optional paths — open any when you want.</p>
-  </div>
+<section class="section-rule scroll-mt-28" aria-labelledby="more-heading">
+  <h2 id="more-heading" class="section-title mb-4">More</h2>
 
-  <ul class="overflow-hidden rounded-xl border border-[var(--color-line)] bg-[var(--color-surface-elevated)]">
+  <ul class="grid grid-cols-2 gap-2 sm:grid-cols-3">
     {
       links.map((link) => (
-        <li class="border-b border-[var(--color-line)] last:border-b-0">
+        <li>
           <a
             href={link.href}
-            class="group flex min-h-[3.5rem] touch-manipulation items-center gap-3 px-4 py-3.5 transition hover:bg-[color-mix(in_srgb,var(--color-primary)_6%,transparent)] sm:gap-4 sm:px-5"
+            class="flex min-h-12 touch-manipulation items-center justify-center rounded-xl border border-[var(--color-line)] bg-[var(--color-surface-elevated)] px-3 text-center text-sm font-semibold text-[var(--color-ink)] transition hover:border-[var(--color-primary)]/45"
             data-astro-prefetch="tap"
           >
-            <span
-              class="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-lg border border-[var(--color-line)] text-[var(--color-primary)]"
-              aria-hidden="true"
-            >
-              <svg
-                class="h-5 w-5"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                stroke-width="1.7"
-                stroke-linecap="round"
-                stroke-linejoin="round"
-              >
-                <path d={icons[link.icon]} />
-              </svg>
-            </span>
-            <span class="min-w-0 flex-1">
-              <span class="block text-[0.95rem] font-semibold text-[var(--color-ink)]">
-                {link.label}
-              </span>
-              <span class="mt-0.5 block text-sm text-[var(--color-ink-muted)]">
-                {link.hint}
-              </span>
-            </span>
-            <span
-              class="shrink-0 text-sm text-[var(--color-ink-subtle)] transition group-hover:text-[var(--color-primary)]"
-              aria-hidden="true"
-            >
-              →
-            </span>
+            {link.label}
           </a>
         </li>
       ))

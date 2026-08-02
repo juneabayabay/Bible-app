@@ -36,26 +36,27 @@ if (ntOther.length) nt.push({ id: "other-nt", label: "Other", books: ntOther });
   class="section-rule scroll-mt-28"
   x-data={`{ open: false, tab: '${defaultTab}' }`}
 >
-  <div class="section-head mb-4">
-    <p class="eyebrow">Read</p>
-    <h2 class="section-title">Open Bible</h2>
-    <p class="section-lead">Pick Old or New, choose a book, then a chapter.</p>
-  </div>
-
   <button
     type="button"
-    class="flex w-full min-h-[3.5rem] touch-manipulation items-center justify-between gap-4 rounded-xl border border-[var(--color-line)] bg-[var(--color-surface-elevated)] px-4 py-3.5 text-left transition hover:border-[var(--color-primary)]/45 sm:px-5"
+    class="flex w-full touch-manipulation items-center justify-between gap-4 rounded-xl border border-[var(--color-line)] bg-[var(--color-surface-elevated)] px-4 py-4 text-left transition hover:border-[var(--color-primary)]/40 sm:px-5"
     @click="open = !open"
     :aria-expanded="open.toString()"
   >
-    <span class="text-sm font-semibold text-[var(--color-ink)]" x-text="open ? 'Hide books' : 'Show books'"></span>
+    <span>
+      <span class="block font-scripture text-xl font-semibold text-[var(--color-ink)] sm:text-2xl">
+        Bible
+      </span>
+      <span class="mt-0.5 block text-sm text-[var(--color-ink-muted)]">
+        Book → chapter → read
+      </span>
+    </span>
     <span
-      class="inline-flex h-8 shrink-0 items-center rounded-full border border-[var(--color-line)] px-3 text-xs font-medium text-[var(--color-ink-muted)]"
+      class="inline-flex h-9 shrink-0 items-center rounded-full border border-[var(--color-line)] px-3.5 text-sm font-medium text-[var(--color-ink-muted)]"
       x-text="open ? 'Close' : 'Open'"
     ></span>
   </button>
 
-  <div class="mt-4 space-y-5" x-show="open" x-cloak>
+  <div class="mt-4 space-y-4" x-show="open" x-cloak>
     {
       showTabs && (
         <div class="segment" role="tablist" aria-label="Testament">
@@ -67,7 +68,7 @@ if (ntOther.length) nt.push({ id: "other-nt", label: "Other", books: ntOther });
             @click="tab = 'ot'"
             :aria-selected="(tab === 'ot').toString()"
           >
-            Old Testament
+            Old
           </button>
           <button
             type="button"
@@ -77,7 +78,7 @@ if (ntOther.length) nt.push({ id: "other-nt", label: "Other", books: ntOther });
             @click="tab = 'nt'"
             :aria-selected="(tab === 'nt').toString()"
           >
-            New Testament
+            New
           </button>
         </div>
       )
@@ -86,7 +87,7 @@ if (ntOther.length) nt.push({ id: "other-nt", label: "Other", books: ntOther });
     <div x-show="tab === 'ot'" {...(defaultTab === "nt" ? { "x-cloak": true } : {})}>
       {
         ot.length === 0 ? (
-          <p class="text-sm text-[var(--color-ink-subtle)]">No Old Testament books in this edition.</p>
+          <p class="text-sm text-[var(--color-ink-subtle)]">No books here.</p>
         ) : (
           <BookAccordion version={version} sections={ot} />
         )
@@ -96,7 +97,7 @@ if (ntOther.length) nt.push({ id: "other-nt", label: "Other", books: ntOther });
     <div x-show="tab === 'nt'" {...(defaultTab === "ot" ? { "x-cloak": true } : {})}>
       {
         nt.length === 0 ? (
-          <p class="text-sm text-[var(--color-ink-subtle)]">No New Testament books in this edition.</p>
+          <p class="text-sm text-[var(--color-ink-subtle)]">No books here.</p>
         ) : (
           <BookAccordion version={version} sections={nt} />
         )

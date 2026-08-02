@@ -5,7 +5,6 @@ import HomeHero from "../../components/HomeHero.astro";
 import QuickActions from "../../components/QuickActions.astro";
 import HomePaths from "../../components/HomePaths.astro";
 import BookIndex from "../../components/BookIndex.astro";
-import GiveBanner from "../../components/GiveBanner.astro";
 import HomePrayerWall from "../../components/HomePrayerWall.astro";
 import { getBookCatalog, resolveVersionId } from "../../lib/bible";
 import { getVersion } from "../../lib/versions";
@@ -40,9 +39,9 @@ const startHref =
   <div x-data={`homeDashboard('${version}')`}>
     <HomeHero
       headline="Read God’s Word"
-      subcopy="Start with today’s verse, continue where you left off, or open any book."
+      subcopy="Today’s verse, continue reading, or open any book."
       ctaHref={startHref}
-      ctaLabel={daily ? "Read today’s chapter" : "Start reading"}
+      ctaLabel={daily ? "Today’s chapter" : "Start reading"}
       booksHref="#books"
       verseText={daily?.text}
       verseCite={daily ? `${daily.book} ${daily.chapter}:${daily.verse} · ${meta.shortLabel}` : undefined}
@@ -59,7 +58,6 @@ const startHref =
       />
       <HomePrayerWall version={version} />
       <HomePaths version={version} />
-      <GiveBanner version={version} />
     </div>
   </div>
 </Layout>
