@@ -9,7 +9,7 @@
  */
 
 /** Bump when voice logic changes — shown in the mic hint so you can confirm a refresh. */
-export const VOICE_ENGINE = "v3";
+export const VOICE_ENGINE = "v4";
 
 type AsrPipeline = (
   input: string | Float32Array,
@@ -93,6 +93,7 @@ export async function startLocalRecording(
   onReady: () => void,
   maxMs = 4000,
   onAutoStop?: () => void,
+  language = "en",
 ): Promise<LocalVoiceSession> {
   if (!navigator.mediaDevices?.getUserMedia) {
     throw new Error("Microphone isn’t available in this browser.");
@@ -166,20 +167,22 @@ export async function startLocalRecording(
       if (blob.size < 600) {
         throw new Error("No speech heard. Tap the mic and speak clearly.");
       }
-      return transcribeBlob(blob);
+      return transcribeBlob(blob, language);
     },
   };
 }
 
-export async function transcribeBlob(blob: Blob): Promise<string> {
+export async function transcribeBlob(blob: Blob, language = "en"): Promise<string> {
   const asr = await getAsr();
   const url = URL.createObjectURL(blob);
   try {
-    // Multilingual model — language/task are valid here.
-    // Also try a bare call if the first path fails (older cached configs).
+    const { whisperLanguageName } = await import("./speechLang");
+    const whisperLang = whisperLanguageName(language);
     let result: { text?: string } | { text?: string }[];
     try {
-      result = await asr(url, { language: "english", task: "transcribe" });
+      result = await asr(url, {
+        ...(whisperLang ? { language: whisperLang, task: "transcribe" } : {}),
+      });
     } catch (err) {
       const msg = err instanceof Error ? err.message : String(err);
       if (/English-only|language|task/i.test(msg)) {

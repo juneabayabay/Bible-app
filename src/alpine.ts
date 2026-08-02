@@ -19,6 +19,7 @@ import {
   warmSpeechVoices,
   type SpeakHandle,
 } from "./lib/speakBible";
+import { micExamplePhrase, speechRecognitionLang } from "./lib/speechLang";
 import {
   completeDevotion,
   journeyProgress,
@@ -1879,7 +1880,8 @@ export default (Alpine: Alpine) => {
       _speakHandle: null as SpeakHandle | null,
 
       init() {
-        warmSpeechVoices();
+        const lang = VERSIONS[this.version]?.language || "en";
+        warmSpeechVoices(lang);
         this.annotations = loadAnnotations();
         try {
           this.showTip = localStorage.getItem("bible-tip-press-seen") !== "1";
@@ -2210,6 +2212,7 @@ export default (Alpine: Alpine) => {
           chapter: this.chapter,
           verse,
           text,
+          language: VERSIONS[this.version]?.language || "en",
           onDone: () => {
             this.speaking = false;
             this.speakingVerse = null;
@@ -2233,6 +2236,7 @@ export default (Alpine: Alpine) => {
           bookName,
           chapter: this.chapter,
           verses: texts,
+          language: VERSIONS[this.version]?.language || "en",
           onVerse: (n) => {
             this.speakingVerse = n;
           },
@@ -2695,11 +2699,13 @@ export default (Alpine: Alpine) => {
       this.stopVoice(true);
       this.error = "";
       const seq = ++this._voiceSeq;
-      this.voiceHint = `Listening… say a verse, like “John 3 16” (${VOICE_ENGINE})`;
+      const langCode = VERSIONS[this.version]?.language || "en";
+      const example = micExamplePhrase(langCode);
+      this.voiceHint = `Listening… say a verse, like “${example}” (${VOICE_ENGINE})`;
 
       const SR = this.getSpeechRecognition()!;
       const recognition = new SR();
-      recognition.lang = "en-US";
+      recognition.lang = speechRecognitionLang(langCode);
       recognition.continuous = false;
       // Interim results → jump as soon as we hear a valid reference (faster).
       recognition.interimResults = true;
@@ -2823,13 +2829,15 @@ export default (Alpine: Alpine) => {
           () => {
             if (seq !== this._voiceSeq) return;
             this.listening = true;
-            this.voiceHint = "Listening… say the verse (opens automatically).";
+            const example = micExamplePhrase(VERSIONS[this.version]?.language || "en");
+            this.voiceHint = `Listening… say the verse (e.g. “${example}”).`;
           },
-          4000,
+          4500,
           () => {
             if (seq !== this._voiceSeq) return;
             if (this._localSession === session) void this.finishLocalVoice();
           },
+          VERSIONS[this.version]?.language || "en",
         );
         if (seq !== this._voiceSeq) {
           session.cancel();
@@ -2904,7 +2912,7 @@ export default (Alpine: Alpine) => {
         return;
       }
 
-      this.voiceHint = `Heard “${tried[0]}” — no verse found. Try “John 3 16” or “Juan 3 16”.`;
+      this.voiceHint = `Heard “${tried[0]}” — no verse found. Try “${micExamplePhrase(VERSIONS[this.version]?.language || "en")}”.`;
     },
 
     referenceResult(query: string) {

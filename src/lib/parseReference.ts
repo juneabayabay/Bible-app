@@ -271,6 +271,43 @@ const BOOK_ALIASES: Record<string, string> = {
   judas: "jude",
   apocalipsis: "revelation",
   pahayag: "revelation",
+  // More Tagalog / Spanish / FR / DE / IT / PT spoken names
+  "unang juan": "1-john",
+  "ikalawang juan": "2-john",
+  "ikatlong juan": "3-john",
+  "unang pedro": "1-peter",
+  "ikalawang pedro": "2-peter",
+  "unang samuel": "1-samuel",
+  "ikalawang samuel": "2-samuel",
+  "mga hukom": "judges",
+  hukom: "judges",
+  "mga bilang": "numbers",
+  bilang: "numbers",
+  levitico: "leviticus",
+  deuteronomio: "deuteronomy",
+  josue: "joshua",
+  rut: "ruth",
+  nehemias: "nehemiah",
+  ester: "esther",
+  "mga panaghoy": "lamentations",
+  panaghoy: "lamentations",
+  "awit ng mga awit": "song-of-solomon",
+  "cantares": "song-of-solomon",
+  jean: "john",
+  matthieu: "matthew",
+  marc: "mark",
+  luc: "luke",
+  giovanni: "john",
+  matteo: "matthew",
+  marco: "mark",
+  luca: "luke",
+  joao: "john",
+  "joão": "john",
+  mateus: "matthew",
+  johannes: "john",
+  "matthäus": "matthew",
+  markus: "mark",
+  lukas: "luke",
 };
 
 export type ParsedReference = {
@@ -320,6 +357,51 @@ const ONES: Record<string, number> = {
   eighteenth: 18,
   nineteen: 19,
   nineteenth: 19,
+  // Tagalog
+  isa: 1,
+  una: 1,
+  dalawa: 2,
+  pangalawa: 2,
+  tatlo: 3,
+  pangatlo: 3,
+  apat: 4,
+  lima: 5,
+  anim: 6,
+  pito: 7,
+  walo: 8,
+  siyam: 9,
+  sampu: 10,
+  labingisa: 11,
+  "labing-isa": 11,
+  labindalawa: 12,
+  "labing-dalawa": 12,
+  labintatlo: 13,
+  labingapat: 14,
+  "labing-apat": 14,
+  labinlima: 15,
+  labinganim: 16,
+  "labing-anim": 16,
+  // Spanish
+  uno: 1,
+  dos: 2,
+  tres: 3,
+  cuatro: 4,
+  cinco: 5,
+  seis: 6,
+  siete: 7,
+  ocho: 8,
+  nueve: 9,
+  diez: 10,
+  once: 11,
+  doce: 12,
+  trece: 13,
+  catorce: 14,
+  quince: 15,
+  dieciseis: 16,
+  "dieciséis": 16,
+  diecisiete: 17,
+  dieciocho: 18,
+  diecinueve: 19,
 };
 
 const TENS: Record<string, number> = {
@@ -390,10 +472,10 @@ export function normalizeSpokenReference(query: string): string {
   let q = query
     .toLowerCase()
     .replace(/[?!'"“”‘’]/g, " ")
-    .replace(/\b(please|open|go to|goto|find|show|read|basahin|buksan|hanapin)\b/g, " ")
-    .replace(/\b(chapter|kapitulo|kabanata)\b/g, " ")
-    .replace(/\b(verse|verses|talata|bersikulo)\b/g, " ")
-    .replace(/\b(book of|libro ng|libro|sa)\b/g, " ")
+    .replace(/\b(please|open|go to|goto|find|show|read|basahin|buksan|hanapin|abre|ouvrir|öffne)\b/g, " ")
+    .replace(/\b(chapter|kapitulo|kabanata|capítulo|chapitre|kapitel|capitolo|hoofdstuk)\b/g, " ")
+    .replace(/\b(verse|verses|talata|bersikulo|versículo|verset|vers|versetto|стих)\b/g, " ")
+    .replace(/\b(book of|libro ng|libro|sa|livre|buch)\b/g, " ")
     .replace(/,/g, " ")
     .replace(/:/g, " ")
     .replace(/\s+/g, " ")
